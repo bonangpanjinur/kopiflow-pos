@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendances: {
+        Row: {
+          business_date: string
+          clock_in: string
+          clock_out: string | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          note: string | null
+          outlet_id: string
+          shop_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_date?: string
+          clock_in?: string
+          clock_out?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          note?: string | null
+          outlet_id: string
+          shop_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_date?: string
+          clock_in?: string
+          clock_out?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          note?: string | null
+          outlet_id?: string
+          shop_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -462,6 +504,87 @@ export type Database = {
         }
         Relationships: []
       }
+      shifts: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          note: string | null
+          outlet_id: string
+          shop_id: string
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          note?: string | null
+          outlet_id: string
+          shop_id: string
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          note?: string | null
+          outlet_id?: string
+          shop_id?: string
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      staff_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          outlet_id: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          shop_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          outlet_id?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          shop_id: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          outlet_id?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          shop_id?: string
+          token?: string
+        }
+        Relationships: []
+      }
       stock_movements: {
         Row: {
           created_at: string
@@ -562,6 +685,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_staff_invitation: { Args: { _token: string }; Returns: Json }
       has_outlet_access: {
         Args: { _outlet_id: string; _user_id: string }
         Returns: boolean
@@ -584,7 +708,13 @@ export type Database = {
       next_order_no: { Args: { _outlet_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "super_admin" | "owner" | "cashier" | "barista" | "customer"
+      app_role:
+        | "super_admin"
+        | "owner"
+        | "cashier"
+        | "barista"
+        | "customer"
+        | "manager"
       order_status: "completed" | "voided" | "refunded"
       payment_method: "cash" | "qris"
       stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
@@ -715,7 +845,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "owner", "cashier", "barista", "customer"],
+      app_role: [
+        "super_admin",
+        "owner",
+        "cashier",
+        "barista",
+        "customer",
+        "manager",
+      ],
       order_status: ["completed", "voided", "refunded"],
       payment_method: ["cash", "qris"],
       stock_movement_type: ["purchase", "adjustment", "sale", "waste"],

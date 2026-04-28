@@ -15,12 +15,16 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as AppScheduleRouteImport } from './routes/app.schedule'
 import { Route as AppRecipesRouteImport } from './routes/app.recipes'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
+import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
+import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -52,6 +56,16 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppScheduleRoute = AppScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRecipesRoute = AppRecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
@@ -77,9 +91,19 @@ const AppInventoryRoute = AppInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmployeesRoute = AppEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCategoriesRoute = AppCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAttendanceRoute = AppAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -89,12 +113,16 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/app/attendance': typeof AppAttendanceRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/app/schedule': typeof AppScheduleRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -102,12 +130,16 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/app/attendance': typeof AppAttendanceRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/app/schedule': typeof AppScheduleRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -117,12 +149,16 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/app/attendance': typeof AppAttendanceRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/app/schedule': typeof AppScheduleRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -133,12 +169,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/app/attendance'
     | '/app/categories'
+    | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/app/schedule'
+    | '/invite/$token'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -146,12 +186,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/app/attendance'
     | '/app/categories'
+    | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/app/schedule'
+    | '/invite/$token'
     | '/app'
   id:
     | '__root__'
@@ -160,12 +204,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/app/attendance'
     | '/app/categories'
+    | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/app/schedule'
+    | '/invite/$token'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -175,6 +223,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,6 +270,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/schedule': {
+      id: '/app/schedule'
+      path: '/schedule'
+      fullPath: '/app/schedule'
+      preLoaderRoute: typeof AppScheduleRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/recipes': {
       id: '/app/recipes'
       path: '/recipes'
@@ -256,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInventoryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/employees': {
+      id: '/app/employees'
+      path: '/employees'
+      fullPath: '/app/employees'
+      preLoaderRoute: typeof AppEmployeesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/categories': {
       id: '/app/categories'
       path: '/categories'
@@ -263,26 +333,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCategoriesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/attendance': {
+      id: '/app/attendance'
+      path: '/attendance'
+      fullPath: '/app/attendance'
+      preLoaderRoute: typeof AppAttendanceRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAttendanceRoute: typeof AppAttendanceRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
+  AppEmployeesRoute: typeof AppEmployeesRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppMenuRoute: typeof AppMenuRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
   AppRecipesRoute: typeof AppRecipesRoute
+  AppScheduleRoute: typeof AppScheduleRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAttendanceRoute: AppAttendanceRoute,
   AppCategoriesRoute: AppCategoriesRoute,
+  AppEmployeesRoute: AppEmployeesRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppMenuRoute: AppMenuRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
   AppRecipesRoute: AppRecipesRoute,
+  AppScheduleRoute: AppScheduleRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
@@ -294,6 +377,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
