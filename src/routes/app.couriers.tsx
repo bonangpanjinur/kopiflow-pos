@@ -202,7 +202,7 @@ function CouriersPage() {
   const active = couriers.filter((c) => c.is_active).length;
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Kurir Toko</h1>
