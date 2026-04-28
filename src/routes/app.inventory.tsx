@@ -369,6 +369,7 @@ function InventoryPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {lowStock.length > 0 && (
