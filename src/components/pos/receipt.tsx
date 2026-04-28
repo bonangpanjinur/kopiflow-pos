@@ -17,6 +17,7 @@ type Props = {
   customerName?: string;
   promoCode?: string | null;
   promoDiscount?: number;
+  manualDiscount?: number;
   pointsRedeemed?: number;
   pointsRedeemValue?: number;
   pointsEarned?: number;
