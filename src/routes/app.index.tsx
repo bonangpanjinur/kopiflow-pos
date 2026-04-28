@@ -136,21 +136,8 @@ function Dashboard() {
         </div>
       )}
 
-      {lowStock.length > 0 && (
-        <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
-            <div className="flex-1">
-              <div className="font-semibold text-sm">Bahan menipis</div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {lowStock.map((l) => `${l.name} (${l.current_stock} ${l.unit})`).join(" · ")}
-              </div>
-            </div>
-            <Link to="/app/inventory" className="text-sm font-medium text-primary hover:underline whitespace-nowrap">
-              Kelola →
-            </Link>
-          </div>
-        </div>
+      {lowStock.length > 0 && shop && (
+        <LowStockBanner items={lowStock} shopId={shop.id} />
       )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
