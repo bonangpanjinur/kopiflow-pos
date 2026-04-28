@@ -70,6 +70,12 @@ function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promo, setPromo] = useState<{ id: string; code: string; discount: number } | null>(null);
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [loyalty, setLoyalty] = useState<LoyaltySettings | null>(null);
+  const [pointBalance, setPointBalance] = useState(0);
+  const [redeemPoints, setRedeemPoints] = useState(0);
 
   useEffect(() => {
     setItems(readCart(slug));
