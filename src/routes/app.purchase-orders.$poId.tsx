@@ -236,5 +236,94 @@ function PODetailPage() {
         )}
       </div>
     </div>
+
+    {/* Print-only sheet (A4) */}
+    <div className="po-print">
+      <div className="row">
+        <div>
+          <h1>Purchase Order</h1>
+          <div className="muted" style={{ marginTop: 4, fontSize: "10pt" }}>{shop?.name ?? ""}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div className={`stamp ${po.status}`}>{statusLabel}</div>
+          <div style={{ marginTop: 8, fontWeight: 600 }}>{po.po_no}</div>
+          <div className="muted" style={{ fontSize: "9.5pt" }}>Tgl Order: {po.order_date}</div>
+          {po.expected_date && <div className="muted" style={{ fontSize: "9.5pt" }}>Kedatangan: {po.expected_date}</div>}
+          {po.received_date && <div className="muted" style={{ fontSize: "9.5pt" }}>Diterima: {po.received_date}</div>}
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="box">
+          <div className="label">Supplier</div>
+          {supplier ? (
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontWeight: 600 }}>{supplier.name}</div>
+              {supplier.contact_name && <div>{supplier.contact_name}</div>}
+              {supplier.phone && <div className="muted">{supplier.phone}</div>}
+              {supplier.email && <div className="muted">{supplier.email}</div>}
+              {supplier.address && <div className="muted" style={{ marginTop: 2 }}>{supplier.address}</div>}
+            </div>
+          ) : <div className="muted" style={{ marginTop: 4 }}>— tidak ditentukan —</div>}
+        </div>
+        <div className="box">
+          <div className="label">Dipesan oleh</div>
+          <div style={{ marginTop: 4, fontWeight: 600 }}>{shop?.name ?? "—"}</div>
+          <div className="muted" style={{ fontSize: "9.5pt", marginTop: 2 }}>
+            Dicetak: {new Date().toLocaleString("id-ID")}
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style={{ width: "6%" }}>#</th>
+            <th>Bahan</th>
+            <th className="num" style={{ width: "14%" }}>Qty</th>
+            <th className="num" style={{ width: "20%" }}>Harga / unit</th>
+            <th className="num" style={{ width: "20%" }}>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it, idx) => {
+            const ig = ingMap[it.ingredient_id];
+            return (
+              <tr key={it.id}>
+                <td>{idx + 1}</td>
+                <td>{ig?.name ?? "—"}</td>
+                <td className="num">{Number(it.quantity)} {ig?.unit}</td>
+                <td className="num">{formatIDR(it.unit_cost)}</td>
+                <td className="num">{formatIDR(it.subtotal)}</td>
+              </tr>
+            );
+          })}
+          {items.length === 0 && (
+            <tr><td colSpan={5} style={{ textAlign: "center", padding: "16px 0" }} className="muted">Tidak ada item.</td></tr>
+          )}
+        </tbody>
+      </table>
+
+      <div className="totals">
+        <div className="line"><span className="muted">Subtotal</span><span className="num">{formatIDR(po.subtotal)}</span></div>
+        {Number(po.tax) > 0 && (
+          <div className="line"><span className="muted">Pajak</span><span className="num">{formatIDR(po.tax)}</span></div>
+        )}
+        <div className="line grand"><span>Total</span><span className="num">{formatIDR(po.total)}</span></div>
+      </div>
+
+      {po.note && (
+        <div className="note">
+          <div className="label">Catatan</div>
+          <div style={{ marginTop: 4 }}>{po.note}</div>
+        </div>
+      )}
+
+      <div className="footer">
+        <div className="sign">Hormat kami,<br/>{shop?.name ?? ""}</div>
+        <div className="sign">Penerima,<br/>{supplier?.name ?? ""}</div>
+      </div>
+    </div>
+    </>
   );
 }
