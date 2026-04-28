@@ -236,7 +236,50 @@ function InventoryPage() {
     load();
   }
 
-  if (shopLoading) {
+  function openBulkOpname() {
+    const init: Record<string, string> = {};
+    items.forEach((i) => { init[i.id] = String(i.current_stock); });
+    setBulkValues(init);
+    setBulkNote("");
+    setBulkSearch("");
+    setBulkOnlyChanged(false);
+    setBulkOpen(true);
+  }
+
+  async function saveBulkOpname() {
+    if (!shop) return;
+    const movements: Array<{ shop_id: string; ingredient_id: string; type: "adjustment" | "waste"; quantity: number; note: string }> = [];
+    let totalDeltaValue = 0;
+    let adjusted = 0;
+    const today = new Date().toLocaleDateString("id-ID");
+    for (const i of items) {
+      const raw = bulkValues[i.id];
+      if (raw === undefined || raw === "") continue;
+      const actual = Number(raw);
+      if (Number.isNaN(actual) || actual < 0) {
+        toast.error(`Stok aktual untuk "${i.name}" tidak valid`);
+        return;
+      }
+      const delta = actual - Number(i.current_stock);
+      if (delta === 0) continue;
+      adjusted += 1;
+      totalDeltaValue += delta * Number(i.cost_per_unit);
+      const note = `Opname ${today}: sistem ${i.current_stock} → aktual ${actual} ${i.unit}` + (bulkNote.trim() ? ` — ${bulkNote.trim()}` : "");
+      if (delta > 0) {
+        movements.push({ shop_id: shop.id, ingredient_id: i.id, type: "adjustment", quantity: delta, note });
+      } else {
+        movements.push({ shop_id: shop.id, ingredient_id: i.id, type: "waste", quantity: Math.abs(delta), note });
+      }
+    }
+    if (movements.length === 0) { toast.info("Tidak ada selisih untuk disimpan"); return; }
+    setBulkSaving(true);
+    const { error } = await supabase.from("stock_movements").insert(movements);
+    setBulkSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Opname tersimpan: ${adjusted} bahan disesuaikan (${totalDeltaValue >= 0 ? "+" : ""}${formatIDR(totalDeltaValue)})`);
+    setBulkOpen(false);
+    load();
+  }
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
