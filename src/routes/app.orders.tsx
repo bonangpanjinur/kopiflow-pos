@@ -298,7 +298,26 @@ function DetailDialog({
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
+          {!isVoided && (
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={voiding}
+              onClick={async () => {
+                const reason = prompt("Alasan void? (opsional)") ?? "";
+                if (!confirm(`Void order #${order.order_no}? Stok & poin akan dibalik.`)) return;
+                setVoiding(true);
+                const { error } = await supabase.rpc("void_order", { _order_id: order.id, _reason: reason });
+                setVoiding(false);
+                if (error) return toast.error(error.message);
+                toast.success("Order di-void");
+                onVoided();
+              }}
+            >
+              <XCircle className="mr-2 h-4 w-4" /> {voiding ? "Memproses…" : "Void order"}
+            </Button>
+          )}
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Cetak ulang
           </Button>
