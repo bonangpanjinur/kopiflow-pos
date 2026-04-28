@@ -15,6 +15,7 @@ import {
   CalendarDays,
   Clock,
   Truck,
+  Bike,
   BarChart3,
   Settings,
   LogOut,
@@ -40,6 +41,7 @@ const NAV = [
   { to: "/app/schedule", label: "Jadwal", icon: CalendarDays },
   { to: "/app/attendance", label: "Absensi", icon: Clock },
   { to: "/app/delivery", label: "Delivery", icon: Truck },
+  { to: "/app/couriers", label: "Kurir", icon: Bike },
   { to: "/app/reports", label: "Laporan", icon: BarChart3 },
   { to: "/app/settings", label: "Pengaturan", icon: Settings },
 ];
