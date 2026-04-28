@@ -534,9 +534,37 @@ function CheckoutPage() {
         </p>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-3 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <div>
+      <section className="space-y-2 rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold">Metode pembayaran</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {paymentMethods.map((m) => {
+            const labels: Record<string, string> = {
+              cash: "Cash di tempat",
+              qris: "QRIS",
+              transfer: "Transfer bank",
+            };
+            const active = paymentChoice === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setPaymentChoice(m as "cash" | "qris" | "transfer")}
+                className={`rounded-lg border p-3 text-left text-sm transition-colors ${
+                  active ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-accent"
+                }`}
+              >
+                {labels[m] ?? m}
+              </button>
+            );
+          })}
+        </div>
+        {paymentChoice !== "cash" && (
+          <p className="pt-1 text-xs text-muted-foreground">
+            Setelah kirim pesanan, Anda diarahkan ke halaman pembayaran untuk upload bukti.
+          </p>
+        )}
+      </section>
+
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-base font-semibold">{formatIDR(total)}</p>
           </div>
