@@ -15,11 +15,13 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppRecipesRouteImport } from './routes/app.recipes'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
+import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 
 const SignupRoute = SignupRouteImport.update({
@@ -52,6 +54,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRecipesRoute = AppRecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
@@ -77,6 +84,11 @@ const AppInventoryRoute = AppInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmployeesRoute = AppEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCategoriesRoute = AppCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -90,11 +102,13 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -103,11 +117,13 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -118,11 +134,13 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -134,11 +152,13 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/app/categories'
+    | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/invite/$token'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -147,11 +167,13 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/app/categories'
+    | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/invite/$token'
     | '/app'
   id:
     | '__root__'
@@ -161,11 +183,13 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/app/categories'
+    | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/invite/$token'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -175,6 +199,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,6 +246,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/recipes': {
       id: '/app/recipes'
       path: '/recipes'
@@ -256,6 +288,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInventoryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/employees': {
+      id: '/app/employees'
+      path: '/employees'
+      fullPath: '/app/employees'
+      preLoaderRoute: typeof AppEmployeesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/categories': {
       id: '/app/categories'
       path: '/categories'
@@ -268,6 +307,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
+  AppEmployeesRoute: typeof AppEmployeesRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppMenuRoute: typeof AppMenuRoute
   AppOrdersRoute: typeof AppOrdersRoute
@@ -278,6 +318,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
+  AppEmployeesRoute: AppEmployeesRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppMenuRoute: AppMenuRoute,
   AppOrdersRoute: AppOrdersRoute,
@@ -294,6 +335,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
