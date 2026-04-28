@@ -1049,6 +1049,20 @@ function CheckoutDialog({
     }
     const orderNo = noData as string;
 
+    const splitArr: PaymentSplit[] = splitEnabled
+      ? [
+          { method: "cash", amount: splitCashNum },
+          { method: "qris", amount: splitQrisNum },
+        ].filter((p) => p.amount > 0)
+      : [];
+    const finalMethod: "cash" | "qris" = splitEnabled
+      ? splitCashNum >= splitQrisNum
+        ? "cash"
+        : "qris"
+      : method;
+    const finalTendered = splitEnabled ? splitSum : method === "cash" ? tenderedNum : total;
+    const finalChange = splitEnabled ? Math.max(0, splitSum - total) : change;
+
     const { data: orderRow, error: oErr } = await supabase
       .from("orders")
       .insert({
@@ -1057,11 +1071,16 @@ function CheckoutDialog({
         order_no: orderNo,
         subtotal,
         discount,
+        tax,
+        service_charge: service,
+        tip_amount: tip,
         total,
-        payment_method: method,
-        amount_tendered: method === "cash" ? tenderedNum : total,
-        change_due: change,
+        payment_method: finalMethod,
+        payment_split: splitArr as unknown as never,
+        amount_tendered: finalTendered,
+        change_due: finalChange,
         cashier_id: cashierId,
+        shift_id: shiftId,
         promo_id: promo?.id ?? null,
         promo_code: promo?.code ?? null,
       })
@@ -1110,8 +1129,12 @@ function CheckoutDialog({
     setDone({
       orderNo,
       date: new Date(orderRow.created_at),
-      amountTendered: tenderedNum,
-      changeDue: change,
+      amountTendered: finalTendered,
+      changeDue: finalChange,
+      splitUsed: splitArr,
+      tax,
+      service,
+      tip,
     });
     setSaving(false);
     toast.success(`Order #${orderNo} tersimpan`);
