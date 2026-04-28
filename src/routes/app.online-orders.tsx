@@ -11,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ShoppingBag, Phone, MapPin, Bell } from "lucide-react";
+import { Loader2, ShoppingBag, Phone, MapPin, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
+import { ensureNotificationPermission, notifyOrder } from "@/lib/notify";
 
 export const Route = createFileRoute("/app/online-orders")({
   component: OnlineOrders,
@@ -114,9 +115,11 @@ function OnlineOrders() {
         (payload) => {
           load();
           if (payload.eventType === "INSERT" && (payload.new as { channel: string }).channel === "online") {
-            toast.info(`Pesanan baru #${(payload.new as { order_no: string }).order_no}`, {
+            const orderNo = (payload.new as { order_no: string }).order_no;
+            toast.info(`Pesanan baru #${orderNo}`, {
               icon: <Bell className="h-4 w-4" />,
             });
+            notifyOrder("Pesanan baru masuk", `Order #${orderNo} menunggu konfirmasi`);
           }
         }
       )
