@@ -482,10 +482,34 @@ function POSPage() {
             )}
           </button>
         </div>
-        <div className="text-xs text-muted-foreground">
-          {shop?.name} · {outlet.name}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {!shiftLoading && shift && (
+            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-600 dark:text-emerald-400">
+              ● Shift open · modal {formatIDR(Number(shift.opening_cash))}
+            </span>
+          )}
+          <span>{shop?.name} · {outlet.name}</span>
         </div>
       </div>
+
+      {!shiftLoading && !shift && (
+        <div className="flex flex-col items-center justify-center gap-3 border-b border-amber-300 bg-amber-50 p-4 text-center dark:border-amber-800 dark:bg-amber-950/30 sm:flex-row sm:justify-between sm:text-left">
+          <div className="text-sm">
+            <div className="font-semibold text-amber-900 dark:text-amber-200">Shift kasir belum dibuka</div>
+            <div className="text-xs text-amber-800/80 dark:text-amber-300/80">
+              Buka shift dulu agar transaksi tercatat ke laci kas hari ini.
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/app/shifts">Buka di halaman Shift</Link>
+            </Button>
+            <Button size="sm" onClick={() => setOpenShiftDlg(true)}>
+              Buka shift sekarang
+            </Button>
+          </div>
+        </div>
+      )}
 
       {tab === "register" ? (
         <div className="flex flex-1 overflow-hidden">
