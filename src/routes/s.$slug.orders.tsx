@@ -17,6 +17,8 @@ type Order = {
   fulfillment: string;
   total: number;
   delivery_address: string | null;
+  payment_status: "unpaid" | "awaiting_verification" | "paid" | "refunded";
+  payment_method: string;
 };
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
@@ -49,7 +51,7 @@ function MyOrders() {
       if (!shop || cancelled) return;
       const { data } = await supabase
         .from("orders")
-        .select("id,order_no,created_at,status,fulfillment,total,delivery_address")
+        .select("id,order_no,created_at,status,fulfillment,total,delivery_address,payment_status,payment_method")
         .eq("customer_user_id", user.id)
         .eq("shop_id", shop.id)
         .order("created_at", { ascending: false })
@@ -115,6 +117,17 @@ function MyOrders() {
             </div>
             {o.delivery_address && (
               <p className="mt-1 text-xs text-muted-foreground">📍 {o.delivery_address}</p>
+            )}
+            {o.payment_status === "unpaid" && o.payment_method !== "cash" && o.status === "pending" && (
+              <Link to="/s/$slug/pay/$orderId" params={{ slug, orderId: o.id }} className="mt-2 block">
+                <Button size="sm" className="w-full">Bayar sekarang</Button>
+              </Link>
+            )}
+            {o.payment_status === "awaiting_verification" && (
+              <p className="mt-2 text-xs text-amber-600">⏳ Menunggu verifikasi pembayaran</p>
+            )}
+            {o.payment_status === "paid" && (
+              <p className="mt-2 text-xs text-emerald-600">✓ Pembayaran terverifikasi</p>
             )}
             <Link
               to="/track/$orderId"

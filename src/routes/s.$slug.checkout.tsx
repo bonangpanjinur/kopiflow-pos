@@ -59,6 +59,8 @@ function CheckoutPage() {
 
   const [items, setItems] = useState<CustomerCartItem[]>([]);
   const [shopId, setShopId] = useState<string | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(["cash"]);
+  const [paymentChoice, setPaymentChoice] = useState<"cash" | "qris" | "transfer">("cash");
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [outletId, setOutletId] = useState<string>("");
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -85,11 +87,17 @@ function CheckoutPage() {
     (async () => {
       const { data: shop } = await supabase
         .from("coffee_shops")
-        .select("id")
+        .select("id, payment_methods_enabled, qris_image_url")
         .eq("slug", slug)
         .maybeSingle();
       if (!shop) return;
       setShopId(shop.id);
+      const methods = (shop.payment_methods_enabled ?? ["cash"]) as string[];
+      // Filter QRIS out if no QR uploaded
+      const usable = methods.filter((m) => m !== "qris" || shop.qris_image_url);
+      const finalMethods = usable.length ? usable : ["cash"];
+      setPaymentMethods(finalMethods);
+      setPaymentChoice(finalMethods[0] as "cash" | "qris" | "transfer");
       const [{ data: o }, { data: s }, { data: z }] = await Promise.all([
         supabase
           .from("outlets")
@@ -233,7 +241,7 @@ function CheckoutPage() {
           channel: "online",
           fulfillment,
           status: "pending",
-          payment_method: "cash",
+          payment_method: (paymentChoice === "transfer" ? "qris" : paymentChoice) as "cash" | "qris",
           customer_user_id: user.id,
           customer_name: name.trim(),
           customer_phone: phone.trim(),
@@ -279,7 +287,11 @@ function CheckoutPage() {
 
       clearCart(slug);
       toast.success(`Order #${order.order_no} terkirim!`);
-      navigate({ to: "/s/$slug/orders", params: { slug } });
+      if (paymentChoice === "qris" || paymentChoice === "transfer") {
+        navigate({ to: "/s/$slug/pay/$orderId", params: { slug, orderId: order.id } });
+      } else {
+        navigate({ to: "/s/$slug/orders", params: { slug } });
+      }
     } catch (e) {
       console.error(e);
       toast.error("Gagal membuat pesanan");
@@ -520,6 +532,37 @@ function CheckoutPage() {
         <p className="text-xs text-muted-foreground">
           Pembayaran: bayar di tempat (Cash/QRIS) saat pickup atau ke kurir.
         </p>
+      </section>
+
+      <section className="space-y-2 rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold">Metode pembayaran</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {paymentMethods.map((m) => {
+            const labels: Record<string, string> = {
+              cash: "Cash di tempat",
+              qris: "QRIS",
+              transfer: "Transfer bank",
+            };
+            const active = paymentChoice === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setPaymentChoice(m as "cash" | "qris" | "transfer")}
+                className={`rounded-lg border p-3 text-left text-sm transition-colors ${
+                  active ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-accent"
+                }`}
+              >
+                {labels[m] ?? m}
+              </button>
+            );
+          })}
+        </div>
+        {paymentChoice !== "cash" && (
+          <p className="pt-1 text-xs text-muted-foreground">
+            Setelah kirim pesanan, Anda diarahkan ke halaman pembayaran untuk upload bukti.
+          </p>
+        )}
       </section>
 
       <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-3 backdrop-blur">

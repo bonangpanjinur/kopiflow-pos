@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, Trash2, Store, Phone, MapPin, Clock, Share2, Save, Image as ImageIcon } from "lucide-react";
+import { Loader2, Upload, Trash2, Store, Phone, MapPin, Clock, Share2, Save, Image as ImageIcon, QrCode, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/settings")({
@@ -38,6 +38,8 @@ const DEFAULT_HOURS: OpenHours = {
   sun: { open: "08:00", close: "22:00", closed: false },
 };
 
+type PaymentMethod = "cash" | "qris" | "transfer";
+
 type ShopRow = {
   id: string;
   name: string;
@@ -51,6 +53,9 @@ type ShopRow = {
   instagram: string | null;
   whatsapp: string | null;
   open_hours: OpenHours | null;
+  qris_image_url: string | null;
+  qris_merchant_name: string | null;
+  payment_methods_enabled: PaymentMethod[];
 };
 
 function SettingsPage() {
@@ -59,6 +64,8 @@ function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const qrisFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingQris, setUploadingQris] = useState(false);
   const [form, setForm] = useState<ShopRow | null>(null);
 
   useEffect(() => {
@@ -67,13 +74,14 @@ function SettingsPage() {
       setLoading(true);
       const { data } = await supabase
         .from("coffee_shops")
-        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours")
+        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours, qris_image_url, qris_merchant_name, payment_methods_enabled")
         .eq("id", shop.id)
         .maybeSingle();
       if (data) {
         setForm({
           ...data,
           open_hours: (data.open_hours as OpenHours | null) ?? DEFAULT_HOURS,
+          payment_methods_enabled: (data.payment_methods_enabled ?? ["cash", "qris"]) as PaymentMethod[],
         } as ShopRow);
       }
       setLoading(false);
@@ -134,6 +142,37 @@ function SettingsPage() {
 
   const onRemoveLogo = () => update("logo_url", null);
 
+  const onUploadQris = async (file: File) => {
+    if (!shop) return;
+    if (!file.type.startsWith("image/")) return toast.error("File harus berupa gambar");
+    if (file.size > 2 * 1024 * 1024) return toast.error("Ukuran maksimal 2MB");
+    setUploadingQris(true);
+    const ext = file.name.split(".").pop() ?? "png";
+    const path = `${shop.id}/qris-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("shop-logos").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (upErr) {
+      toast.error(upErr.message);
+      setUploadingQris(false);
+      return;
+    }
+    const { data: pub } = supabase.storage.from("shop-logos").getPublicUrl(path);
+    update("qris_image_url", pub.publicUrl);
+    setUploadingQris(false);
+    toast.success("QRIS terunggah, simpan untuk menerapkan");
+  };
+
+  const togglePayment = (m: PaymentMethod) => {
+    setForm((f) => {
+      if (!f) return f;
+      const enabled = f.payment_methods_enabled ?? [];
+      const next = enabled.includes(m) ? enabled.filter((x) => x !== m) : [...enabled, m];
+      return { ...f, payment_methods_enabled: next.length ? next : ["cash"] };
+    });
+  };
+
   const onSave = async () => {
     if (!shop || !form) return;
     setSaving(true);
@@ -150,6 +189,9 @@ function SettingsPage() {
         instagram: form.instagram,
         whatsapp: form.whatsapp,
         open_hours: form.open_hours as never,
+        qris_image_url: form.qris_image_url,
+        qris_merchant_name: form.qris_merchant_name,
+        payment_methods_enabled: form.payment_methods_enabled,
       })
       .eq("id", shop.id);
     setSaving(false);
@@ -294,6 +336,97 @@ function SettingsPage() {
               </div>
             );
           })}
+        </div>
+      </Section>
+
+      {/* Pembayaran */}
+      <Section icon={CreditCard} title="Pembayaran" desc="Metode pembayaran yang ditawarkan ke pelanggan online.">
+        <div className="space-y-3">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(["cash", "qris", "transfer"] as PaymentMethod[]).map((m) => {
+              const active = (form.payment_methods_enabled ?? []).includes(m);
+              const labels: Record<PaymentMethod, string> = {
+                cash: "Cash di tempat",
+                qris: "QRIS (statis)",
+                transfer: "Transfer bank",
+              };
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => togglePayment(m)}
+                  className={`rounded-lg border px-3 py-2.5 text-sm text-left transition-colors ${
+                    active ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{labels[m]}</span>
+                    {active && <span className="text-primary text-xs">✓</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {(form.payment_methods_enabled ?? []).includes("qris") && (
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <QrCode className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">QRIS statis</h3>
+              </div>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Upload gambar QR code statis dari merchant Anda. Pelanggan akan scan & upload bukti bayar untuk verifikasi manual.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
+                <div>
+                  <div className="relative h-40 w-40 overflow-hidden rounded-lg border border-dashed border-border bg-background flex items-center justify-center">
+                    {form.qris_image_url ? (
+                      <img src={form.qris_image_url} alt="QRIS" className="h-full w-full object-contain" />
+                    ) : (
+                      <QrCode className="h-10 w-10 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={uploadingQris}
+                      onClick={() => qrisFileRef.current?.click()}
+                    >
+                      {uploadingQris ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    </Button>
+                    {form.qris_image_url && (
+                      <Button size="sm" variant="outline" onClick={() => update("qris_image_url", null)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <input
+                      ref={qrisFileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) onUploadQris(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <Label>Nama merchant</Label>
+                    <Input
+                      placeholder="Mis. Toko Kopi Sahabat"
+                      value={form.qris_merchant_name ?? ""}
+                      onChange={(e) => update("qris_merchant_name", e.target.value)}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Tampil di halaman pembayaran pelanggan.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Section>
 

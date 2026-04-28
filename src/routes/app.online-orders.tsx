@@ -32,6 +32,9 @@ type Order = {
   note: string | null;
   created_at: string;
   courier_id: string | null;
+  payment_status: "unpaid" | "awaiting_verification" | "paid" | "refunded";
+  payment_method: string;
+  payment_proof_url: string | null;
 };
 
 type OrderItem = {
@@ -90,7 +93,7 @@ function OnlineOrders() {
         supabase
           .from("orders")
           .select(
-            "id,order_no,status,fulfillment,total,delivery_fee,delivery_address,customer_name,customer_phone,note,created_at,courier_id"
+            "id,order_no,status,fulfillment,total,delivery_fee,delivery_address,customer_name,customer_phone,note,created_at,courier_id,payment_status,payment_method,payment_proof_url"
           )
           .eq("shop_id", shop.id)
           .eq("channel", "online")
@@ -164,6 +167,18 @@ function OnlineOrders() {
       .eq("id", id);
     if (error) toast.error(error.message);
     else toast.success(courier_id ? "Kurir ditugaskan" : "Penugasan dibatalkan");
+  };
+
+  const verifyPayment = async (id: string, paid: boolean) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        payment_status: paid ? "paid" : "unpaid",
+        paid_at: paid ? new Date().toISOString() : null,
+      })
+      .eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success(paid ? "Pembayaran diverifikasi" : "Pembayaran ditolak");
   };
 
   if (loadingShop || loading) {
@@ -240,6 +255,7 @@ function OnlineOrders() {
               onExpand={() => loadItems(o.id)}
               onUpdateStatus={(s) => updateStatus(o.id, s)}
               onAssign={(cid) => assignCourier(o.id, cid)}
+              onVerifyPayment={(paid) => verifyPayment(o.id, paid)}
             />
           ))}
         </div>
@@ -255,6 +271,7 @@ function OrderCard({
   onExpand,
   onUpdateStatus,
   onAssign,
+  onVerifyPayment,
 }: {
   order: Order;
   items: OrderItem[] | undefined;
@@ -262,6 +279,7 @@ function OrderCard({
   onExpand: () => void;
   onUpdateStatus: (s: string) => void;
   onAssign: (cid: string | null) => void;
+  onVerifyPayment: (paid: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const isDelivery = order.fulfillment === "delivery";
@@ -321,6 +339,32 @@ function OrderCard({
         )}
         {order.note && <p className="text-muted-foreground">📝 {order.note}</p>}
       </div>
+
+      {(order.payment_method !== "cash" || order.payment_proof_url || order.payment_status !== "unpaid") && (
+        <div className="mt-3 rounded-lg border border-border bg-muted/30 p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div>
+              <span className="font-semibold uppercase">{order.payment_method}</span>
+              <span className="ml-2">
+                {order.payment_status === "paid" && <span className="text-emerald-600">✓ Lunas</span>}
+                {order.payment_status === "awaiting_verification" && <span className="text-amber-600">⏳ Perlu verifikasi</span>}
+                {order.payment_status === "unpaid" && <span className="text-muted-foreground">Belum bayar</span>}
+              </span>
+            </div>
+            {order.payment_proof_url && (
+              <a href={order.payment_proof_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                Lihat bukti
+              </a>
+            )}
+          </div>
+          {order.payment_status === "awaiting_verification" && (
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" onClick={() => onVerifyPayment(true)}>Verifikasi lunas</Button>
+              <Button size="sm" variant="outline" onClick={() => onVerifyPayment(false)}>Tolak</Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {open && items && (
         <div className="mt-3 rounded-lg bg-muted/40 p-2 text-sm">

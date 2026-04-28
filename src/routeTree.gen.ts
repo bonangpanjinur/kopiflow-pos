@@ -40,6 +40,7 @@ import { Route as SSlugOrdersRouteImport } from './routes/s.$slug.orders'
 import { Route as SSlugLoginRouteImport } from './routes/s.$slug.login'
 import { Route as SSlugCheckoutRouteImport } from './routes/s.$slug.checkout'
 import { Route as SSlugCartRouteImport } from './routes/s.$slug.cart'
+import { Route as SSlugPayOrderIdRouteImport } from './routes/s.$slug.pay.$orderId'
 import { Route as SSlugMenuMenuIdRouteImport } from './routes/s.$slug.menu.$menuId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -197,6 +198,11 @@ const SSlugCartRoute = SSlugCartRouteImport.update({
   path: '/cart',
   getParentRoute: () => SSlugRoute,
 } as any)
+const SSlugPayOrderIdRoute = SSlugPayOrderIdRouteImport.update({
+  id: '/pay/$orderId',
+  path: '/pay/$orderId',
+  getParentRoute: () => SSlugRoute,
+} as any)
 const SSlugMenuMenuIdRoute = SSlugMenuMenuIdRouteImport.update({
   id: '/menu/$menuId',
   path: '/menu/$menuId',
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
+  '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug': typeof SSlugIndexRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
+  '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
+  '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/s/$slug/orders'
     | '/s/$slug/'
     | '/s/$slug/menu/$menuId'
+    | '/s/$slug/pay/$orderId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -371,6 +381,7 @@ export interface FileRouteTypes {
     | '/s/$slug/orders'
     | '/s/$slug'
     | '/s/$slug/menu/$menuId'
+    | '/s/$slug/pay/$orderId'
   id:
     | '__root__'
     | '/'
@@ -405,6 +416,7 @@ export interface FileRouteTypes {
     | '/s/$slug/orders'
     | '/s/$slug/'
     | '/s/$slug/menu/$menuId'
+    | '/s/$slug/pay/$orderId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -637,6 +649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugCartRouteImport
       parentRoute: typeof SSlugRoute
     }
+    '/s/$slug/pay/$orderId': {
+      id: '/s/$slug/pay/$orderId'
+      path: '/pay/$orderId'
+      fullPath: '/s/$slug/pay/$orderId'
+      preLoaderRoute: typeof SSlugPayOrderIdRouteImport
+      parentRoute: typeof SSlugRoute
+    }
     '/s/$slug/menu/$menuId': {
       id: '/s/$slug/menu/$menuId'
       path: '/menu/$menuId'
@@ -698,6 +717,7 @@ interface SSlugRouteChildren {
   SSlugOrdersRoute: typeof SSlugOrdersRoute
   SSlugIndexRoute: typeof SSlugIndexRoute
   SSlugMenuMenuIdRoute: typeof SSlugMenuMenuIdRoute
+  SSlugPayOrderIdRoute: typeof SSlugPayOrderIdRoute
 }
 
 const SSlugRouteChildren: SSlugRouteChildren = {
@@ -707,6 +727,7 @@ const SSlugRouteChildren: SSlugRouteChildren = {
   SSlugOrdersRoute: SSlugOrdersRoute,
   SSlugIndexRoute: SSlugIndexRoute,
   SSlugMenuMenuIdRoute: SSlugMenuMenuIdRoute,
+  SSlugPayOrderIdRoute: SSlugPayOrderIdRoute,
 }
 
 const SSlugRouteWithChildren = SSlugRoute._addFileChildren(SSlugRouteChildren)
