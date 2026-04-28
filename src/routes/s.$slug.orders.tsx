@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { addToCart } from "@/lib/customer-cart";
+import { toast } from "sonner";
+import { ChevronDown, ChevronUp, RotateCw } from "lucide-react";
 
 export const Route = createFileRoute("/s/$slug/orders")({
   component: MyOrders,
@@ -19,6 +22,16 @@ type Order = {
   delivery_address: string | null;
   payment_status: "unpaid" | "awaiting_verification" | "paid" | "refunded";
   payment_method: string;
+};
+
+type OrderItem = {
+  id: string;
+  menu_item_id: string | null;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  note: string | null;
 };
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
@@ -37,6 +50,9 @@ function MyOrders() {
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [itemsCache, setItemsCache] = useState<Record<string, OrderItem[]>>({});
+  const [prevStatus, setPrevStatus] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) {
@@ -59,7 +75,20 @@ function MyOrders() {
         .order("created_at", { ascending: false })
         .limit(50);
       if (!cancelled) {
-        setOrders((data ?? []) as Order[]);
+        const next = (data ?? []) as Order[];
+        // Toast on status change
+        setPrevStatus((prev) => {
+          const updated: Record<string, string> = { ...prev };
+          for (const o of next) {
+            if (prev[o.id] && prev[o.id] !== o.status) {
+              const lbl = STATUS_LABEL[o.status]?.label ?? o.status;
+              toast.info(`Pesanan #${o.order_no}: ${lbl}`);
+            }
+            updated[o.id] = o.status;
+          }
+          return updated;
+        });
+        setOrders(next);
         setLoading(false);
       }
     };
@@ -73,7 +102,62 @@ function MyOrders() {
       cancelled = true;
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, slug]);
+
+  const loadItems = async (orderId: string) => {
+    if (itemsCache[orderId]) return;
+    const { data } = await supabase
+      .from("order_items")
+      .select("id,menu_item_id,name,quantity,unit_price,subtotal,note")
+      .eq("order_id", orderId);
+    setItemsCache((prev) => ({ ...prev, [orderId]: (data ?? []) as OrderItem[] }));
+  };
+
+  const reorder = async (orderId: string) => {
+    let list = itemsCache[orderId];
+    if (!list) {
+      const { data } = await supabase
+        .from("order_items")
+        .select("id,menu_item_id,name,quantity,unit_price,subtotal,note")
+        .eq("order_id", orderId);
+      list = (data ?? []) as OrderItem[];
+    }
+    // Verify which menu items still available
+    const ids = list.map((i) => i.menu_item_id).filter(Boolean) as string[];
+    if (ids.length === 0) {
+      toast.error("Tidak ada item yang bisa dipesan ulang");
+      return;
+    }
+    const { data: menus } = await supabase
+      .from("menu_items")
+      .select("id,name,price,image_url,is_available")
+      .in("id", ids);
+    const avail = new Map((menus ?? []).filter((m) => m.is_available).map((m) => [m.id, m]));
+    let added = 0;
+    let skipped = 0;
+    for (const it of list) {
+      if (it.menu_item_id && avail.has(it.menu_item_id)) {
+        const m = avail.get(it.menu_item_id)!;
+        addToCart(
+          slug,
+          {
+            menu_item_id: m.id,
+            name: m.name,
+            price: Number(m.price),
+            image_url: m.image_url,
+            note: it.note ?? undefined,
+          },
+          it.quantity,
+        );
+        added++;
+      } else {
+        skipped++;
+      }
+    }
+    if (added) toast.success(`${added} item ditambahkan ke keranjang${skipped ? ` (${skipped} habis)` : ""}`);
+    else toast.error("Semua item sudah tidak tersedia");
+  };
 
   if (authLoading) return <p className="text-muted-foreground text-sm">Memuat…</p>;
 
@@ -102,6 +186,8 @@ function MyOrders() {
       )}
       {orders.map((o) => {
         const st = STATUS_LABEL[o.status] ?? { label: o.status, cls: "bg-gray-100 text-gray-800" };
+        const isOpen = openId === o.id;
+        const items = itemsCache[o.id];
         return (
           <div key={o.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
@@ -131,13 +217,50 @@ function MyOrders() {
             {o.payment_status === "paid" && (
               <p className="mt-2 text-xs text-emerald-600">✓ Pembayaran terverifikasi</p>
             )}
-            <Link
-              to="/track/$orderId"
-              params={{ orderId: o.id }}
-              className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
-            >
-              Lacak pesanan →
-            </Link>
+
+            {isOpen && items && (
+              <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs">
+                {items.map((it) => (
+                  <div key={it.id} className="flex justify-between py-0.5">
+                    <span>
+                      {it.quantity}× {it.name}
+                      {it.note && <span className="text-muted-foreground"> — {it.note}</span>}
+                    </span>
+                    <span>{formatIDR(Number(it.subtotal))}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  if (isOpen) {
+                    setOpenId(null);
+                  } else {
+                    setOpenId(o.id);
+                    loadItems(o.id);
+                  }
+                }}
+                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                {isOpen ? "Sembunyikan item" : "Lihat item"}
+              </button>
+              <Link
+                to="/track/$orderId"
+                params={{ orderId: o.id }}
+                className="inline-block text-xs font-medium text-primary hover:underline"
+              >
+                Lacak →
+              </Link>
+              <button
+                onClick={() => reorder(o.id)}
+                className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-accent"
+              >
+                <RotateCw className="h-3 w-3" /> Pesan lagi
+              </button>
+            </div>
           </div>
         );
       })}
