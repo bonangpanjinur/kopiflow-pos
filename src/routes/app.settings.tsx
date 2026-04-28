@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, Trash2, Store, Phone, MapPin, Clock, Share2, Save, Image as ImageIcon, QrCode, CreditCard } from "lucide-react";
+import { Loader2, Upload, Trash2, Store, Phone, MapPin, Clock, Share2, Save, Image as ImageIcon, QrCode, CreditCard, Receipt as ReceiptIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/settings")({
@@ -56,6 +56,9 @@ type ShopRow = {
   qris_image_url: string | null;
   qris_merchant_name: string | null;
   payment_methods_enabled: PaymentMethod[];
+  tax_percent: number;
+  service_charge_percent: number;
+  tax_inclusive: boolean;
 };
 
 function SettingsPage() {
@@ -74,7 +77,7 @@ function SettingsPage() {
       setLoading(true);
       const { data } = await supabase
         .from("coffee_shops")
-        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours, qris_image_url, qris_merchant_name, payment_methods_enabled")
+        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours, qris_image_url, qris_merchant_name, payment_methods_enabled, tax_percent, service_charge_percent, tax_inclusive")
         .eq("id", shop.id)
         .maybeSingle();
       if (data) {
@@ -82,6 +85,9 @@ function SettingsPage() {
           ...data,
           open_hours: (data.open_hours as OpenHours | null) ?? DEFAULT_HOURS,
           payment_methods_enabled: (data.payment_methods_enabled ?? ["cash", "qris"]) as PaymentMethod[],
+          tax_percent: Number(data.tax_percent ?? 0),
+          service_charge_percent: Number(data.service_charge_percent ?? 0),
+          tax_inclusive: Boolean(data.tax_inclusive ?? false),
         } as ShopRow);
       }
       setLoading(false);
@@ -192,6 +198,9 @@ function SettingsPage() {
         qris_image_url: form.qris_image_url,
         qris_merchant_name: form.qris_merchant_name,
         payment_methods_enabled: form.payment_methods_enabled,
+        tax_percent: form.tax_percent,
+        service_charge_percent: form.service_charge_percent,
+        tax_inclusive: form.tax_inclusive,
       })
       .eq("id", shop.id);
     setSaving(false);
