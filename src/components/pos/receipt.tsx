@@ -18,6 +18,7 @@ type Props = {
   promoCode?: string | null;
   promoDiscount?: number;
   pointsRedeemed?: number;
+  pointsRedeemValue?: number;
   pointsEarned?: number;
 };
 
@@ -38,11 +39,11 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     promoCode,
     promoDiscount = 0,
     pointsRedeemed = 0,
+    pointsRedeemValue = 0,
     pointsEarned = 0,
   },
   ref,
 ) {
-  const totalDiscount = promoDiscount + pointsRedeemed;
   return (
     <div ref={ref} className="receipt-58">
       <div className="r-center r-bold">{shopName}</div>
@@ -91,10 +92,10 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
           <span>-{formatIDR(promoDiscount)}</span>
         </div>
       )}
-      {pointsRedeemed > 0 && (
+      {pointsRedeemed > 0 && pointsRedeemValue > 0 && (
         <div className="r-row">
           <span>Tukar {pointsRedeemed} poin</span>
-          <span>-{formatIDR(pointsRedeemed * (totalDiscount > 0 ? Math.round((subtotal - total) / Math.max(promoDiscount + pointsRedeemed, 1) * pointsRedeemed) / Math.max(pointsRedeemed,1) : 0))}</span>
+          <span>-{formatIDR(pointsRedeemValue)}</span>
         </div>
       )}
       <div className="r-row r-bold">
