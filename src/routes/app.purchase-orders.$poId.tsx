@@ -117,14 +117,18 @@ function PODetailPage() {
     return <div className="mx-auto max-w-2xl px-4 py-10 text-center text-muted-foreground">PO tidak ditemukan.</div>;
   }
 
+  const statusLabel = { draft: "Draft", ordered: "Sudah dipesan", received: "Diterima", cancelled: "Dibatalkan" }[po.status];
+
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10 print:p-0">
-      <div className="mb-4 flex items-center justify-between gap-3 print:hidden">
+    <>
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10 print:hidden">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <Link to="/app/purchase-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke daftar PO
         </Link>
         <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
       </div>
+
 
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
