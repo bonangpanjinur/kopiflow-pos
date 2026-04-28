@@ -246,6 +246,44 @@ function PODetailPage() {
 
     {/* Print-only sheet (A4) */}
     <div className="po-print">
+      <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} />
+    </div>
+
+    {/* Print preview dialog */}
+    <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+      <DialogContent className="max-w-[min(95vw,240mm)] max-h-[92vh] overflow-y-auto p-0 gap-0 bg-muted/40">
+        <DialogHeader className="px-5 pt-5 pb-3 print:hidden">
+          <DialogTitle>Preview cetak — {po.po_no}</DialogTitle>
+        </DialogHeader>
+        <div className="px-4 pb-4">
+          <div className="po-preview">
+            <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} />
+          </div>
+        </div>
+        <DialogFooter className="px-5 py-3 border-t bg-background print:hidden">
+          <Button variant="outline" onClick={() => setPreviewOpen(false)}>Tutup</Button>
+          <Button onClick={() => { setPreviewOpen(false); setTimeout(() => window.print(), 150); }}>
+            <Printer className="mr-1.5 h-4 w-4" /> Cetak sekarang
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
+}
+
+function POSheetBody({
+  po, items, ingMap, supplier, shop, statusLabel,
+}: {
+  po: PO;
+  items: POItem[];
+  ingMap: Record<string, Ingredient>;
+  supplier: Supplier | null;
+  shop: Shop | null;
+  statusLabel: string;
+}) {
+  return (
+    <>
       <div className="row">
         <div>
           <h1>Purchase Order</h1>
@@ -330,7 +368,6 @@ function PODetailPage() {
         <div className="sign">Hormat kami,<br/>{shop?.name ?? ""}</div>
         <div className="sign">Penerima,<br/>{supplier?.name ?? ""}</div>
       </div>
-    </div>
     </>
   );
 }
