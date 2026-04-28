@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppScheduleRouteImport } from './routes/app.schedule'
@@ -22,11 +23,13 @@ import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppRecipesRouteImport } from './routes/app.recipes'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
+import { Route as AppOnlineOrdersRouteImport } from './routes/app.online-orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppDeliveryRouteImport } from './routes/app.delivery'
 import { Route as AppCouriersRouteImport } from './routes/app.couriers'
+import { Route as AppCourierRouteImport } from './routes/app.courier'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
 import { Route as SSlugIndexRouteImport } from './routes/s.$slug.index'
@@ -66,6 +69,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const TrackOrderIdRoute = TrackOrderIdRouteImport.update({
+  id: '/track/$orderId',
+  path: '/track/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SSlugRoute = SSlugRouteImport.update({
   id: '/s/$slug',
   path: '/s/$slug',
@@ -101,6 +109,11 @@ const AppOrdersRoute = AppOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOnlineOrdersRoute = AppOnlineOrdersRouteImport.update({
+  id: '/online-orders',
+  path: '/online-orders',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMenuRoute = AppMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
@@ -124,6 +137,11 @@ const AppDeliveryRoute = AppDeliveryRouteImport.update({
 const AppCouriersRoute = AppCouriersRouteImport.update({
   id: '/couriers',
   path: '/couriers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCourierRoute = AppCourierRouteImport.update({
+  id: '/courier',
+  path: '/courier',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCategoriesRoute = AppCategoriesRouteImport.update({
@@ -175,11 +193,13 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/app/attendance': typeof AppAttendanceRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
+  '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
@@ -187,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/app/schedule': typeof AppScheduleRoute
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
@@ -202,17 +223,20 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/app/attendance': typeof AppAttendanceRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
+  '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/track/$orderId': typeof TrackOrderIdRoute
   '/app': typeof AppIndexRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
@@ -230,11 +254,13 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/app/attendance': typeof AppAttendanceRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
+  '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
@@ -242,6 +268,7 @@ export interface FileRoutesById {
   '/app/schedule': typeof AppScheduleRoute
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
@@ -260,11 +287,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/attendance'
     | '/app/categories'
+    | '/app/courier'
     | '/app/couriers'
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
+    | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
@@ -272,6 +301,7 @@ export interface FileRouteTypes {
     | '/app/schedule'
     | '/invite/$token'
     | '/s/$slug'
+    | '/track/$orderId'
     | '/app/'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
@@ -287,17 +317,20 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/attendance'
     | '/app/categories'
+    | '/app/courier'
     | '/app/couriers'
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
+    | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
     | '/invite/$token'
+    | '/track/$orderId'
     | '/app'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
@@ -314,11 +347,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/attendance'
     | '/app/categories'
+    | '/app/courier'
     | '/app/couriers'
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
     | '/app/menu'
+    | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
@@ -326,6 +361,7 @@ export interface FileRouteTypes {
     | '/app/schedule'
     | '/invite/$token'
     | '/s/$slug'
+    | '/track/$orderId'
     | '/app/'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
@@ -343,6 +379,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   InviteTokenRoute: typeof InviteTokenRoute
   SSlugRoute: typeof SSlugRouteWithChildren
+  TrackOrderIdRoute: typeof TrackOrderIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -388,6 +425,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/track/$orderId': {
+      id: '/track/$orderId'
+      path: '/track/$orderId'
+      fullPath: '/track/$orderId'
+      preLoaderRoute: typeof TrackOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/s/$slug': {
       id: '/s/$slug'
@@ -438,6 +482,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrdersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/online-orders': {
+      id: '/app/online-orders'
+      path: '/online-orders'
+      fullPath: '/app/online-orders'
+      preLoaderRoute: typeof AppOnlineOrdersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/menu': {
       id: '/app/menu'
       path: '/menu'
@@ -471,6 +522,13 @@ declare module '@tanstack/react-router' {
       path: '/couriers'
       fullPath: '/app/couriers'
       preLoaderRoute: typeof AppCouriersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/courier': {
+      id: '/app/courier'
+      path: '/courier'
+      fullPath: '/app/courier'
+      preLoaderRoute: typeof AppCourierRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/categories': {
@@ -535,11 +593,13 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
+  AppCourierRoute: typeof AppCourierRoute
   AppCouriersRoute: typeof AppCouriersRoute
   AppDeliveryRoute: typeof AppDeliveryRoute
   AppEmployeesRoute: typeof AppEmployeesRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppMenuRoute: typeof AppMenuRoute
+  AppOnlineOrdersRoute: typeof AppOnlineOrdersRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
   AppRecipesRoute: typeof AppRecipesRoute
@@ -551,11 +611,13 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
   AppCategoriesRoute: AppCategoriesRoute,
+  AppCourierRoute: AppCourierRoute,
   AppCouriersRoute: AppCouriersRoute,
   AppDeliveryRoute: AppDeliveryRoute,
   AppEmployeesRoute: AppEmployeesRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppMenuRoute: AppMenuRoute,
+  AppOnlineOrdersRoute: AppOnlineOrdersRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
   AppRecipesRoute: AppRecipesRoute,
@@ -594,6 +656,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   InviteTokenRoute: InviteTokenRoute,
   SSlugRoute: SSlugRouteWithChildren,
+  TrackOrderIdRoute: TrackOrderIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
