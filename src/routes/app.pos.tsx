@@ -1192,11 +1192,18 @@ function CheckoutDialog({
               <div className="rounded-lg bg-muted p-4 text-center">
                 <div className="text-xs text-muted-foreground">Total</div>
                 <div className="text-3xl font-bold">{formatIDR(total)}</div>
-                {discount > 0 && (
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Subtotal {formatIDR(subtotal)} − diskon {formatIDR(discount)}
-                  </div>
-                )}
+                <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                  <div>Subtotal {formatIDR(subtotal)}</div>
+                  {discount > 0 && <div>Diskon −{formatIDR(discount)}</div>}
+                  {service > 0 && <div>Service {formatIDR(service)}</div>}
+                  {tax > 0 && (
+                    <div>
+                      Pajak {formatIDR(tax)}
+                      {taxCfg.tax_inclusive && " (incl)"}
+                    </div>
+                  )}
+                  {tip > 0 && <div>Tip {formatIDR(tip)}</div>}
+                </div>
               </div>
 
               <div className="space-y-1.5">
