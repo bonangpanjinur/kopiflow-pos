@@ -439,6 +439,41 @@ function SettingsPage() {
         </div>
       </Section>
 
+      {/* Pajak & Service Charge */}
+      <Section icon={ReceiptIcon} title="Pajak & Service Charge" desc="Diterapkan otomatis saat checkout POS dan online.">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label>Pajak (%)</Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              value={form.tax_percent}
+              onChange={(e) => update("tax_percent", Number(e.target.value || 0))}
+              placeholder="0"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Mis. PB1 10%. Isi 0 jika tidak pakai.</p>
+          </div>
+          <div>
+            <Label>Service charge (%)</Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              value={form.service_charge_percent}
+              onChange={(e) => update("service_charge_percent", Number(e.target.value || 0))}
+              placeholder="0"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Mis. 5%. Dihitung sebelum pajak.</p>
+          </div>
+          <label className="flex items-center gap-2 sm:col-span-2 mt-1">
+            <Switch
+              checked={form.tax_inclusive}
+              onCheckedChange={(v) => update("tax_inclusive", v)}
+            />
+            <span className="text-sm">Harga sudah termasuk pajak (tax inclusive)</span>
+          </label>
+        </div>
+      </Section>
+
       {/* Share */}
       <Section icon={Share2} title="Bagikan etalase" desc="Salin link untuk dibagikan ke pelanggan.">
         <div className="flex gap-2">
