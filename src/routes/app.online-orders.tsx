@@ -93,7 +93,7 @@ function OnlineOrders() {
         supabase
           .from("orders")
           .select(
-            "id,order_no,status,fulfillment,total,delivery_fee,delivery_address,customer_name,customer_phone,note,created_at,courier_id"
+            "id,order_no,status,fulfillment,total,delivery_fee,delivery_address,customer_name,customer_phone,note,created_at,courier_id,payment_status,payment_method,payment_proof_url"
           )
           .eq("shop_id", shop.id)
           .eq("channel", "online")
