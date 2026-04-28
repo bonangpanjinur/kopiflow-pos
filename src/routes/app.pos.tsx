@@ -776,6 +776,7 @@ function POSPage() {
           outlet={outlet}
           cashierId={user!.id}
           cashierName={user!.email ?? "Kasir"}
+          shiftId={shift?.id ?? null}
           onSuccess={() => {
             // remove parked bill if checked out from one
             if (cart.id) {
@@ -789,6 +790,34 @@ function POSPage() {
           }}
         />
       )}
+
+      {/* Open shift dialog */}
+      <Dialog open={openShiftDlg} onOpenChange={setOpenShiftDlg}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Buka shift kasir</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="opening-cash">Modal awal laci (Rp)</Label>
+            <Input
+              id="opening-cash"
+              type="number"
+              inputMode="numeric"
+              value={openingCash}
+              onChange={(e) => setOpeningCash(e.target.value)}
+              placeholder="100000"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Hitung uang fisik di laci, lalu masukkan jumlahnya.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpenShiftDlg(false)}>Batal</Button>
+            <Button onClick={handleOpenShift}>Buka shift</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
