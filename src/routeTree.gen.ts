@@ -18,11 +18,13 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as AppSuppliersRouteImport } from './routes/app.suppliers'
 import { Route as AppShiftsRouteImport } from './routes/app.shifts'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppScheduleRouteImport } from './routes/app.schedule'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppRecipesRouteImport } from './routes/app.recipes'
+import { Route as AppPurchaseOrdersRouteImport } from './routes/app.purchase-orders'
 import { Route as AppPromosRouteImport } from './routes/app.promos'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
@@ -89,6 +91,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSuppliersRoute = AppSuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppShiftsRoute = AppShiftsRouteImport.update({
   id: '/shifts',
   path: '/shifts',
@@ -112,6 +119,11 @@ const AppReportsRoute = AppReportsRouteImport.update({
 const AppRecipesRoute = AppRecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPurchaseOrdersRoute = AppPurchaseOrdersRouteImport.update({
+  id: '/purchase-orders',
+  path: '/purchase-orders',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPromosRoute = AppPromosRouteImport.update({
@@ -234,11 +246,13 @@ export interface FileRoutesByFullPath {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/promos': typeof AppPromosRoute
+  '/app/purchase-orders': typeof AppPurchaseOrdersRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/shifts': typeof AppShiftsRoute
+  '/app/suppliers': typeof AppSuppliersRoute
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
@@ -269,11 +283,13 @@ export interface FileRoutesByTo {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/promos': typeof AppPromosRoute
+  '/app/purchase-orders': typeof AppPurchaseOrdersRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/shifts': typeof AppShiftsRoute
+  '/app/suppliers': typeof AppSuppliersRoute
   '/invite/$token': typeof InviteTokenRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app': typeof AppIndexRoute
@@ -305,11 +321,13 @@ export interface FileRoutesById {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/promos': typeof AppPromosRoute
+  '/app/purchase-orders': typeof AppPurchaseOrdersRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/shifts': typeof AppShiftsRoute
+  '/app/suppliers': typeof AppSuppliersRoute
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
@@ -343,11 +361,13 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/pos'
     | '/app/promos'
+    | '/app/purchase-orders'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
     | '/app/settings'
     | '/app/shifts'
+    | '/app/suppliers'
     | '/invite/$token'
     | '/s/$slug'
     | '/track/$orderId'
@@ -378,11 +398,13 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/pos'
     | '/app/promos'
+    | '/app/purchase-orders'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
     | '/app/settings'
     | '/app/shifts'
+    | '/app/suppliers'
     | '/invite/$token'
     | '/track/$orderId'
     | '/app'
@@ -413,11 +435,13 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/pos'
     | '/app/promos'
+    | '/app/purchase-orders'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
     | '/app/settings'
     | '/app/shifts'
+    | '/app/suppliers'
     | '/invite/$token'
     | '/s/$slug'
     | '/track/$orderId'
@@ -507,6 +531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/suppliers': {
+      id: '/app/suppliers'
+      path: '/suppliers'
+      fullPath: '/app/suppliers'
+      preLoaderRoute: typeof AppSuppliersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/shifts': {
       id: '/app/shifts'
       path: '/shifts'
@@ -540,6 +571,13 @@ declare module '@tanstack/react-router' {
       path: '/recipes'
       fullPath: '/app/recipes'
       preLoaderRoute: typeof AppRecipesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/purchase-orders': {
+      id: '/app/purchase-orders'
+      path: '/purchase-orders'
+      fullPath: '/app/purchase-orders'
+      preLoaderRoute: typeof AppPurchaseOrdersRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/promos': {
@@ -699,11 +737,13 @@ interface AppRouteChildren {
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
   AppPromosRoute: typeof AppPromosRoute
+  AppPurchaseOrdersRoute: typeof AppPurchaseOrdersRoute
   AppRecipesRoute: typeof AppRecipesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppScheduleRoute: typeof AppScheduleRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppShiftsRoute: typeof AppShiftsRoute
+  AppSuppliersRoute: typeof AppSuppliersRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -721,11 +761,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
   AppPromosRoute: AppPromosRoute,
+  AppPurchaseOrdersRoute: AppPurchaseOrdersRoute,
   AppRecipesRoute: AppRecipesRoute,
   AppReportsRoute: AppReportsRoute,
   AppScheduleRoute: AppScheduleRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppShiftsRoute: AppShiftsRoute,
+  AppSuppliersRoute: AppSuppliersRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

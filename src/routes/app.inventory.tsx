@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -70,6 +70,13 @@ function InventoryPage() {
   const [moveQty, setMoveQty] = useState("");
   const [moveNote, setMoveNote] = useState("");
   const [moveSaving, setMoveSaving] = useState(false);
+
+  // opname modal
+  const [opnameOpen, setOpnameOpen] = useState(false);
+  const [opnameTarget, setOpnameTarget] = useState<Ingredient | null>(null);
+  const [opnameActual, setOpnameActual] = useState("");
+  const [opnameNote, setOpnameNote] = useState("");
+  const [opnameSaving, setOpnameSaving] = useState(false);
 
   async function load() {
     if (!shop) return;
@@ -181,6 +188,40 @@ function InventoryPage() {
       load();
     }
     setMoveSaving(false);
+  }
+
+  function openOpname(i: Ingredient) {
+    setOpnameTarget(i);
+    setOpnameActual(String(i.current_stock));
+    setOpnameNote("");
+    setOpnameOpen(true);
+  }
+
+  async function saveOpname() {
+    if (!opnameTarget || !shop) return;
+    const actual = Number(opnameActual);
+    if (Number.isNaN(actual) || actual < 0) { toast.error("Stok aktual tidak valid"); return; }
+    const delta = actual - opnameTarget.current_stock;
+    if (delta === 0) { toast.info("Tidak ada selisih"); setOpnameOpen(false); return; }
+    setOpnameSaving(true);
+    const note = `Opname: aktual ${actual} ${opnameTarget.unit}` + (opnameNote.trim() ? ` — ${opnameNote.trim()}` : "");
+    if (delta > 0) {
+      const { error } = await supabase.from("stock_movements").insert({
+        shop_id: shop.id, ingredient_id: opnameTarget.id,
+        type: "adjustment", quantity: delta, note,
+      });
+      if (error) { toast.error(error.message); setOpnameSaving(false); return; }
+    } else {
+      const { error } = await supabase.from("stock_movements").insert({
+        shop_id: shop.id, ingredient_id: opnameTarget.id,
+        type: "waste", quantity: Math.abs(delta), note,
+      });
+      if (error) { toast.error(error.message); setOpnameSaving(false); return; }
+    }
+    toast.success(`Opname tersimpan (${delta > 0 ? "+" : ""}${delta})`);
+    setOpnameOpen(false);
+    setOpnameSaving(false);
+    load();
   }
 
   if (shopLoading) {
@@ -319,8 +360,11 @@ function InventoryPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openOpname(i)}>
+                          <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Opname
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => openMove(i)}>
-                          <ArrowDownUp className="mr-1.5 h-3.5 w-3.5" /> Stok masuk/keluar
+                          <ArrowDownUp className="mr-1.5 h-3.5 w-3.5" /> Stok
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => openEdit(i)}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -432,6 +476,40 @@ function InventoryPage() {
             <Button onClick={saveMovement} disabled={moveSaving}>
               {moveSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={opnameOpen} onOpenChange={setOpnameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Stok Opname — {opnameTarget?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="rounded-md bg-muted/30 px-3 py-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Stok sistem</span>
+                <span className="tabular-nums font-medium">{opnameTarget?.current_stock} {opnameTarget?.unit}</span></div>
+              {opnameActual !== "" && !Number.isNaN(Number(opnameActual)) && opnameTarget && (
+                <div className="mt-1 flex justify-between border-t border-border pt-1"><span className="text-muted-foreground">Selisih</span>
+                  <span className={`tabular-nums font-semibold ${Number(opnameActual) - opnameTarget.current_stock < 0 ? "text-destructive" : "text-emerald-600"}`}>
+                    {Number(opnameActual) - opnameTarget.current_stock > 0 ? "+" : ""}{Number(opnameActual) - opnameTarget.current_stock} {opnameTarget.unit}
+                  </span></div>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Stok aktual hasil hitung fisik ({opnameTarget?.unit})</Label>
+              <Input type="number" value={opnameActual} onChange={(e) => setOpnameActual(e.target.value)} placeholder="0" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Catatan (opsional)</Label>
+              <Input value={opnameNote} onChange={(e) => setOpnameNote(e.target.value)} placeholder="Mis. Opname akhir bulan" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpnameOpen(false)}>Batal</Button>
+            <Button onClick={saveOpname} disabled={opnameSaving}>
+              {opnameSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan
             </Button>
           </DialogFooter>
         </DialogContent>
