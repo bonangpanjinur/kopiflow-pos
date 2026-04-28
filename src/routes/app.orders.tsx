@@ -39,6 +39,7 @@ type OrderDetail = Order & {
     name: string;
     unit_price: number;
     quantity: number;
+    note: string | null;
   }[];
 };
 
@@ -94,7 +95,7 @@ function OrdersPage() {
     const { data } = await supabase
       .from("orders")
       .select(
-        "id, order_no, total, payment_method, amount_tendered, change_due, status, created_at, customer_name, cashier_id, order_items(name, unit_price, quantity)",
+        "id, order_no, total, payment_method, amount_tendered, change_due, status, created_at, customer_name, cashier_id, order_items(name, unit_price, quantity, note)",
       )
       .eq("id", o.id)
       .single();
@@ -233,6 +234,7 @@ function DetailDialog({
     name: i.name,
     unit_price: Number(i.unit_price),
     quantity: i.quantity,
+    note: i.note ?? undefined,
   }));
 
   function handlePrint() {
@@ -255,11 +257,16 @@ function DetailDialog({
           </div>
           <ul className="divide-y divide-border rounded-lg border border-border">
             {items.map((it, k) => (
-              <li key={k} className="flex justify-between gap-2 px-3 py-2 text-sm">
-                <span>
-                  {it.quantity}× {it.name}
-                </span>
-                <span>{formatIDR(it.unit_price * it.quantity)}</span>
+              <li key={k} className="px-3 py-2 text-sm">
+                <div className="flex justify-between gap-2">
+                  <span>
+                    {it.quantity}× {it.name}
+                  </span>
+                  <span>{formatIDR(it.unit_price * it.quantity)}</span>
+                </div>
+                {it.note && (
+                  <div className="mt-0.5 text-xs italic text-muted-foreground">📝 {it.note}</div>
+                )}
               </li>
             ))}
           </ul>
@@ -291,7 +298,26 @@ function DetailDialog({
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
+          {!isVoided && (
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={voiding}
+              onClick={async () => {
+                const reason = prompt("Alasan void? (opsional)") ?? "";
+                if (!confirm(`Void order #${order.order_no}? Stok & poin akan dibalik.`)) return;
+                setVoiding(true);
+                const { error } = await supabase.rpc("void_order", { _order_id: order.id, _reason: reason });
+                setVoiding(false);
+                if (error) return toast.error(error.message);
+                toast.success("Order di-void");
+                onVoided();
+              }}
+            >
+              <XCircle className="mr-2 h-4 w-4" /> {voiding ? "Memproses…" : "Void order"}
+            </Button>
+          )}
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Cetak ulang
           </Button>

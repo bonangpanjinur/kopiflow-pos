@@ -27,7 +27,10 @@ import {
   Printer,
   Check,
   ImageIcon,
+  StickyNote,
+  Percent,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
@@ -576,13 +579,39 @@ function POSPage() {
                           <div className="text-xs text-muted-foreground">
                             {formatIDR(line.unit_price)}
                           </div>
+                          {line.note && (
+                            <div className="mt-1 text-xs italic text-muted-foreground">
+                              📝 {line.note}
+                            </div>
+                          )}
                         </div>
-                        <button
-                          onClick={() => removeLine(i)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              const v = prompt("Catatan untuk item ini (mis. less sugar)", line.note ?? "");
+                              if (v === null) return;
+                              setCarts((cs) => {
+                                const next = cs.slice();
+                                const c = { ...next[activeIdx] };
+                                c.items = c.items.map((x, k) =>
+                                  k === i ? { ...x, note: v.trim() || undefined } : x,
+                                );
+                                next[activeIdx] = c;
+                                return next;
+                              });
+                            }}
+                            className="text-muted-foreground hover:text-primary"
+                            title="Catatan"
+                          >
+                            <StickyNote className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => removeLine(i)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
                         <div className="flex items-center gap-1 rounded-md border border-border">
@@ -824,6 +853,7 @@ function CheckoutDialog({
   const [promoCode, setPromoCode] = useState("");
   const [promoApplying, setPromoApplying] = useState(false);
   const [promo, setPromo] = useState<{ id: string; code: string; discount: number } | null>(null);
+  const [manualDiscount, setManualDiscount] = useState<string>("");
   const [done, setDone] = useState<{
     orderNo: string;
     date: Date;
@@ -833,7 +863,9 @@ function CheckoutDialog({
   const printRef = useRef<HTMLDivElement>(null);
 
   const subtotal = cartTotal(cart.items);
-  const discount = promo?.discount ?? 0;
+  const promoDisc = promo?.discount ?? 0;
+  const manualDisc = Math.max(0, Math.min(Number(manualDiscount || 0), subtotal - promoDisc));
+  const discount = promoDisc + manualDisc;
   const total = Math.max(0, subtotal - discount);
   const tenderedNum = method === "cash" ? Number(tendered || 0) : total;
   const change = Math.max(0, tenderedNum - total);
@@ -899,6 +931,7 @@ function CheckoutDialog({
       unit_price: i.unit_price,
       quantity: i.quantity,
       subtotal: i.unit_price * i.quantity,
+      note: i.note ?? null,
     }));
     const { error: iErr } = await supabase.from("order_items").insert(rows);
     if (iErr) {
@@ -944,7 +977,25 @@ function CheckoutDialog({
     setMethod("cash");
     setPromo(null);
     setPromoCode("");
+    setManualDiscount("");
   }
+
+  // Keyboard shortcuts: F2=cash, F3=qris, Enter=confirm, Esc=close
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (done) return;
+      if (e.key === "F2") { e.preventDefault(); setMethod("cash"); }
+      else if (e.key === "F3") { e.preventDefault(); setMethod("qris"); }
+      else if (e.key === "Enter" && !saving && cashOk && (e.target as HTMLElement)?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        checkout();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, done, saving, cashOk, method, tenderedNum, total]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? close() : onOpenChange(o))}>
@@ -999,6 +1050,19 @@ function CheckoutDialog({
                     </Button>
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1">
+                  <Percent className="h-3 w-3" /> Diskon manual (Rp)
+                </Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={manualDiscount}
+                  onChange={(e) => setManualDiscount(e.target.value)}
+                  placeholder="0"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1095,7 +1159,8 @@ function CheckoutDialog({
                     amountTendered={done.amountTendered}
                     changeDue={done.changeDue}
                     promoCode={promo?.code ?? null}
-                    promoDiscount={discount}
+                    promoDiscount={promoDisc}
+                    manualDiscount={manualDisc}
                   />
                 </div>
               </div>

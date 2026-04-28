@@ -17,6 +17,7 @@ type Props = {
   customerName?: string;
   promoCode?: string | null;
   promoDiscount?: number;
+  manualDiscount?: number;
   pointsRedeemed?: number;
   pointsRedeemValue?: number;
   pointsEarned?: number;
@@ -38,6 +39,7 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     customerName,
     promoCode,
     promoDiscount = 0,
+    manualDiscount = 0,
     pointsRedeemed = 0,
     pointsRedeemValue = 0,
     pointsEarned = 0,
@@ -79,6 +81,7 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
             </span>
             <span>{formatIDR(it.unit_price * it.quantity)}</span>
           </div>
+          {it.note && <div className="r-small">  · {it.note}</div>}
         </div>
       ))}
       <div className="r-divider" />
@@ -90,6 +93,12 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
         <div className="r-row">
           <span>Promo{promoCode ? ` (${promoCode})` : ""}</span>
           <span>-{formatIDR(promoDiscount)}</span>
+        </div>
+      )}
+      {manualDiscount > 0 && (
+        <div className="r-row">
+          <span>Diskon</span>
+          <span>-{formatIDR(manualDiscount)}</span>
         </div>
       )}
       {pointsRedeemed > 0 && pointsRedeemValue > 0 && (

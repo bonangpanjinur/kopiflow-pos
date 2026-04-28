@@ -18,7 +18,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Bike, Phone } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Bike, Phone, TrendingUp } from "lucide-react";
+import { formatIDR } from "@/lib/format";
 
 export const Route = createFileRoute("/app/couriers")({
   component: CouriersPage,
@@ -65,6 +66,7 @@ const EMPTY: FormState = { name: "", phone: "", plate_number: "", note: "", is_a
 function CouriersPage() {
   const { shop, loading: shopLoading } = useCurrentShop();
   const [couriers, setCouriers] = useState<Courier[]>([]);
+  const [stats, setStats] = useState<Record<string, { count: number; fee: number }>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Courier | null>(null);
@@ -81,7 +83,26 @@ function CouriersPage() {
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false });
     if (error) toast.error("Gagal memuat kurir");
-    setCouriers((data ?? []) as Courier[]);
+    const list = (data ?? []) as Courier[];
+    setCouriers(list);
+
+    // 7-day stats per courier
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: ords } = await supabase
+      .from("orders")
+      .select("courier_id, delivery_fee, status")
+      .eq("shop_id", shop.id)
+      .gte("created_at", since)
+      .eq("status", "completed")
+      .not("courier_id", "is", null);
+    const agg: Record<string, { count: number; fee: number }> = {};
+    (ords ?? []).forEach((o) => {
+      const id = o.courier_id as string;
+      if (!agg[id]) agg[id] = { count: 0, fee: 0 };
+      agg[id].count += 1;
+      agg[id].fee += Number(o.delivery_fee || 0);
+    });
+    setStats(agg);
     setLoading(false);
   }
 
@@ -325,6 +346,11 @@ function CouriersPage() {
                   onCheckedChange={() => toggleActive(c)}
                   aria-label="Aktif"
                 />
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-[11px] text-muted-foreground">
+                <TrendingUp className="h-3 w-3" />
+                7 hari: <span className="font-semibold text-foreground">{stats[c.id]?.count ?? 0}</span> antar ·{" "}
+                <span className="font-semibold text-foreground">{formatIDR(stats[c.id]?.fee ?? 0)}</span> ongkir
               </div>
               <div className="mt-3 flex justify-end gap-1">
                 <Button variant="ghost" size="sm" onClick={() => openEdit(c)} className="gap-1">
