@@ -1412,6 +1412,10 @@ function CheckoutDialog({
                     promoCode={promo?.code ?? null}
                     promoDiscount={promoDisc}
                     manualDiscount={manualDisc}
+                    tipAmount={done.tip}
+                    serviceCharge={done.service}
+                    tax={done.tax}
+                    paymentSplit={done.splitUsed}
                   />
                 </div>
               </div>
