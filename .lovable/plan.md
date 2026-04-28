@@ -1,77 +1,124 @@
-## Audit Lengkap — Yang Belum Sempurna & Harus Dikerjakan
+## Audit Hasil: Apa yang Sudah Ada vs Belum
 
-Setelah cek semua route, RLS, dan flow ujung-ke-ujung, ini daftar masalah yang ditemukan, diurutkan dari paling kritis.
+Sistem KopiHub sudah punya pondasi sangat lengkap (POS, multi-cart, online order, kurir, loyalty, promo, QRIS manual, tracking). Tapi banyak **fitur kunci di sisi pembeli & POS** masih kasar atau missing. Ini daftar yang akan disempurnakan.
 
-### 🔴 Bug Kritis (data tidak tersimpan / fitur broken)
+### A. POS — yang masih kurang (untuk owner/kasir)
 
-1. **Loyalty system 100% silent-fail**
-   - Tabel `loyalty_points` & `loyalty_ledger` hanya punya policy SELECT. Skema mengonfirmasi: "Can't INSERT/UPDATE records".
-   - Akibat: setiap kali customer/POS checkout, `applyPostOrder()` memanggil `.insert()` & `.upsert()` ke kedua tabel — selalu ditolak RLS, error di-swallow. **Tidak ada poin yang pernah benar-benar tersimpan**, balance selalu 0, redeem juga gagal mengurangi.
-   - **Fix**: tambah RPC `apply_loyalty_post_order` (SECURITY DEFINER) yang melakukan upsert balance + insert ledger atomik, dan panggil dari client. Hapus path client-side direct insert.
+1. **Tidak ada modifier / catatan per item saat tambah ke cart** — kasir tidak bisa input "less sugar / extra shot" tanpa hack.
+2. **Tidak ada split bill / multi-payment** — order >100rb sering dibayar gabungan cash+QRIS.
+3. **Tidak ada quick-discount** (potongan manual Rp/% per order) selain promo code.
+4. **Tidak ada hold & recall + nomor meja** — open bill ada tapi label generic.
+5. **Reprint struk dari Order list** belum ada (struk hanya muncul saat checkout).
+6. **Shortcut keyboard** (Enter=bayar, F2=cash, F3=qris) — POS desktop production butuh ini.
+7. **Search menu by SKU / barcode** (opsional, tapi penting untuk inventory-heavy).
+8. **Daily cash drawer / shift open-close + setoran kas** — tidak ada.
 
-2. **Bukti bayar QRIS tidak bisa diakses owner setelah beberapa hari**
-   - Bucket `payment-proofs` private. Customer pakai `createSignedUrl(60*60*24*30)` (30 hari) — Supabase membatasi maks 7 hari, plus link bisa expired sebelum owner verifikasi.
-   - Owner di online-orders cuma render `<a href={proof_url}>` tanpa re-sign.
-   - **Fix**: simpan **path** (bukan signed URL) di `payment_proof_url`, dan halaman owner generate signed URL on-demand saat klik "Lihat bukti". Halaman customer juga.
+### B. Pesan online — sisi pembeli (PALING PENTING)
 
-3. **Label status order pelanggan inkonsistensi**
-   - `s.$slug.orders` mapping pakai `voided` tapi DB enum punya `cancelled` (yang dipakai owner di online-orders). Order yang dibatalkan tidak menampilkan label/style benar.
-   - **Fix**: tambahkan `cancelled` & `delivering` ke STATUS_LABEL.
+1. **Etalase tidak menampilkan info toko**: jam buka, status open/closed badge, alamat, telepon, link WA. Saat ini hanya nama + deskripsi.
+2. **Address book**: tabel `customer_addresses` sudah ada tapi **tidak dipakai** — customer harus ketik alamat manual setiap order.
+3. **Saved profile**: nama & HP tidak auto-fill dari `customer_profiles`.
+4. **Riwayat pesanan tipis**: `s.$slug.orders` tidak menampilkan rincian item, tidak ada tombol "Pesan lagi" (re-order ke cart).
+5. **Track order inkonsisten**: tombol "Lacak" di orders → buka `/track/$id` tapi etalase tidak punya CTA setelah checkout. Customer suka bingung.
+6. **Estimasi waktu** (ETA pickup/delivery) tidak ada — owner & customer butuh.
+7. **Realtime status update** untuk customer di halaman orders: tidak subscribe.
+8. **Cart kosong UX**: tidak ada empty state nice + suggestion menu.
+9. **Tidak ada filter "Tersedia saja"** & **out-of-stock indicator** di etalase.
+10. **Login/signup flow** customer di etalase hanya email+password, tidak ada Google. Friction tinggi.
+11. **Halaman checkout**: tidak ada "Estimasi tiba" preview, tidak ada validasi nomor HP Indonesia, alamat textarea polos (bisa kasih chip "rumah/kantor").
+12. **Notifikasi customer**: setelah owner update status, tidak ada toast/notif visual selain refresh manual di halaman orders.
 
-### 🟡 UX / Polish penting
+### C. Kurir — sisi kurir & owner
 
-4. **Login redirect dari etalase rusak**
-   - `s.$slug.tsx` header pakai `search={{ redirect: "" }}` → setelah login customer dilempar ke `/` (landing owner), bukan kembali ke etalase toko.
-   - **Fix**: `redirect: \`/s/${slug}\``.
+1. **Halaman kurir** (`app/courier`) hanya list order ditugaskan; **tidak ada peta / link Google Maps** untuk navigasi ke alamat customer.
+2. **Tidak ada tombol "Mulai antar / Sudah sampai"** dari sisi kurir (hanya owner yang ubah status).
+3. **Kurir tidak bisa mark "tidak ditemukan / customer tidak respon"** (status exception).
+4. **Owner di list kurir**: tidak ada statistik per kurir (jumlah antar hari ini, on-time).
 
-5. **Struk POS tidak menampilkan promo & poin**
-   - Field `promo_code`, `points_earned`, `points_redeemed` sudah ada di order tapi `Receipt` component tidak render.
-   - **Fix**: tambahkan baris "Promo (KODE) −Rp X" dan footer "Anda dapat N poin" jika ada.
+### D. Backend / data integrity yang masih bocor
 
-6. **Responsive padding terlalu lebar di mobile**
-   - Dashboard, Reports, dan beberapa halaman owner pakai `px-8 py-10` flat (viewport user 888px → masih oke, tapi 375px hp owner akan sumpek).
-   - **Fix**: ganti ke `px-4 sm:px-6 lg:px-8 py-6 lg:py-10`.
+1. **`customer_profiles` belum auto-create** saat customer signup di etalase (mirip `profiles` trigger tapi untuk customer).
+2. **Nomor HP customer tersimpan acak**: kadang di `orders.customer_phone`, tidak pernah di `customer_profiles`.
+3. **`promo_redemptions` belum di-insert** dari client checkout (harusnya `INSERT` setelah order confirmed). Sekarang hanya `usage_count` yang naik via RPC.
+4. **`payment-proofs` storage policy** belum diverifikasi — customer harus bisa upload, owner read. Perlu RLS storage policy eksplisit.
 
-7. **Refund / void order POS**
-   - Owner tidak punya cara batalkan/refund order yang sudah completed dari halaman Orders.
-   - **Fix**: tambah tombol "Batalkan / Refund" di `app.orders.tsx` detail row → set `status='voided'`, `payment_status='refunded'`, dan reverse stock movement (insert balik) bila track_stock.
+### E. UX & polish yang masih outstanding
 
-8. **Customer signup confirm email**
-   - Saat ini default Supabase = harus konfirmasi email. Customer marketplace banyak drop di sini.
-   - **Fix**: aktifkan auto-confirm email signup (lebih friendly untuk customer beli kopi).
-
-### 🟢 Quality-of-life
-
-9. **Track page**: tambahkan handling `cancelled` / `delivering` step yang tepat & link "Pesan lagi" ke etalase.
-
-10. **Etalase**: tambahkan info jam buka shop (sudah ada `open_hours` di DB) dan tampilkan "Tutup sekarang — buka jam X" badge bila di luar jam.
-
-11. **Cleanup import unused** (Coffee, Phone, dll) — ringan.
+1. Landing page (`/`) masih demo "Mulai gratis" tanpa harga, fitur, kontak.
+2. Halaman owner pakai padding `p-6` flat — tidak responsive optimal di mobile (`px-4 sm:px-6 lg:px-8 py-6 lg:py-10`).
+3. Tidak ada PWA manifest / install prompt untuk customer agar etalase terasa "app".
 
 ---
 
-## Yang Akan Dikerjakan
+## Rencana Implementasi (3 batch besar, semua dikerjakan)
 
-### Migrasi DB
-- RPC `apply_loyalty_post_order(_shop_id, _user_id, _order_id, _earned, _redeemed)` SECURITY DEFINER → upsert `loyalty_points` + insert `loyalty_ledger`. Validasi: user adalah customer order ITU, atau outlet access (untuk POS).
-- Auth setting: aktifkan auto-confirm email signup.
+### Batch 1 — Sisi Pembeli: pengalaman online order kelas atas
 
-### Code
-- `src/lib/promo-loyalty.ts` — ganti applyPostOrder pakai RPC baru.
-- `src/routes/s.$slug.pay.$orderId.tsx` — simpan path saja, generate signed URL untuk preview.
-- `src/routes/app.online-orders.tsx` — tombol "Lihat bukti" generate signed URL on-demand.
-- `src/routes/s.$slug.orders.tsx` — STATUS_LABEL tambah `cancelled`, `delivering`.
-- `src/routes/s.$slug.tsx` — fix login redirect.
-- `src/components/pos/receipt.tsx` — tambahkan promo & poin.
-- `src/routes/app.orders.tsx` — tombol Void/Refund + reverse stock.
-- Dashboard & Reports & beberapa app pages — responsive padding.
-- `src/routes/track.$orderId.tsx` — handle cancelled state lebih baik.
-- `src/routes/s.$slug.index.tsx` — badge jam buka.
-- Cleanup import unused.
+**Migrasi DB**:
+- Trigger `handle_new_customer_signup`: auto-insert `customer_profiles` row saat user signup dari etalase (deteksi via `raw_user_meta_data->>'is_customer'='true'` flag yang dipasang oleh `s.$slug.signup`).
+- Storage RLS untuk bucket `payment-proofs`:
+  - INSERT: customer pemilik order (path = `{order_id}/...`).
+  - SELECT: owner shop dari order tsb + customer pemilik order.
 
-### Tidak dikerjakan (sengaja)
-- Marketing landing pisah (Pricing, About, dll) — di luar scope "sempurnakan", bukan bug.
-- PWA / offline — fase 12 advanced, butuh diskusi tersendiri.
+**Etalase (`s.$slug.index.tsx`)**:
+- Hero card: logo besar, nama, tagline, badge **Buka/Tutup** real-time (pakai `open_hours` jsonb), alamat, tombol WhatsApp, share.
+- Item card: badge "Habis" untuk yang `is_available=false` (sekalian ditampilkan grayed), filter "Sembunyikan habis".
+- Sticky kategori bar saat scroll.
+
+**Cart (`s.$slug.cart.tsx`) & detail menu**:
+- Modifier note per item (textarea saat klik item) — sudah ada field `note` di cart, tinggal UI.
+- Empty state dengan CTA "Lihat menu".
+
+**Checkout (`s.$slug.checkout.tsx`)**:
+- **Address book**: dropdown alamat tersimpan + tombol "Simpan sebagai alamat baru" (`Rumah/Kantor/Lainnya` chip). Auto-fill `customer_profiles` (nama+HP) saat mount.
+- Validasi nomor HP Indonesia (regex `^08[0-9]{8,12}$` atau `^\+62`).
+- ETA preview: "Estimasi siap ~20 menit" (config field per shop, default 20).
+- Setelah submit: redirect ke `/track/$orderId` (bukan `/s/$slug/orders`).
+
+**Riwayat (`s.$slug.orders.tsx`)**:
+- Expand/collapse rincian item.
+- Tombol **"Pesan lagi"** → load item ke cart current shop (skip yang sudah dihapus).
+- Realtime subscribe: status berubah → toast.
+
+**Login/Signup customer (`s.$slug.login.tsx`, `s.$slug.signup.tsx`)**:
+- Tambah tombol Google OAuth (dengan `redirectTo` kembali ke storefront).
+- Set metadata `is_customer: true` saat signup dari sini.
+
+### Batch 2 — POS Pro & Kurir Tooling
+
+**POS (`app.pos.tsx`)**:
+- Klik item → buka mini sheet "Tambah item" dengan input qty + textarea catatan (modifier).
+- Tombol "Diskon manual" di footer cart (Rp atau %). Disimpan ke `orders.discount` + label note.
+- **Split payment dialog**: dua input (cash + qris), validasi total = grand. Simpan via field `payment_method='split'` (perlu enum baru) ATAU simpan combined string di `note` + tetap pakai method dominan.  
+  → Pilih simple: tetap satu method utama tapi tambah field `note` "Split: Cash 50rb + QRIS 30rb".
+- **Reprint** dari `app/orders.tsx` → buka dialog `Receipt` lagi.
+- Shortcut keyboard di POS (Enter, F2/F3, Esc).
+- Search menu: tambah filter "kategori chip" sticky.
+
+**Kurir (`app/courier.tsx`)**:
+- Tombol "Buka di Maps" per order (`https://maps.google.com/?q=${encodeURIComponent(address)}`).
+- Tombol "Mulai antar" (`status='delivering'`) & "Selesai" (`status='completed'`) dari sisi kurir (RLS sudah mengizinkan via `orders_courier_update`).
+- Tombol "Hubungi" → `tel:` + WhatsApp.
+- Stats card di top: "Hari ini: 5 antar / 3 selesai".
+
+**Owner kurir list (`app.couriers.tsx`)**:
+- Kolom statistik 7 hari terakhir per kurir (jumlah antar, total ongkir).
+
+### Batch 3 — Polish & Foundation
+
+- Landing `/` direvamp: section Fitur, Harga (opsional), Testimonial, CTA, footer.
+- Semua halaman owner: ganti `p-6` → `px-4 sm:px-6 lg:px-8 py-6`.
+- Tambah `manifest.webmanifest` + apple-touch-icon untuk PWA basic (install prompt di Chrome Android).
+- Per-shop "Estimasi siap" field di `app.settings` → simpan di `coffee_shops.prep_minutes` (kolom baru integer default 20).
+- Insert `promo_redemptions` row dari client setelah order create (RLS sudah mengizinkan).
+
+---
+
+## Yang **TIDAK** dikerjakan (sengaja, biar focused)
+
+- Payment gateway otomatis (Midtrans/Xendit) — tetap QRIS manual.
 - Email transactional — butuh konfigurasi domain.
+- Multi-bahasa, dark mode, push notification ke customer (web push butuh service worker setup serius).
+- Voucher digital / referral / membership tier.
 
-Setelah disetujui, saya akan implementasikan semuanya dalam satu batch.
+Setelah disetujui, saya implementasikan **ketiga batch dalam satu jalur** (DB migrations dulu, lalu code per area). Estimasi 1 sesi panjang.
