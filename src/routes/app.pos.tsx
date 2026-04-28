@@ -718,8 +718,16 @@ function POSPage() {
                   <Save className="mr-1.5 h-4 w-4" /> Park
                 </Button>
                 <Button
-                  onClick={() => setCheckoutOpen(true)}
-                  disabled={cart.items.length === 0}
+                  onClick={() => {
+                    if (!shift) {
+                      toast.error("Buka shift dulu sebelum bayar");
+                      setOpenShiftDlg(true);
+                      return;
+                    }
+                    setCheckoutOpen(true);
+                  }}
+                  disabled={cart.items.length === 0 || !shift}
+                  title={!shift ? "Buka shift dulu" : undefined}
                 >
                   Bayar
                 </Button>
