@@ -121,12 +121,32 @@ function CourierView() {
 
   const active = orders.filter((o) => ["ready", "delivering"].includes(o.status));
   const done = orders.filter((o) => o.status === "completed");
+  const todayStr = new Date().toDateString();
+  const doneToday = done.filter((o) => new Date(o.created_at).toDateString() === todayStr);
+  const activeCount = active.length;
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-6">
       <div className="mb-4 flex items-center gap-2">
         <Bike className="h-5 w-5" />
         <h1 className="text-xl font-semibold">Pengantaran</h1>
+      </div>
+
+      <div className="mb-5 grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-border bg-card p-3 text-center">
+          <div className="text-[10px] uppercase text-muted-foreground">Aktif</div>
+          <div className="text-xl font-bold">{activeCount}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3 text-center">
+          <div className="text-[10px] uppercase text-muted-foreground">Selesai hari ini</div>
+          <div className="text-xl font-bold">{doneToday.length}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3 text-center">
+          <div className="text-[10px] uppercase text-muted-foreground">Pendapatan ongkir</div>
+          <div className="text-sm font-bold">
+            {formatIDR(doneToday.reduce((s, o) => s + Number(o.delivery_fee || 0), 0))}
+          </div>
+        </div>
       </div>
 
       <h2 className="mb-2 text-sm font-medium text-muted-foreground">Aktif</h2>
