@@ -12,14 +12,14 @@ export const Route = createFileRoute("/s/$slug")({
 
 function ShopLayout() {
   const { slug } = useParams({ from: "/s/$slug" });
-  const [shop, setShop] = useState<{ id: string; name: string; description: string | null } | null>(null);
+  const [shop, setShop] = useState<{ id: string; name: string; description: string | null; logo_url: string | null; tagline: string | null } | null>(null);
   const [count, setCount] = useState(0);
   const { user, signOut } = useAuth();
 
   useEffect(() => {
     supabase
       .from("coffee_shops")
-      .select("id,name,description")
+      .select("id,name,description,logo_url,tagline")
       .eq("slug", slug)
       .eq("is_active", true)
       .maybeSingle()
