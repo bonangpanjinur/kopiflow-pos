@@ -1,124 +1,158 @@
-## Audit Hasil: Apa yang Sudah Ada vs Belum
+# Plan: 4 Batch Penyempurnaan KopiHub
 
-Sistem KopiHub sudah punya pondasi sangat lengkap (POS, multi-cart, online order, kurir, loyalty, promo, QRIS manual, tracking). Tapi banyak **fitur kunci di sisi pembeli & POS** masih kasar atau missing. Ini daftar yang akan disempurnakan.
-
-### A. POS — yang masih kurang (untuk owner/kasir)
-
-1. **Tidak ada modifier / catatan per item saat tambah ke cart** — kasir tidak bisa input "less sugar / extra shot" tanpa hack.
-2. **Tidak ada split bill / multi-payment** — order >100rb sering dibayar gabungan cash+QRIS.
-3. **Tidak ada quick-discount** (potongan manual Rp/% per order) selain promo code.
-4. **Tidak ada hold & recall + nomor meja** — open bill ada tapi label generic.
-5. **Reprint struk dari Order list** belum ada (struk hanya muncul saat checkout).
-6. **Shortcut keyboard** (Enter=bayar, F2=cash, F3=qris) — POS desktop production butuh ini.
-7. **Search menu by SKU / barcode** (opsional, tapi penting untuk inventory-heavy).
-8. **Daily cash drawer / shift open-close + setoran kas** — tidak ada.
-
-### B. Pesan online — sisi pembeli (PALING PENTING)
-
-1. **Etalase tidak menampilkan info toko**: jam buka, status open/closed badge, alamat, telepon, link WA. Saat ini hanya nama + deskripsi.
-2. **Address book**: tabel `customer_addresses` sudah ada tapi **tidak dipakai** — customer harus ketik alamat manual setiap order.
-3. **Saved profile**: nama & HP tidak auto-fill dari `customer_profiles`.
-4. **Riwayat pesanan tipis**: `s.$slug.orders` tidak menampilkan rincian item, tidak ada tombol "Pesan lagi" (re-order ke cart).
-5. **Track order inkonsisten**: tombol "Lacak" di orders → buka `/track/$id` tapi etalase tidak punya CTA setelah checkout. Customer suka bingung.
-6. **Estimasi waktu** (ETA pickup/delivery) tidak ada — owner & customer butuh.
-7. **Realtime status update** untuk customer di halaman orders: tidak subscribe.
-8. **Cart kosong UX**: tidak ada empty state nice + suggestion menu.
-9. **Tidak ada filter "Tersedia saja"** & **out-of-stock indicator** di etalase.
-10. **Login/signup flow** customer di etalase hanya email+password, tidak ada Google. Friction tinggi.
-11. **Halaman checkout**: tidak ada "Estimasi tiba" preview, tidak ada validasi nomor HP Indonesia, alamat textarea polos (bisa kasih chip "rumah/kantor").
-12. **Notifikasi customer**: setelah owner update status, tidak ada toast/notif visual selain refresh manual di halaman orders.
-
-### C. Kurir — sisi kurir & owner
-
-1. **Halaman kurir** (`app/courier`) hanya list order ditugaskan; **tidak ada peta / link Google Maps** untuk navigasi ke alamat customer.
-2. **Tidak ada tombol "Mulai antar / Sudah sampai"** dari sisi kurir (hanya owner yang ubah status).
-3. **Kurir tidak bisa mark "tidak ditemukan / customer tidak respon"** (status exception).
-4. **Owner di list kurir**: tidak ada statistik per kurir (jumlah antar hari ini, on-time).
-
-### D. Backend / data integrity yang masih bocor
-
-1. **`customer_profiles` belum auto-create** saat customer signup di etalase (mirip `profiles` trigger tapi untuk customer).
-2. **Nomor HP customer tersimpan acak**: kadang di `orders.customer_phone`, tidak pernah di `customer_profiles`.
-3. **`promo_redemptions` belum di-insert** dari client checkout (harusnya `INSERT` setelah order confirmed). Sekarang hanya `usage_count` yang naik via RPC.
-4. **`payment-proofs` storage policy** belum diverifikasi — customer harus bisa upload, owner read. Perlu RLS storage policy eksplisit.
-
-### E. UX & polish yang masih outstanding
-
-1. Landing page (`/`) masih demo "Mulai gratis" tanpa harga, fitur, kontak.
-2. Halaman owner pakai padding `p-6` flat — tidak responsive optimal di mobile (`px-4 sm:px-6 lg:px-8 py-6 lg:py-10`).
-3. Tidak ada PWA manifest / install prompt untuk customer agar etalase terasa "app".
+Tanpa payment gateway (tetap manual QRIS). Semua dikerjakan bertahap, 1 batch = 1 sesi besar. Saya rekomendasikan eksekusi berurutan **Batch 4 → 5 → 7 → 6** karena Batch 6 (push notif & live tracking) paling kompleks.
 
 ---
 
-## Rencana Implementasi (3 batch besar, semua dikerjakan)
+## BATCH 4 — Money: Shift, Refund, Split Payment, Multi-tax
 
-### Batch 1 — Sisi Pembeli: pengalaman online order kelas atas
+### Tujuan
+Owner punya kontrol kas penuh: tahu berapa uang di laci awal/akhir shift, bisa refund, bisa terima pembayaran campuran.
 
-**Migrasi DB**:
-- Trigger `handle_new_customer_signup`: auto-insert `customer_profiles` row saat user signup dari etalase (deteksi via `raw_user_meta_data->>'is_customer'='true'` flag yang dipasang oleh `s.$slug.signup`).
-- Storage RLS untuk bucket `payment-proofs`:
-  - INSERT: customer pemilik order (path = `{order_id}/...`).
-  - SELECT: owner shop dari order tsb + customer pemilik order.
+### Database
+Migrasi baru:
+- Tabel **`cash_shifts`**: `id, outlet_id, shop_id, opened_by, opened_at, opening_cash, closed_by, closed_at, closing_cash, expected_cash, variance, note, status (open/closed)`.
+- Tabel **`cash_movements`**: `id, shift_id, type (in/out/sale/refund), amount, note, created_by, created_at` — log semua arus kas dalam shift.
+- Tabel **`refunds`**: `id, order_id, amount, reason, refund_method, created_by, created_at`.
+- Kolom baru di `orders`:
+  - `shift_id uuid` (link ke shift saat order dibuat)
+  - `tip_amount numeric default 0`
+  - `service_charge numeric default 0`
+  - `payment_split jsonb default '[]'` — array `[{method, amount}]` untuk split payment
+- Kolom baru di `coffee_shops`:
+  - `tax_percent numeric default 0`
+  - `service_charge_percent numeric default 0`
+  - `tax_inclusive boolean default false`
+- RPC **`open_shift(_outlet_id, _opening_cash)`** & **`close_shift(_shift_id, _closing_cash, _note)`** dengan auto-hitung expected & variance.
+- RPC **`refund_order(_order_id, _amount, _reason, _method)`** — insert refund + cash_movement, update order.payment_status='refunded'.
 
-**Etalase (`s.$slug.index.tsx`)**:
-- Hero card: logo besar, nama, tagline, badge **Buka/Tutup** real-time (pakai `open_hours` jsonb), alamat, tombol WhatsApp, share.
-- Item card: badge "Habis" untuk yang `is_available=false` (sekalian ditampilkan grayed), filter "Sembunyikan habis".
-- Sticky kategori bar saat scroll.
-
-**Cart (`s.$slug.cart.tsx`) & detail menu**:
-- Modifier note per item (textarea saat klik item) — sudah ada field `note` di cart, tinggal UI.
-- Empty state dengan CTA "Lihat menu".
-
-**Checkout (`s.$slug.checkout.tsx`)**:
-- **Address book**: dropdown alamat tersimpan + tombol "Simpan sebagai alamat baru" (`Rumah/Kantor/Lainnya` chip). Auto-fill `customer_profiles` (nama+HP) saat mount.
-- Validasi nomor HP Indonesia (regex `^08[0-9]{8,12}$` atau `^\+62`).
-- ETA preview: "Estimasi siap ~20 menit" (config field per shop, default 20).
-- Setelah submit: redirect ke `/track/$orderId` (bukan `/s/$slug/orders`).
-
-**Riwayat (`s.$slug.orders.tsx`)**:
-- Expand/collapse rincian item.
-- Tombol **"Pesan lagi"** → load item ke cart current shop (skip yang sudah dihapus).
-- Realtime subscribe: status berubah → toast.
-
-**Login/Signup customer (`s.$slug.login.tsx`, `s.$slug.signup.tsx`)**:
-- Tambah tombol Google OAuth (dengan `redirectTo` kembali ke storefront).
-- Set metadata `is_customer: true` saat signup dari sini.
-
-### Batch 2 — POS Pro & Kurir Tooling
-
-**POS (`app.pos.tsx`)**:
-- Klik item → buka mini sheet "Tambah item" dengan input qty + textarea catatan (modifier).
-- Tombol "Diskon manual" di footer cart (Rp atau %). Disimpan ke `orders.discount` + label note.
-- **Split payment dialog**: dua input (cash + qris), validasi total = grand. Simpan via field `payment_method='split'` (perlu enum baru) ATAU simpan combined string di `note` + tetap pakai method dominan.  
-  → Pilih simple: tetap satu method utama tapi tambah field `note` "Split: Cash 50rb + QRIS 30rb".
-- **Reprint** dari `app/orders.tsx` → buka dialog `Receipt` lagi.
-- Shortcut keyboard di POS (Enter, F2/F3, Esc).
-- Search menu: tambah filter "kategori chip" sticky.
-
-**Kurir (`app/courier.tsx`)**:
-- Tombol "Buka di Maps" per order (`https://maps.google.com/?q=${encodeURIComponent(address)}`).
-- Tombol "Mulai antar" (`status='delivering'`) & "Selesai" (`status='completed'`) dari sisi kurir (RLS sudah mengizinkan via `orders_courier_update`).
-- Tombol "Hubungi" → `tel:` + WhatsApp.
-- Stats card di top: "Hari ini: 5 antar / 3 selesai".
-
-**Owner kurir list (`app.couriers.tsx`)**:
-- Kolom statistik 7 hari terakhir per kurir (jumlah antar, total ongkir).
-
-### Batch 3 — Polish & Foundation
-
-- Landing `/` direvamp: section Fitur, Harga (opsional), Testimonial, CTA, footer.
-- Semua halaman owner: ganti `p-6` → `px-4 sm:px-6 lg:px-8 py-6`.
-- Tambah `manifest.webmanifest` + apple-touch-icon untuk PWA basic (install prompt di Chrome Android).
-- Per-shop "Estimasi siap" field di `app.settings` → simpan di `coffee_shops.prep_minutes` (kolom baru integer default 20).
-- Insert `promo_redemptions` row dari client setelah order create (RLS sudah mengizinkan).
+### UI
+- **`app.shifts.tsx`** (route baru): list shift, detail (cash in/out, sales, expected vs actual). Tombol "Buka Shift" & "Tutup Shift".
+- **`app.pos.tsx`**: 
+  - Block POS jika tidak ada shift open (banner "Buka shift dulu").
+  - Tombol "Split Payment" di dialog bayar → 2+ input method+amount, validasi total.
+  - Input tip & service charge opsional.
+  - Auto-isi `shift_id` saat create order.
+- **`app.orders.tsx`**: tombol "Refund" di detail order (parsial atau penuh) dengan dialog alasan.
+- **`app.settings.tsx`**: section Pajak & Service (% pajak, % service, tax inclusive toggle).
+- **`receipt.tsx`**: tampilkan tip, service, split payment breakdown.
 
 ---
 
-## Yang **TIDAK** dikerjakan (sengaja, biar focused)
+## BATCH 5 — Inventory Pro: Low Stock, HPP, Supplier, PO
 
-- Payment gateway otomatis (Midtrans/Xendit) — tetap QRIS manual.
-- Email transactional — butuh konfigurasi domain.
-- Multi-bahasa, dark mode, push notification ke customer (web push butuh service worker setup serius).
-- Voucher digital / referral / membership tier.
+### Tujuan
+Owner tidak kehabisan bahan baku tanpa sadar; tahu margin tiap menu; bisa kelola supplier & purchase order.
 
-Setelah disetujui, saya implementasikan **ketiga batch dalam satu jalur** (DB migrations dulu, lalu code per area). Estimasi 1 sesi panjang.
+### Database
+Migrasi:
+- Tabel **`suppliers`**: `id, shop_id, name, contact_name, phone, email, address, note, is_active`.
+- Tabel **`purchase_orders`**: `id, shop_id, supplier_id, po_no, status (draft/sent/received/cancelled), order_date, received_date, total, note, created_by`.
+- Tabel **`purchase_order_items`**: `id, po_id, ingredient_id, quantity, unit_cost, subtotal`.
+- Kolom baru `ingredients`:
+  - `supplier_id uuid` (default supplier)
+  - `last_purchase_cost numeric` (auto-update saat PO received)
+- Trigger: saat `purchase_orders.status` berubah ke `received`, auto-insert `stock_movements` type='purchase' untuk semua item + update `ingredients.last_purchase_cost`.
+- View **`menu_hpp_view`**: hitung HPP per menu = SUM(recipe.qty * ingredient.cost_per_unit) → owner lihat margin.
+
+### UI
+- **`app.suppliers.tsx`** (route baru): CRUD supplier.
+- **`app.purchase-orders.tsx`** (route baru): list PO, create PO (pilih supplier + add items), tombol "Tandai Diterima".
+- **`app.inventory.tsx`**: 
+  - Badge merah untuk ingredient yang `current_stock < min_stock`.
+  - Filter "Stok Menipis".
+  - Tombol "Stock Opname" → dialog input stok aktual + alasan, otomatis insert `stock_movements` type='adjustment'.
+- **`app.menu.tsx`**: kolom HPP & margin per item (dari view).
+- **`app.index.tsx`** (dashboard): widget "Stok menipis" (top 5 ingredient di bawah min_stock).
+- Notif toast di sidebar saat ada low stock (poll tiap 5 menit).
+
+---
+
+## BATCH 6 — Customer Delight: Push Notif, Review, Live Tracking, Voucher
+
+### Tujuan
+Customer dapat notifikasi otomatis, bisa rating, bisa lacak kurir live, bisa share voucher.
+
+### Database
+Migrasi:
+- Tabel **`order_reviews`**: `id, order_id, shop_id, user_id, rating (1-5), comment, created_at`.
+- Tabel **`menu_reviews`** (turunan otomatis dari order_reviews): `id, menu_item_id, order_id, user_id, rating, created_at`.
+- Tabel **`courier_locations`**: `id, courier_id, order_id, lat, lng, updated_at` — kurir kirim posisi tiap 30 detik saat status='delivering'.
+- Tabel **`push_subscriptions`**: `id, user_id, endpoint, p256dh, auth, created_at` (Web Push API).
+- Kolom baru `promos`: `is_referral boolean default false`, `referrer_user_id uuid` — voucher yang dibagikan customer.
+
+### UI / Logic
+- **PWA Service Worker** (`public/sw.js`): handle push events, cache shell.
+- **`s.$slug.orders.tsx`**: 
+  - Tombol "Beri Rating" di order completed → dialog 5-star + komentar per menu.
+  - Tampilkan rating rata-rata di setiap order history.
+- **`track.$orderId.tsx`**: 
+  - Embed Leaflet map (open-source, no API key) menampilkan posisi kurir live.
+  - Subscribe realtime ke `courier_locations`.
+- **`app.courier.tsx`**: 
+  - Auto-share location pakai `navigator.geolocation.watchPosition` saat order status='delivering'.
+- **`s.$slug.menu.$menuId.tsx`**: tampilkan rating + review terbaru per menu.
+- **`s.$slug.checkout.tsx`**: input "Kode referral" → validasi & apply.
+- **Push notification flow**:
+  - Setelah login customer, prompt "Aktifkan notifikasi" → register service worker → simpan subscription.
+  - Trigger via DB trigger pada `orders` status change → call edge endpoint `/api/public/push-notify` → kirim Web Push.
+
+### Catatan teknis
+- Web Push butuh VAPID keys (generate sekali, simpan sebagai env var).
+- Map: pakai **Leaflet + OpenStreetMap** (gratis, tanpa API key).
+- Voucher referral: setiap customer punya kode unik auto-generate.
+
+---
+
+## BATCH 7 — Analytics Pro: Charts, Export, Best-seller, Shift Report
+
+### Tujuan
+Owner punya dashboard insight bisnis dengan grafik & bisa export laporan.
+
+### Database
+- View **`sales_hourly_view`**: agregat penjualan per jam.
+- View **`menu_performance_view`**: penjualan per menu (qty, revenue, %).
+- View **`shift_summary_view`**: ringkasan per shift (sales, refund, variance).
+
+### UI
+- **`app.index.tsx`** (dashboard revamp):
+  - Line chart: penjualan 7/30 hari (Recharts, sudah di stack).
+  - Bar chart: jam tersibuk hari ini.
+  - Pie chart: revenue per kategori.
+  - Comparison card: minggu ini vs minggu lalu (% growth).
+- **`app.reports.tsx`**:
+  - Tab baru: **Best-seller** (sortable table per menu, filter range tanggal).
+  - Tab baru: **Shift Report** (X-report = shift berjalan, Z-report = shift ditutup).
+  - Tombol **Export PDF** & **Export Excel** untuk semua tab — pakai library `jspdf` + `xlsx`.
+- **Email harian** (opsional, pakai cron pg_net):
+  - Cron `0 22 * * *` → call `/api/public/daily-report` → kirim email summary ke owner.
+  - Skip kalau email infra belum setup, fallback: simpan di tabel `daily_reports` untuk dilihat owner.
+
+---
+
+## Yang TIDAK Dikerjakan
+
+- Payment gateway (Midtrans/Xendit) — sesuai keputusan, tetap manual QRIS.
+- Multi-outlet switcher (cukup 1 outlet untuk fase ini).
+- Push notif iOS Safari (butuh setup khusus, coverage rendah).
+- GoFood/GrabFood integration (butuh akses partner API).
+- Email transactional otomatis ke customer (butuh domain custom).
+
+---
+
+## Detail Teknis Singkat
+
+| Batch | Tabel baru | RPC baru | Library tambahan |
+|-------|------------|----------|------------------|
+| 4 | cash_shifts, cash_movements, refunds | open_shift, close_shift, refund_order | — |
+| 5 | suppliers, purchase_orders, purchase_order_items | (trigger only) | — |
+| 6 | order_reviews, courier_locations, push_subscriptions | — | leaflet, web-push |
+| 7 | (views only) | — | jspdf, xlsx |
+
+Semua RLS akan mengikuti pattern eksisting (`owner_all` + role-specific).
+
+---
+
+## Pertanyaan Eksekusi
+
+Apakah saya mulai dari **Batch 4 (Money)** dulu sekarang? Atau Anda mau urutan lain?

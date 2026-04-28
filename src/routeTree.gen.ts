@@ -18,6 +18,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as AppShiftsRouteImport } from './routes/app.shifts'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppScheduleRouteImport } from './routes/app.schedule'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
@@ -87,6 +88,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppShiftsRoute = AppShiftsRouteImport.update({
+  id: '/shifts',
+  path: '/shifts',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/shifts': typeof AppShiftsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/shifts': typeof AppShiftsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app': typeof AppIndexRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/shifts': typeof AppShiftsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/schedule'
     | '/app/settings'
+    | '/app/shifts'
     | '/invite/$token'
     | '/s/$slug'
     | '/track/$orderId'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/schedule'
     | '/app/settings'
+    | '/app/shifts'
     | '/invite/$token'
     | '/track/$orderId'
     | '/app'
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/schedule'
     | '/app/settings'
+    | '/app/shifts'
     | '/invite/$token'
     | '/s/$slug'
     | '/track/$orderId'
@@ -494,6 +506,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invite/$token'
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/shifts': {
+      id: '/app/shifts'
+      path: '/shifts'
+      fullPath: '/app/shifts'
+      preLoaderRoute: typeof AppShiftsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/settings': {
       id: '/app/settings'
@@ -684,6 +703,7 @@ interface AppRouteChildren {
   AppReportsRoute: typeof AppReportsRoute
   AppScheduleRoute: typeof AppScheduleRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppShiftsRoute: typeof AppShiftsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -705,6 +725,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppReportsRoute: AppReportsRoute,
   AppScheduleRoute: AppScheduleRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppShiftsRoute: AppShiftsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
