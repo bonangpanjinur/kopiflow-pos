@@ -168,6 +168,28 @@ function CheckoutPage() {
       });
   }, [user]);
 
+  // Load saved addresses
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("customer_addresses")
+      .select("id,label,recipient_name,phone,address_line,is_default")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const list = (data ?? []) as SavedAddr[];
+        setSavedAddrs(list);
+        const def = list.find((a) => a.is_default) ?? list[0];
+        if (def) {
+          setSelectedAddrId(def.id);
+          setAddress(def.address_line);
+          setName((n) => n || def.recipient_name);
+          setPhone((p) => p || def.phone);
+        }
+      });
+  }, [user]);
+
   // Load loyalty settings + balance once shop & user are known
   useEffect(() => {
     if (!shopId) return;
