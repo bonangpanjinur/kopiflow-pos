@@ -1,0 +1,232 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer } from "lucide-react";
+import { toast } from "sonner";
+import { formatIDR } from "@/lib/format";
+
+export const Route = createFileRoute("/app/purchase-orders/$poId")({
+  component: PODetailPage,
+});
+
+type PO = {
+  id: string;
+  po_no: string;
+  status: "draft" | "ordered" | "received" | "cancelled";
+  shop_id: string;
+  supplier_id: string | null;
+  order_date: string;
+  expected_date: string | null;
+  received_date: string | null;
+  subtotal: number;
+  tax: number;
+  total: number;
+  note: string | null;
+  created_at: string;
+};
+type POItem = {
+  id: string;
+  ingredient_id: string;
+  quantity: number;
+  unit_cost: number;
+  subtotal: number;
+  received_qty: number;
+};
+type Ingredient = { id: string; name: string; unit: string };
+type Supplier = { id: string; name: string; phone: string | null; contact_name: string | null };
+
+function statusBadge(status: PO["status"]) {
+  const map: Record<PO["status"], string> = {
+    draft: "bg-muted text-muted-foreground",
+    ordered: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+    received: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+    cancelled: "bg-destructive/15 text-destructive",
+  };
+  const label = { draft: "Draft", ordered: "Sudah dipesan", received: "Diterima", cancelled: "Dibatalkan" }[status];
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${map[status]}`}>{label}</span>;
+}
+
+function PODetailPage() {
+  const { poId } = Route.useParams();
+  const nav = useNavigate();
+  const [po, setPo] = useState<PO | null>(null);
+  const [items, setItems] = useState<POItem[]>([]);
+  const [ingMap, setIngMap] = useState<Record<string, Ingredient>>({});
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const { data: poData, error } = await supabase.from("purchase_orders").select("*").eq("id", poId).single();
+    if (error || !poData) { toast.error(error?.message ?? "PO tidak ditemukan"); setLoading(false); return; }
+    setPo(poData as PO);
+    const [itRes, ingRes, supRes] = await Promise.all([
+      supabase.from("purchase_order_items").select("*").eq("po_id", poId),
+      supabase.from("ingredients").select("id, name, unit").eq("shop_id", poData.shop_id),
+      poData.supplier_id
+        ? supabase.from("suppliers").select("id, name, phone, contact_name").eq("id", poData.supplier_id).single()
+        : Promise.resolve({ data: null }),
+    ]);
+    setItems((itRes.data ?? []) as POItem[]);
+    const map: Record<string, Ingredient> = {};
+    ((ingRes.data ?? []) as Ingredient[]).forEach((i) => { map[i.id] = i; });
+    setIngMap(map);
+    setSupplier((supRes as { data: Supplier | null }).data ?? null);
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [poId]);
+
+  async function setStatus(status: PO["status"]) {
+    if (!po) return;
+    setBusy(true);
+    const { error } = await supabase.from("purchase_orders").update({ status }).eq("id", po.id);
+    if (error) toast.error(error.message); else { toast.success("Status diperbarui"); load(); }
+    setBusy(false);
+  }
+
+  async function receivePO() {
+    if (!po) return;
+    if (!confirm(`Terima PO ${po.po_no}? Stok akan otomatis bertambah dan HPP akan di-update.`)) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("receive_purchase_order", { _po_id: po.id });
+    if (error) toast.error(error.message); else { toast.success("PO diterima — stok diperbarui"); load(); }
+    setBusy(false);
+  }
+
+  async function deletePO() {
+    if (!po) return;
+    if (!confirm(`Hapus PO ${po.po_no}? Tindakan ini tidak bisa dibatalkan.`)) return;
+    setBusy(true);
+    await supabase.from("purchase_order_items").delete().eq("po_id", po.id);
+    const { error } = await supabase.from("purchase_orders").delete().eq("id", po.id);
+    if (error) { toast.error(error.message); setBusy(false); }
+    else { toast.success("PO dihapus"); nav({ to: "/app/purchase-orders" }); }
+  }
+
+  if (loading) {
+    return <div className="flex h-full items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+  }
+  if (!po) {
+    return <div className="mx-auto max-w-2xl px-4 py-10 text-center text-muted-foreground">PO tidak ditemukan.</div>;
+  }
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10 print:p-0">
+      <div className="mb-4 flex items-center justify-between gap-3 print:hidden">
+        <Link to="/app/purchase-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke daftar PO
+        </Link>
+        <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{po.po_no}</h1>
+            <div className="mt-2">{statusBadge(po.status)}</div>
+          </div>
+          <div className="text-right text-sm">
+            <div className="text-muted-foreground">Order: <span className="text-foreground tabular-nums">{po.order_date}</span></div>
+            {po.expected_date && <div className="text-muted-foreground">Kedatangan: <span className="text-foreground tabular-nums">{po.expected_date}</span></div>}
+            {po.received_date && <div className="text-muted-foreground">Diterima: <span className="text-foreground tabular-nums">{po.received_date}</span></div>}
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-border bg-background p-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Supplier</div>
+            {supplier ? (
+              <div className="mt-1">
+                <Link to="/app/suppliers" className="font-medium hover:underline">{supplier.name}</Link>
+                {supplier.contact_name && <div className="text-xs text-muted-foreground">{supplier.contact_name}</div>}
+                {supplier.phone && <div className="text-xs text-muted-foreground">{supplier.phone}</div>}
+              </div>
+            ) : <div className="mt-1 text-sm text-muted-foreground">— tidak ditentukan —</div>}
+          </div>
+          <div className="rounded-lg border border-border bg-background p-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Catatan</div>
+            <div className="mt-1 text-sm whitespace-pre-wrap">{po.note || <span className="text-muted-foreground">—</span>}</div>
+          </div>
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-lg border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2.5 text-left">Bahan</th>
+                <th className="px-3 py-2.5 text-right">Qty</th>
+                <th className="px-3 py-2.5 text-right">Harga / unit</th>
+                <th className="px-3 py-2.5 text-right">Subtotal</th>
+                {po.status === "received" && <th className="px-3 py-2.5 text-right">Diterima</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {items.map((it) => {
+                const ig = ingMap[it.ingredient_id];
+                return (
+                  <tr key={it.id}>
+                    <td className="px-3 py-2.5 font-medium">{ig?.name ?? "—"}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{Number(it.quantity)} {ig?.unit}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{formatIDR(it.unit_cost)}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{formatIDR(it.subtotal)}</td>
+                    {po.status === "received" && (
+                      <td className="px-3 py-2.5 text-right tabular-nums text-emerald-600">+{Number(it.received_qty)} {ig?.unit}</td>
+                    )}
+                  </tr>
+                );
+              })}
+              {items.length === 0 && (
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">Tidak ada item.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 ml-auto max-w-xs space-y-1 text-sm">
+          <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="tabular-nums">{formatIDR(po.subtotal)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Pajak</span><span className="tabular-nums">{formatIDR(po.tax)}</span></div>
+          <div className="flex justify-between border-t border-border pt-1.5 text-base font-semibold"><span>Total</span><span className="tabular-nums">{formatIDR(po.total)}</span></div>
+        </div>
+
+        {po.status !== "received" && po.status !== "cancelled" && (
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-2 print:hidden">
+            {po.status === "draft" && (
+              <>
+                <Button variant="ghost" onClick={deletePO} disabled={busy} className="text-destructive hover:text-destructive">
+                  <Trash2 className="mr-1.5 h-4 w-4" /> Hapus
+                </Button>
+                <Button variant="outline" onClick={() => setStatus("cancelled")} disabled={busy}>
+                  <X className="mr-1.5 h-4 w-4" /> Batalkan
+                </Button>
+                <Button onClick={() => setStatus("ordered")} disabled={busy}>
+                  <Send className="mr-1.5 h-4 w-4" /> Order ke supplier
+                </Button>
+              </>
+            )}
+            {po.status === "ordered" && (
+              <>
+                <Button variant="outline" onClick={() => setStatus("cancelled")} disabled={busy}>
+                  <X className="mr-1.5 h-4 w-4" /> Batalkan
+                </Button>
+                <Button onClick={receivePO} disabled={busy}>
+                  {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
+                  Terima & update stok
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
+        {po.status === "received" && (
+          <div className="mt-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-800 dark:text-emerald-300 print:hidden">
+            <CheckCircle2 className="mr-1.5 inline h-4 w-4" />
+            PO sudah diterima — stok bahan dan HPP rata-rata sudah otomatis terupdate.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

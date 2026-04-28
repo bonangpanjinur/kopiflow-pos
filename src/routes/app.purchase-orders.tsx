@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";
@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, CheckCircle2, X, Trash2 } from "lucide-react";
+import { Loader2, Plus, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -26,6 +26,7 @@ type PO = {
 type Line = { ingredient_id: string; quantity: string; unit_cost: string };
 
 function POPage() {
+  const nav = useNavigate();
   const { shop, loading: shopLoading } = useCurrentShop();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -41,8 +42,7 @@ function POPage() {
   const [lines, setLines] = useState<Line[]>([{ ingredient_id: "", quantity: "", unit_cost: "" }]);
   const [saving, setSaving] = useState(false);
 
-  const [detail, setDetail] = useState<PO | null>(null);
-  const [detailItems, setDetailItems] = useState<any[]>([]);
+  const [itemCounts, setItemCounts] = useState<Record<string, number>>({});
 
   async function load() {
     if (!shop) return;
@@ -111,24 +111,19 @@ function POPage() {
     setSaving(false);
   }
 
-  async function openDetail(po: PO) {
-    setDetail(po);
-    const { data } = await supabase.from("purchase_order_items").select("*").eq("po_id", po.id);
-    setDetailItems(data ?? []);
-  }
-
-  async function receivePO(po: PO) {
-    if (!confirm(`Terima PO ${po.po_no}? Stok akan otomatis bertambah & HPP terupdate.`)) return;
-    const { error } = await supabase.rpc("receive_purchase_order", { _po_id: po.id });
-    if (error) toast.error(error.message);
-    else { toast.success("PO diterima, stok diperbarui"); setDetail(null); load(); }
-  }
-
-  async function cancelPO(po: PO) {
-    if (!confirm(`Batalkan PO ${po.po_no}?`)) return;
-    const { error } = await supabase.from("purchase_orders").update({ status: "cancelled" }).eq("id", po.id);
-    if (error) toast.error(error.message); else { toast.success("PO dibatalkan"); setDetail(null); load(); }
-  }
+  // Load item counts after POs change
+  useEffect(() => {
+    (async () => {
+      if (pos.length === 0) { setItemCounts({}); return; }
+      const { data } = await supabase
+        .from("purchase_order_items")
+        .select("po_id")
+        .in("po_id", pos.map((p) => p.id));
+      const counts: Record<string, number> = {};
+      (data ?? []).forEach((r: { po_id: string }) => { counts[r.po_id] = (counts[r.po_id] ?? 0) + 1; });
+      setItemCounts(counts);
+    })();
+  }, [pos]);
 
   if (shopLoading) return <div className="flex h-full items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
@@ -220,16 +215,24 @@ function POPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr><th className="px-4 py-2.5 text-left">No. PO</th><th className="px-4 py-2.5 text-left">Tanggal</th><th className="px-4 py-2.5 text-left">Supplier</th><th className="px-4 py-2.5 text-left">Status</th><th className="px-4 py-2.5 text-right">Total</th></tr>
+              <tr>
+                <th className="px-4 py-2.5 text-left">No. PO</th>
+                <th className="px-4 py-2.5 text-left">Tanggal</th>
+                <th className="px-4 py-2.5 text-left">Supplier</th>
+                <th className="px-4 py-2.5 text-right">Item</th>
+                <th className="px-4 py-2.5 text-left">Status</th>
+                <th className="px-4 py-2.5 text-right">Total</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {pos.map((p) => {
                 const sup = suppliers.find((s) => s.id === p.supplier_id);
                 return (
-                  <tr key={p.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => openDetail(p)}>
+                  <tr key={p.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => nav({ to: "/app/purchase-orders/$poId", params: { poId: p.id } })}>
                     <td className="px-4 py-3 font-medium">{p.po_no}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{p.order_date}</td>
+                    <td className="px-4 py-3 text-muted-foreground tabular-nums">{p.order_date}</td>
                     <td className="px-4 py-3">{sup?.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{itemCounts[p.id] ?? 0}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                         p.status === "received" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
@@ -246,52 +249,6 @@ function POPage() {
           </table>
         </div>
       )}
-
-      <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>PO {detail?.po_no}</DialogTitle></DialogHeader>
-          {detail && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Status: </span>{detail.status}</div>
-                <div><span className="text-muted-foreground">Tanggal: </span>{detail.order_date}</div>
-                <div><span className="text-muted-foreground">Kedatangan: </span>{detail.expected_date ?? "—"}</div>
-                <div><span className="text-muted-foreground">Diterima: </span>{detail.received_date ?? "—"}</div>
-              </div>
-              <div className="overflow-hidden rounded-md border border-border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-xs text-muted-foreground"><tr><th className="px-3 py-2 text-left">Bahan</th><th className="px-3 py-2 text-right">Qty</th><th className="px-3 py-2 text-right">Harga</th><th className="px-3 py-2 text-right">Subtotal</th></tr></thead>
-                  <tbody className="divide-y divide-border">
-                    {detailItems.map((it: any) => {
-                      const ig = ingredients.find((x) => x.id === it.ingredient_id);
-                      return (
-                        <tr key={it.id}>
-                          <td className="px-3 py-2">{ig?.name ?? "—"}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{it.quantity} {ig?.unit}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{formatIDR(it.unit_cost)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{formatIDR(it.subtotal)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="rounded-md bg-muted/30 px-3 py-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="tabular-nums">{formatIDR(detail.subtotal)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Pajak</span><span className="tabular-nums">{formatIDR(detail.tax)}</span></div>
-                <div className="mt-1 flex justify-between border-t border-border pt-1 font-semibold"><span>Total</span><span className="tabular-nums">{formatIDR(detail.total)}</span></div>
-              </div>
-              {detail.note && <p className="text-sm text-muted-foreground">{detail.note}</p>}
-              {detail.status !== "received" && detail.status !== "cancelled" && (
-                <DialogFooter className="flex-wrap gap-2">
-                  <Button variant="ghost" onClick={() => cancelPO(detail)}><X className="mr-1.5 h-4 w-4" /> Batal</Button>
-                  <Button onClick={() => receivePO(detail)}><CheckCircle2 className="mr-1.5 h-4 w-4" /> Terima & update stok</Button>
-                </DialogFooter>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

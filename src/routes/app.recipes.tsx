@@ -15,20 +15,23 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Plus, Trash2, ChefHat } from "lucide-react";
 import { toast } from "sonner";
+import { formatIDR } from "@/lib/format";
 
 export const Route = createFileRoute("/app/recipes")({
   component: RecipesPage,
 });
 
 type Menu = { id: string; name: string; track_stock: boolean };
-type Ingredient = { id: string; name: string; unit: string; current_stock: number };
+type Ingredient = { id: string; name: string; unit: string; current_stock: number; cost_per_unit: number };
 type Recipe = { id: string; menu_item_id: string; ingredient_id: string; quantity: number };
+type HPPRow = { menu_item_id: string; hpp: number; margin: number; margin_percent: number; price: number; last_updated: string; recipe_count: number };
 
 function RecipesPage() {
   const { shop, loading: shopLoading } = useCurrentShop();
   const [menus, setMenus] = useState<Menu[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [hpp, setHpp] = useState<Record<string, HPPRow>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMenu, setSelectedMenu] = useState<string | null>(null);
 
@@ -40,14 +43,18 @@ function RecipesPage() {
   async function load() {
     if (!shop) return;
     setLoading(true);
-    const [m, i, r] = await Promise.all([
+    const [m, i, r, h] = await Promise.all([
       supabase.from("menu_items").select("id, name, track_stock").eq("shop_id", shop.id).order("name"),
-      supabase.from("ingredients").select("id, name, unit, current_stock").eq("shop_id", shop.id).eq("is_active", true).order("name"),
+      supabase.from("ingredients").select("id, name, unit, current_stock, cost_per_unit").eq("shop_id", shop.id).eq("is_active", true).order("name"),
       supabase.from("recipes").select("id, menu_item_id, ingredient_id, quantity"),
+      supabase.from("menu_hpp_view").select("menu_item_id, hpp, margin, margin_percent, price, last_updated, recipe_count").eq("shop_id", shop.id),
     ]);
     setMenus((m.data ?? []) as Menu[]);
     setIngredients((i.data ?? []) as Ingredient[]);
     setRecipes((r.data ?? []) as Recipe[]);
+    const hMap: Record<string, HPPRow> = {};
+    ((h.data ?? []) as HPPRow[]).forEach((row) => { if (row.menu_item_id) hMap[row.menu_item_id] = row; });
+    setHpp(hMap);
     setLoading(false);
     if (!selectedMenu && m.data && m.data.length > 0) {
       setSelectedMenu(m.data[0].id);
@@ -190,6 +197,33 @@ function RecipesPage() {
                   </div>
                 </div>
               </div>
+
+              {(() => {
+                const h = hpp[current.id];
+                if (!h) return null;
+                const pct = Number(h.margin_percent ?? 0);
+                const tone = pct >= 30 ? "text-emerald-600 bg-emerald-500/15"
+                  : pct >= 10 ? "text-amber-600 bg-amber-500/15"
+                  : "text-destructive bg-destructive/15";
+                return (
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">HPP & Margin</div>
+                        <div className="mt-1 text-sm">
+                          HPP <span className="font-semibold tabular-nums">{formatIDR(Number(h.hpp))}</span>
+                          {" · "}Harga <span className="font-semibold tabular-nums">{formatIDR(Number(h.price))}</span>
+                          {" · "}Margin <span className="font-semibold tabular-nums">{formatIDR(Number(h.margin))}</span>
+                        </div>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-sm font-semibold ${tone}`}>{pct}%</span>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Sumber: {h.recipe_count} bahan dari resep · Diperbarui {new Date(h.last_updated).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="overflow-hidden rounded-xl border border-border bg-card">
                 <table className="w-full text-sm">

@@ -1454,11 +1454,13 @@ export type Database = {
       menu_hpp_view: {
         Row: {
           hpp: number | null
+          last_updated: string | null
           margin: number | null
           margin_percent: number | null
           menu_item_id: string | null
           name: string | null
           price: number | null
+          recipe_count: number | null
           shop_id: string | null
         }
         Relationships: [

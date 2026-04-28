@@ -43,6 +43,7 @@ import { Route as SSlugOrdersRouteImport } from './routes/s.$slug.orders'
 import { Route as SSlugLoginRouteImport } from './routes/s.$slug.login'
 import { Route as SSlugCheckoutRouteImport } from './routes/s.$slug.checkout'
 import { Route as SSlugCartRouteImport } from './routes/s.$slug.cart'
+import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/app.purchase-orders.$poId'
 import { Route as SSlugPayOrderIdRouteImport } from './routes/s.$slug.pay.$orderId'
 import { Route as SSlugMenuMenuIdRouteImport } from './routes/s.$slug.menu.$menuId'
 
@@ -216,6 +217,11 @@ const SSlugCartRoute = SSlugCartRouteImport.update({
   path: '/cart',
   getParentRoute: () => SSlugRoute,
 } as any)
+const AppPurchaseOrdersPoIdRoute = AppPurchaseOrdersPoIdRouteImport.update({
+  id: '/$poId',
+  path: '/$poId',
+  getParentRoute: () => AppPurchaseOrdersRoute,
+} as any)
 const SSlugPayOrderIdRoute = SSlugPayOrderIdRouteImport.update({
   id: '/pay/$orderId',
   path: '/pay/$orderId',
@@ -246,7 +252,7 @@ export interface FileRoutesByFullPath {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/promos': typeof AppPromosRoute
-  '/app/purchase-orders': typeof AppPurchaseOrdersRoute
+  '/app/purchase-orders': typeof AppPurchaseOrdersRouteWithChildren
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -257,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
+  '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
   '/s/$slug/login': typeof SSlugLoginRoute
@@ -283,7 +290,7 @@ export interface FileRoutesByTo {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/promos': typeof AppPromosRoute
-  '/app/purchase-orders': typeof AppPurchaseOrdersRoute
+  '/app/purchase-orders': typeof AppPurchaseOrdersRouteWithChildren
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app': typeof AppIndexRoute
+  '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
   '/s/$slug/login': typeof SSlugLoginRoute
@@ -321,7 +329,7 @@ export interface FileRoutesById {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/promos': typeof AppPromosRoute
-  '/app/purchase-orders': typeof AppPurchaseOrdersRoute
+  '/app/purchase-orders': typeof AppPurchaseOrdersRouteWithChildren
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -332,6 +340,7 @@ export interface FileRoutesById {
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
+  '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
   '/s/$slug/login': typeof SSlugLoginRoute
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
     | '/s/$slug'
     | '/track/$orderId'
     | '/app/'
+    | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
     | '/s/$slug/login'
@@ -408,6 +418,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/track/$orderId'
     | '/app'
+    | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
     | '/s/$slug/login'
@@ -446,6 +457,7 @@ export interface FileRouteTypes {
     | '/s/$slug'
     | '/track/$orderId'
     | '/app/'
+    | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
     | '/s/$slug/login'
@@ -706,6 +718,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugCartRouteImport
       parentRoute: typeof SSlugRoute
     }
+    '/app/purchase-orders/$poId': {
+      id: '/app/purchase-orders/$poId'
+      path: '/$poId'
+      fullPath: '/app/purchase-orders/$poId'
+      preLoaderRoute: typeof AppPurchaseOrdersPoIdRouteImport
+      parentRoute: typeof AppPurchaseOrdersRoute
+    }
     '/s/$slug/pay/$orderId': {
       id: '/s/$slug/pay/$orderId'
       path: '/pay/$orderId'
@@ -723,6 +742,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppPurchaseOrdersRouteChildren {
+  AppPurchaseOrdersPoIdRoute: typeof AppPurchaseOrdersPoIdRoute
+}
+
+const AppPurchaseOrdersRouteChildren: AppPurchaseOrdersRouteChildren = {
+  AppPurchaseOrdersPoIdRoute: AppPurchaseOrdersPoIdRoute,
+}
+
+const AppPurchaseOrdersRouteWithChildren =
+  AppPurchaseOrdersRoute._addFileChildren(AppPurchaseOrdersRouteChildren)
+
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
@@ -737,7 +767,7 @@ interface AppRouteChildren {
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
   AppPromosRoute: typeof AppPromosRoute
-  AppPurchaseOrdersRoute: typeof AppPurchaseOrdersRoute
+  AppPurchaseOrdersRoute: typeof AppPurchaseOrdersRouteWithChildren
   AppRecipesRoute: typeof AppRecipesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppScheduleRoute: typeof AppScheduleRoute
@@ -761,7 +791,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
   AppPromosRoute: AppPromosRoute,
-  AppPurchaseOrdersRoute: AppPurchaseOrdersRoute,
+  AppPurchaseOrdersRoute: AppPurchaseOrdersRouteWithChildren,
   AppRecipesRoute: AppRecipesRoute,
   AppReportsRoute: AppReportsRoute,
   AppScheduleRoute: AppScheduleRoute,

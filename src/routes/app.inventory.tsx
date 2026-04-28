@@ -20,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp, ClipboardCheck } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp, ClipboardCheck, ListChecks, ShoppingCart, Search } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
+import { LowStockDialog } from "@/components/inventory/low-stock-dialog";
 
 export const Route = createFileRoute("/app/inventory")({
   component: InventoryPage,
@@ -77,6 +78,17 @@ function InventoryPage() {
   const [opnameActual, setOpnameActual] = useState("");
   const [opnameNote, setOpnameNote] = useState("");
   const [opnameSaving, setOpnameSaving] = useState(false);
+
+  // bulk opname
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkValues, setBulkValues] = useState<Record<string, string>>({});
+  const [bulkNote, setBulkNote] = useState("");
+  const [bulkSearch, setBulkSearch] = useState("");
+  const [bulkOnlyChanged, setBulkOnlyChanged] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  // low-stock dialog
+  const [lowOpen, setLowOpen] = useState(false);
 
   async function load() {
     if (!shop) return;
@@ -224,6 +236,51 @@ function InventoryPage() {
     load();
   }
 
+  function openBulkOpname() {
+    const init: Record<string, string> = {};
+    items.forEach((i) => { init[i.id] = String(i.current_stock); });
+    setBulkValues(init);
+    setBulkNote("");
+    setBulkSearch("");
+    setBulkOnlyChanged(false);
+    setBulkOpen(true);
+  }
+
+  async function saveBulkOpname() {
+    if (!shop) return;
+    const movements: Array<{ shop_id: string; ingredient_id: string; type: "adjustment" | "waste"; quantity: number; note: string }> = [];
+    let totalDeltaValue = 0;
+    let adjusted = 0;
+    const today = new Date().toLocaleDateString("id-ID");
+    for (const i of items) {
+      const raw = bulkValues[i.id];
+      if (raw === undefined || raw === "") continue;
+      const actual = Number(raw);
+      if (Number.isNaN(actual) || actual < 0) {
+        toast.error(`Stok aktual untuk "${i.name}" tidak valid`);
+        return;
+      }
+      const delta = actual - Number(i.current_stock);
+      if (delta === 0) continue;
+      adjusted += 1;
+      totalDeltaValue += delta * Number(i.cost_per_unit);
+      const note = `Opname ${today}: sistem ${i.current_stock} → aktual ${actual} ${i.unit}` + (bulkNote.trim() ? ` — ${bulkNote.trim()}` : "");
+      if (delta > 0) {
+        movements.push({ shop_id: shop.id, ingredient_id: i.id, type: "adjustment", quantity: delta, note });
+      } else {
+        movements.push({ shop_id: shop.id, ingredient_id: i.id, type: "waste", quantity: Math.abs(delta), note });
+      }
+    }
+    if (movements.length === 0) { toast.info("Tidak ada selisih untuk disimpan"); return; }
+    setBulkSaving(true);
+    const { error } = await supabase.from("stock_movements").insert(movements);
+    setBulkSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Opname tersimpan: ${adjusted} bahan disesuaikan (${totalDeltaValue >= 0 ? "+" : ""}${formatIDR(totalDeltaValue)})`);
+    setBulkOpen(false);
+    load();
+  }
+
   if (shopLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -243,12 +300,21 @@ function InventoryPage() {
             Kelola bahan baku. Stok berkurang otomatis saat menu yang punya resep terjual.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNew}>
-              <Plus className="mr-2 h-4 w-4" /> Bahan baru
+        <div className="flex flex-wrap items-center gap-2">
+          {lowStock.length > 0 && (
+            <Button variant="outline" onClick={() => setLowOpen(true)}>
+              <ShoppingCart className="mr-1.5 h-4 w-4" /> Pesan stok ({lowStock.length})
             </Button>
-          </DialogTrigger>
+          )}
+          <Button variant="outline" onClick={openBulkOpname} disabled={items.length === 0}>
+            <ListChecks className="mr-1.5 h-4 w-4" /> Opname Massal
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNew}>
+                <Plus className="mr-2 h-4 w-4" /> Bahan baru
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editing ? "Edit bahan" : "Bahan baru"}</DialogTitle>
@@ -303,6 +369,7 @@ function InventoryPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {lowStock.length > 0 && (
@@ -514,6 +581,80 @@ function InventoryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Stok Opname Massal</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input className="pl-8" placeholder="Cari bahan..." value={bulkSearch} onChange={(e) => setBulkSearch(e.target.value)} />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input type="checkbox" checked={bulkOnlyChanged} onChange={(e) => setBulkOnlyChanged(e.target.checked)} />
+                Hanya yang berubah
+              </label>
+            </div>
+            <div className="overflow-hidden rounded-md border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Bahan</th>
+                    <th className="px-3 py-2 text-right">Sistem</th>
+                    <th className="px-3 py-2 text-right">Aktual</th>
+                    <th className="px-3 py-2 text-right">Selisih</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {items
+                    .filter((i) => i.name.toLowerCase().includes(bulkSearch.toLowerCase()))
+                    .filter((i) => {
+                      if (!bulkOnlyChanged) return true;
+                      const v = bulkValues[i.id];
+                      return v !== undefined && v !== "" && Number(v) !== Number(i.current_stock);
+                    })
+                    .map((i) => {
+                      const raw = bulkValues[i.id] ?? "";
+                      const actual = raw === "" ? null : Number(raw);
+                      const delta = actual !== null && !Number.isNaN(actual) ? actual - Number(i.current_stock) : 0;
+                      const invalid = raw !== "" && (Number.isNaN(actual!) || (actual ?? 0) < 0);
+                      return (
+                        <tr key={i.id}>
+                          <td className="px-3 py-2 font-medium">{i.name} <span className="text-xs text-muted-foreground">({i.unit})</span></td>
+                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{i.current_stock}</td>
+                          <td className="px-3 py-2 text-right">
+                            <Input
+                              type="number" min="0" step="0.01"
+                              className={`h-8 w-24 ml-auto text-right tabular-nums ${invalid ? "border-destructive" : ""}`}
+                              value={raw}
+                              onChange={(e) => setBulkValues((m) => ({ ...m, [i.id]: e.target.value }))}
+                            />
+                          </td>
+                          <td className={`px-3 py-2 text-right tabular-nums font-semibold ${delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-600" : "text-destructive"}`}>
+                            {delta === 0 ? "—" : `${delta > 0 ? "+" : ""}${delta}`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Catatan opname (opsional)</Label>
+              <Input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="Mis. Opname akhir bulan April" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)}>Batal</Button>
+            <Button onClick={saveBulkOpname} disabled={bulkSaving}>
+              {bulkSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan Opname
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <LowStockDialog open={lowOpen} onOpenChange={setLowOpen} shopId={shop?.id ?? null} />
     </div>
   );
 }
