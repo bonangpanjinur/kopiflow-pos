@@ -15,14 +15,16 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Plus, Trash2, ChefHat } from "lucide-react";
 import { toast } from "sonner";
+import { formatIDR } from "@/lib/format";
 
 export const Route = createFileRoute("/app/recipes")({
   component: RecipesPage,
 });
 
 type Menu = { id: string; name: string; track_stock: boolean };
-type Ingredient = { id: string; name: string; unit: string; current_stock: number };
+type Ingredient = { id: string; name: string; unit: string; current_stock: number; cost_per_unit: number };
 type Recipe = { id: string; menu_item_id: string; ingredient_id: string; quantity: number };
+type HPPRow = { menu_item_id: string; hpp: number; margin: number; margin_percent: number; price: number; last_updated: string; recipe_count: number };
 
 function RecipesPage() {
   const { shop, loading: shopLoading } = useCurrentShop();
