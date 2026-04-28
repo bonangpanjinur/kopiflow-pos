@@ -111,24 +111,19 @@ function POPage() {
     setSaving(false);
   }
 
-  async function openDetail(po: PO) {
-    setDetail(po);
-    const { data } = await supabase.from("purchase_order_items").select("*").eq("po_id", po.id);
-    setDetailItems(data ?? []);
-  }
-
-  async function receivePO(po: PO) {
-    if (!confirm(`Terima PO ${po.po_no}? Stok akan otomatis bertambah & HPP terupdate.`)) return;
-    const { error } = await supabase.rpc("receive_purchase_order", { _po_id: po.id });
-    if (error) toast.error(error.message);
-    else { toast.success("PO diterima, stok diperbarui"); setDetail(null); load(); }
-  }
-
-  async function cancelPO(po: PO) {
-    if (!confirm(`Batalkan PO ${po.po_no}?`)) return;
-    const { error } = await supabase.from("purchase_orders").update({ status: "cancelled" }).eq("id", po.id);
-    if (error) toast.error(error.message); else { toast.success("PO dibatalkan"); setDetail(null); load(); }
-  }
+  // Load item counts after POs change
+  useEffect(() => {
+    (async () => {
+      if (pos.length === 0) { setItemCounts({}); return; }
+      const { data } = await supabase
+        .from("purchase_order_items")
+        .select("po_id")
+        .in("po_id", pos.map((p) => p.id));
+      const counts: Record<string, number> = {};
+      (data ?? []).forEach((r: { po_id: string }) => { counts[r.po_id] = (counts[r.po_id] ?? 0) + 1; });
+      setItemCounts(counts);
+    })();
+  }, [pos]);
 
   if (shopLoading) return <div className="flex h-full items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
