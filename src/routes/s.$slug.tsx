@@ -12,14 +12,14 @@ export const Route = createFileRoute("/s/$slug")({
 
 function ShopLayout() {
   const { slug } = useParams({ from: "/s/$slug" });
-  const [shop, setShop] = useState<{ id: string; name: string; description: string | null } | null>(null);
+  const [shop, setShop] = useState<{ id: string; name: string; description: string | null; logo_url: string | null; tagline: string | null } | null>(null);
   const [count, setCount] = useState(0);
   const { user, signOut } = useAuth();
 
   useEffect(() => {
     supabase
       .from("coffee_shops")
-      .select("id,name,description")
+      .select("id,name,description,logo_url,tagline")
       .eq("slug", slug)
       .eq("is_active", true)
       .maybeSingle()
@@ -54,10 +54,19 @@ function ShopLayout() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-4">
           <Link to="/s/$slug" params={{ slug }} className="flex items-center gap-2 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Coffee className="h-4 w-4" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground overflow-hidden">
+              {shop.logo_url ? (
+                <img src={shop.logo_url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <Coffee className="h-4 w-4" />
+              )}
             </div>
-            <span className="truncate text-sm font-semibold">{shop.name}</span>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold leading-tight">{shop.name}</div>
+              {shop.tagline && (
+                <div className="truncate text-[10px] text-muted-foreground leading-tight">{shop.tagline}</div>
+              )}
+            </div>
           </Link>
           <div className="flex items-center gap-1">
             {user ? (

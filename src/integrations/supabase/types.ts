@@ -96,34 +96,61 @@ export type Database = {
       }
       coffee_shops: {
         Row: {
+          address: string | null
           created_at: string
+          currency: string
           description: string | null
+          email: string | null
           id: string
+          instagram: string | null
           is_active: boolean
+          logo_url: string | null
           name: string
+          open_hours: Json
           owner_id: string
+          phone: string | null
           slug: string
+          tagline: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
+          email?: string | null
           id?: string
+          instagram?: string | null
           is_active?: boolean
+          logo_url?: string | null
           name: string
+          open_hours?: Json
           owner_id: string
+          phone?: string | null
           slug: string
+          tagline?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
+          email?: string | null
           id?: string
+          instagram?: string | null
           is_active?: boolean
+          logo_url?: string | null
           name?: string
+          open_hours?: Json
           owner_id?: string
+          phone?: string | null
           slug?: string
+          tagline?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }

@@ -11,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ShoppingBag, Phone, MapPin, Bell } from "lucide-react";
+import { Loader2, ShoppingBag, Phone, MapPin, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
+import { ensureNotificationPermission, notifyOrder } from "@/lib/notify";
 
 export const Route = createFileRoute("/app/online-orders")({
   component: OnlineOrders,
@@ -77,6 +78,9 @@ function OnlineOrders() {
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [tab, setTab] = useState<string>("active");
   const [loading, setLoading] = useState(true);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "denied"
+  );
 
   useEffect(() => {
     if (!shop) return;
@@ -114,9 +118,11 @@ function OnlineOrders() {
         (payload) => {
           load();
           if (payload.eventType === "INSERT" && (payload.new as { channel: string }).channel === "online") {
-            toast.info(`Pesanan baru #${(payload.new as { order_no: string }).order_no}`, {
+            const orderNo = (payload.new as { order_no: string }).order_no;
+            toast.info(`Pesanan baru #${orderNo}`, {
               icon: <Bell className="h-4 w-4" />,
             });
+            notifyOrder("Pesanan baru masuk", `Order #${orderNo} menunggu konfirmasi`);
           }
         }
       )
@@ -178,6 +184,24 @@ function OnlineOrders() {
       <div className="mb-4 flex items-center gap-2">
         <ShoppingBag className="h-5 w-5" />
         <h1 className="text-xl font-semibold">Order Online</h1>
+        <Button
+          size="sm"
+          variant={notifPerm === "granted" ? "secondary" : "outline"}
+          className="ml-auto gap-1.5"
+          onClick={async () => {
+            const p = await ensureNotificationPermission();
+            setNotifPerm(p);
+            if (p === "granted") {
+              notifyOrder("Notifikasi aktif", "Anda akan mendapat notifikasi pesanan baru");
+              toast.success("Notifikasi aktif");
+            } else if (p === "denied") {
+              toast.error("Izin notifikasi ditolak. Aktifkan dari setelan browser.");
+            }
+          }}
+        >
+          {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+          {notifPerm === "granted" ? "Notif aktif" : "Aktifkan notif"}
+        </Button>
       </div>
 
       <div className="mb-4 flex gap-1 border-b border-border">
