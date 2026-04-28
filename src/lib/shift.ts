@@ -54,7 +54,7 @@ export async function closeShift(
   const { data, error } = await supabase.rpc("close_shift", {
     _shift_id: shiftId,
     _closing_cash: closingCash,
-    _note: note ?? null,
+    _note: note ?? undefined,
   });
   if (error) throw error;
   return data as {
