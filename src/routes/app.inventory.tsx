@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -70,6 +70,13 @@ function InventoryPage() {
   const [moveQty, setMoveQty] = useState("");
   const [moveNote, setMoveNote] = useState("");
   const [moveSaving, setMoveSaving] = useState(false);
+
+  // opname modal
+  const [opnameOpen, setOpnameOpen] = useState(false);
+  const [opnameTarget, setOpnameTarget] = useState<Ingredient | null>(null);
+  const [opnameActual, setOpnameActual] = useState("");
+  const [opnameNote, setOpnameNote] = useState("");
+  const [opnameSaving, setOpnameSaving] = useState(false);
 
   async function load() {
     if (!shop) return;
@@ -181,6 +188,40 @@ function InventoryPage() {
       load();
     }
     setMoveSaving(false);
+  }
+
+  function openOpname(i: Ingredient) {
+    setOpnameTarget(i);
+    setOpnameActual(String(i.current_stock));
+    setOpnameNote("");
+    setOpnameOpen(true);
+  }
+
+  async function saveOpname() {
+    if (!opnameTarget || !shop) return;
+    const actual = Number(opnameActual);
+    if (Number.isNaN(actual) || actual < 0) { toast.error("Stok aktual tidak valid"); return; }
+    const delta = actual - opnameTarget.current_stock;
+    if (delta === 0) { toast.info("Tidak ada selisih"); setOpnameOpen(false); return; }
+    setOpnameSaving(true);
+    const note = `Opname: aktual ${actual} ${opnameTarget.unit}` + (opnameNote.trim() ? ` — ${opnameNote.trim()}` : "");
+    if (delta > 0) {
+      const { error } = await supabase.from("stock_movements").insert({
+        shop_id: shop.id, ingredient_id: opnameTarget.id,
+        type: "adjustment", quantity: delta, note,
+      });
+      if (error) { toast.error(error.message); setOpnameSaving(false); return; }
+    } else {
+      const { error } = await supabase.from("stock_movements").insert({
+        shop_id: shop.id, ingredient_id: opnameTarget.id,
+        type: "waste", quantity: Math.abs(delta), note,
+      });
+      if (error) { toast.error(error.message); setOpnameSaving(false); return; }
+    }
+    toast.success(`Opname tersimpan (${delta > 0 ? "+" : ""}${delta})`);
+    setOpnameOpen(false);
+    setOpnameSaving(false);
+    load();
   }
 
   if (shopLoading) {
