@@ -27,6 +27,8 @@ import {
   TicketPercent,
   Award,
   Menu as MenuIcon,
+  Building2,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -44,6 +46,8 @@ const NAV = [
   { to: "/app/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/app/categories", label: "Kategori", icon: Tags },
   { to: "/app/inventory", label: "Inventori", icon: Package },
+  { to: "/app/suppliers", label: "Supplier", icon: Building2 },
+  { to: "/app/purchase-orders", label: "Purchase Order", icon: FileText },
   { to: "/app/recipes", label: "Resep", icon: ChefHat },
   { to: "/app/employees", label: "Pegawai", icon: Users },
   { to: "/app/schedule", label: "Jadwal", icon: CalendarDays },
