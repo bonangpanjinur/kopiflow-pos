@@ -142,6 +142,189 @@ export type Database = {
           },
         ]
       }
+      open_bills: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          items: Json
+          label: string
+          note: string | null
+          outlet_id: string
+          shop_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          items?: Json
+          label?: string
+          note?: string | null
+          outlet_id: string
+          shop_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          items?: Json
+          label?: string
+          note?: string | null
+          outlet_id?: string
+          shop_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_bills_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_bills_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "coffee_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string | null
+          name: string
+          note: string | null
+          order_id: string
+          quantity: number
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          name: string
+          note?: string | null
+          order_id: string
+          quantity: number
+          subtotal: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          name?: string
+          note?: string | null
+          order_id?: string
+          quantity?: number
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          amount_tendered: number | null
+          business_date: string
+          cashier_id: string
+          change_due: number
+          created_at: string
+          customer_name: string | null
+          discount: number
+          id: string
+          note: string | null
+          order_no: string
+          outlet_id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          shop_id: string
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount_tendered?: number | null
+          business_date?: string
+          cashier_id: string
+          change_due?: number
+          created_at?: string
+          customer_name?: string | null
+          discount?: number
+          id?: string
+          note?: string | null
+          order_no: string
+          outlet_id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          shop_id: string
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_tendered?: number | null
+          business_date?: string
+          cashier_id?: string
+          change_due?: number
+          created_at?: string
+          customer_name?: string | null
+          discount?: number
+          id?: string
+          note?: string | null
+          order_no?: string
+          outlet_id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          shop_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "coffee_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outlets: {
         Row: {
           address: string | null
@@ -274,6 +457,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_outlet_access: {
+        Args: { _outlet_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -289,9 +476,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      next_order_no: { Args: { _outlet_id: string }; Returns: string }
     }
     Enums: {
       app_role: "super_admin" | "owner" | "cashier" | "barista" | "customer"
+      order_status: "completed" | "voided" | "refunded"
+      payment_method: "cash" | "qris"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -420,6 +610,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "owner", "cashier", "barista", "customer"],
+      order_status: ["completed", "voided", "refunded"],
+      payment_method: ["cash", "qris"],
     },
   },
 } as const

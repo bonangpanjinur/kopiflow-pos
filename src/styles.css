@@ -149,3 +149,27 @@
     text-rendering: optimizeLegibility;
   }
 }
+
+/* Receipt — 58mm thermal */
+.receipt-58 {
+  width: 58mm;
+  padding: 4mm 3mm;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #000;
+  background: #fff;
+}
+.receipt-58 .r-center { text-align: center; }
+.receipt-58 .r-bold { font-weight: 700; }
+.receipt-58 .r-small { font-size: 10px; }
+.receipt-58 .r-row { display: flex; justify-content: space-between; gap: 8px; }
+.receipt-58 .r-divider { border-top: 1px dashed #000; margin: 4px 0; }
+.receipt-58 .r-item { margin: 2px 0; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area { position: absolute; left: 0; top: 0; }
+  @page { size: 58mm auto; margin: 0; }
+}

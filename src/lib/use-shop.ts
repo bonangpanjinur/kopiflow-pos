@@ -3,27 +3,39 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export type Shop = { id: string; name: string; slug: string };
+export type Outlet = { id: string; name: string };
 
 export function useCurrentShop() {
   const { user, loading } = useAuth();
   const [shop, setShop] = useState<Shop | null>(null);
+  const [outlet, setOutlet] = useState<Outlet | null>(null);
   const [loadingShop, setLoading] = useState(true);
 
   useEffect(() => {
     if (loading || !user) return;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data: s } = await supabase
         .from("coffee_shops")
         .select("id, name, slug")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
-      setShop(data ?? null);
+      setShop(s ?? null);
+      if (s) {
+        const { data: o } = await supabase
+          .from("outlets")
+          .select("id, name")
+          .eq("shop_id", s.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        setOutlet(o ?? null);
+      }
       setLoading(false);
     })();
   }, [user, loading]);
 
-  return { shop, loading: loading || loadingShop };
+  return { shop, outlet, loading: loading || loadingShop };
 }
