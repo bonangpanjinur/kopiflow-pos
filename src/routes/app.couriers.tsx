@@ -347,6 +347,11 @@ function CouriersPage() {
                   aria-label="Aktif"
                 />
               </div>
+              <div className="mt-2 flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-[11px] text-muted-foreground">
+                <TrendingUp className="h-3 w-3" />
+                7 hari: <span className="font-semibold text-foreground">{stats[c.id]?.count ?? 0}</span> antar ·{" "}
+                <span className="font-semibold text-foreground">{formatIDR(stats[c.id]?.fee ?? 0)}</span> ongkir
+              </div>
               <div className="mt-3 flex justify-end gap-1">
                 <Button variant="ghost" size="sm" onClick={() => openEdit(c)} className="gap-1">
                   <Pencil className="h-3.5 w-3.5" /> Edit
