@@ -932,6 +932,7 @@ function CheckoutDialog({
   outlet,
   cashierId,
   cashierName,
+  shiftId,
   onSuccess,
 }: {
   open: boolean;
@@ -941,6 +942,7 @@ function CheckoutDialog({
   outlet: { id: string; name: string };
   cashierId: string;
   cashierName: string;
+  shiftId: string | null;
   onSuccess: () => void;
 }) {
   const [method, setMethod] = useState<"cash" | "qris">("cash");
@@ -950,22 +952,73 @@ function CheckoutDialog({
   const [promoApplying, setPromoApplying] = useState(false);
   const [promo, setPromo] = useState<{ id: string; code: string; discount: number } | null>(null);
   const [manualDiscount, setManualDiscount] = useState<string>("");
+  const [tipInput, setTipInput] = useState<string>("");
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splitCash, setSplitCash] = useState<string>("");
+  const [splitQris, setSplitQris] = useState<string>("");
+  const [taxCfg, setTaxCfg] = useState<{
+    tax_percent: number;
+    service_charge_percent: number;
+    tax_inclusive: boolean;
+  }>({ tax_percent: 0, service_charge_percent: 0, tax_inclusive: false });
   const [done, setDone] = useState<{
     orderNo: string;
     date: Date;
     amountTendered: number;
     changeDue: number;
+    splitUsed: PaymentSplit[];
+    tax: number;
+    service: number;
+    tip: number;
   } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Load shop tax/service config when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    supabase
+      .from("coffee_shops")
+      .select("tax_percent, service_charge_percent, tax_inclusive")
+      .eq("id", shop.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setTaxCfg({
+            tax_percent: Number(data.tax_percent ?? 0),
+            service_charge_percent: Number(data.service_charge_percent ?? 0),
+            tax_inclusive: Boolean(data.tax_inclusive),
+          });
+        }
+      });
+  }, [open, shop.id]);
 
   const subtotal = cartTotal(cart.items);
   const promoDisc = promo?.discount ?? 0;
   const manualDisc = Math.max(0, Math.min(Number(manualDiscount || 0), subtotal - promoDisc));
   const discount = promoDisc + manualDisc;
-  const total = Math.max(0, subtotal - discount);
+  const baseAfterDisc = Math.max(0, subtotal - discount);
+  // Service charge applied on base after discount
+  const service = Math.round((baseAfterDisc * taxCfg.service_charge_percent) / 100);
+  // Tax: if inclusive, tax already included in base; otherwise added on top of (base + service)
+  const taxableBase = baseAfterDisc + service;
+  const tax = taxCfg.tax_inclusive
+    ? Math.round((taxableBase * taxCfg.tax_percent) / (100 + taxCfg.tax_percent))
+    : Math.round((taxableBase * taxCfg.tax_percent) / 100);
+  const tip = Math.max(0, Number(tipInput || 0));
+  const total = taxCfg.tax_inclusive
+    ? baseAfterDisc + service + tip
+    : baseAfterDisc + service + tax + tip;
+
   const tenderedNum = method === "cash" ? Number(tendered || 0) : total;
   const change = Math.max(0, tenderedNum - total);
-  const cashOk = method !== "cash" || tenderedNum >= total;
+
+  const splitCashNum = Math.max(0, Number(splitCash || 0));
+  const splitQrisNum = Math.max(0, Number(splitQris || 0));
+  const splitSum = splitCashNum + splitQrisNum;
+  const cashOk = splitEnabled
+    ? splitSum >= total && splitCashNum > 0 && splitQrisNum > 0
+    : method !== "cash" || tenderedNum >= total;
+
 
   async function applyPromo() {
     if (!promoCode.trim()) return;
