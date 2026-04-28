@@ -1145,6 +1145,16 @@ export type Database = {
     }
     Functions: {
       accept_staff_invitation: { Args: { _token: string }; Returns: Json }
+      apply_loyalty_post_order: {
+        Args: {
+          _earned: number
+          _order_id: string
+          _redeemed: number
+          _shop_id: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       get_order_tracking: {
         Args: { _order_id: string }
         Returns: {
