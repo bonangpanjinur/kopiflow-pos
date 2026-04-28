@@ -65,6 +65,7 @@ const EMPTY: FormState = { name: "", phone: "", plate_number: "", note: "", is_a
 function CouriersPage() {
   const { shop, loading: shopLoading } = useCurrentShop();
   const [couriers, setCouriers] = useState<Courier[]>([]);
+  const [stats, setStats] = useState<Record<string, { count: number; fee: number }>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Courier | null>(null);
@@ -81,7 +82,26 @@ function CouriersPage() {
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false });
     if (error) toast.error("Gagal memuat kurir");
-    setCouriers((data ?? []) as Courier[]);
+    const list = (data ?? []) as Courier[];
+    setCouriers(list);
+
+    // 7-day stats per courier
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: ords } = await supabase
+      .from("orders")
+      .select("courier_id, delivery_fee, status")
+      .eq("shop_id", shop.id)
+      .gte("created_at", since)
+      .eq("status", "completed")
+      .not("courier_id", "is", null);
+    const agg: Record<string, { count: number; fee: number }> = {};
+    (ords ?? []).forEach((o) => {
+      const id = o.courier_id as string;
+      if (!agg[id]) agg[id] = { count: 0, fee: 0 };
+      agg[id].count += 1;
+      agg[id].fee += Number(o.delivery_fee || 0);
+    });
+    setStats(agg);
     setLoading(false);
   }
 
