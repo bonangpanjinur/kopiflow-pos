@@ -2,10 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";
-import { Loader2, ListOrdered, Banknote, QrCode, Printer, XCircle } from "lucide-react";
+import { Loader2, ListOrdered, Banknote, QrCode, Printer, XCircle, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +19,7 @@ import {
 import { Receipt } from "@/components/pos/receipt";
 import type { CartItem } from "@/lib/cart";
 import { useRef } from "react";
+import { refundOrder } from "@/lib/shift";
 
 export const Route = createFileRoute("/app/orders")({
   component: OrdersPage,
@@ -228,6 +232,13 @@ function DetailDialog({
 }) {
   const printRef = useRef<HTMLDivElement>(null);
   const [voiding, setVoiding] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState<string>(String(order.total));
+  const [refundReason, setRefundReason] = useState("");
+  const [refundMethod, setRefundMethod] = useState<"cash" | "qris" | "transfer">(
+    order.payment_method === "qris" ? "qris" : "cash",
+  );
+  const [refunding, setRefunding] = useState(false);
   const isVoided = order.status === "voided" || order.status === "cancelled";
   const items: CartItem[] = order.order_items.map((i) => ({
     menu_item_id: "",
@@ -242,6 +253,24 @@ function DetailDialog({
       printRef.current.classList.add("print-area");
       window.print();
       printRef.current.classList.remove("print-area");
+    }
+  }
+
+  async function handleRefund() {
+    const amt = Number(refundAmount || 0);
+    if (amt <= 0) return toast.error("Jumlah refund harus > 0");
+    if (amt > Number(order.total)) return toast.error("Tidak boleh melebihi total order");
+    setRefunding(true);
+    try {
+      await refundOrder(order.id, amt, refundReason || "Refund", refundMethod);
+      toast.success(`Refund ${formatIDR(amt)} dicatat`);
+      setRefundOpen(false);
+      onVoided();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Gagal refund";
+      toast.error(msg);
+    } finally {
+      setRefunding(false);
     }
   }
 
@@ -298,31 +327,114 @@ function DetailDialog({
             </div>
           </div>
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="flex-wrap gap-2 sm:gap-0">
           {!isVoided && (
-            <Button
-              variant="outline"
-              className="text-destructive hover:text-destructive"
-              disabled={voiding}
-              onClick={async () => {
-                const reason = prompt("Alasan void? (opsional)") ?? "";
-                if (!confirm(`Void order #${order.order_no}? Stok & poin akan dibalik.`)) return;
-                setVoiding(true);
-                const { error } = await supabase.rpc("void_order", { _order_id: order.id, _reason: reason });
-                setVoiding(false);
-                if (error) return toast.error(error.message);
-                toast.success("Order di-void");
-                onVoided();
-              }}
-            >
-              <XCircle className="mr-2 h-4 w-4" /> {voiding ? "Memproses…" : "Void order"}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                disabled={voiding}
+                onClick={async () => {
+                  const reason = prompt("Alasan void? (opsional)") ?? "";
+                  if (!confirm(`Void order #${order.order_no}? Stok & poin akan dibalik.`)) return;
+                  setVoiding(true);
+                  const { error } = await supabase.rpc("void_order", { _order_id: order.id, _reason: reason });
+                  setVoiding(false);
+                  if (error) return toast.error(error.message);
+                  toast.success("Order di-void");
+                  onVoided();
+                }}
+              >
+                <XCircle className="mr-2 h-4 w-4" /> {voiding ? "Memproses…" : "Void"}
+              </Button>
+              <Button variant="outline" onClick={() => setRefundOpen(true)}>
+                <Undo2 className="mr-2 h-4 w-4" /> Refund
+              </Button>
+            </>
           )}
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Cetak ulang
           </Button>
           <Button onClick={onClose}>Tutup</Button>
         </DialogFooter>
+
+        {/* Refund dialog */}
+        <Dialog open={refundOpen} onOpenChange={setRefundOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Refund order #{order.order_no}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="rounded-md bg-muted p-3 text-sm">
+                Total order: <span className="font-semibold">{formatIDR(order.total)}</span>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="refund-amount">Jumlah refund (Rp)</Label>
+                <Input
+                  id="refund-amount"
+                  type="number"
+                  inputMode="numeric"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                />
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setRefundAmount(String(order.total))}
+                    className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-muted"
+                  >
+                    Penuh
+                  </button>
+                  <button
+                    onClick={() => setRefundAmount(String(Math.round(Number(order.total) / 2)))}
+                    className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-muted"
+                  >
+                    50%
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Metode refund</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["cash", "qris", "transfer"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setRefundMethod(m)}
+                      className={`rounded-md border px-3 py-2 text-sm capitalize transition-colors ${
+                        refundMethod === m
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {m === "cash" ? "Tunai" : m === "qris" ? "QRIS" : "Transfer"}
+                    </button>
+                  ))}
+                </div>
+                {refundMethod === "cash" && (
+                  <p className="text-xs text-muted-foreground">
+                    Akan otomatis dicatat sebagai cash-out pada shift aktif.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="refund-reason">Alasan</Label>
+                <Textarea
+                  id="refund-reason"
+                  rows={2}
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Mis. salah pesan, kualitas tidak sesuai…"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setRefundOpen(false)}>Batal</Button>
+              <Button onClick={handleRefund} disabled={refunding}>
+                {refunding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Konfirmasi refund
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );

@@ -2,6 +2,8 @@ import { forwardRef } from "react";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 
+export type PaymentSplit = { method: string; amount: number };
+
 type Props = {
   shopName: string;
   outletName: string;
@@ -21,7 +23,18 @@ type Props = {
   pointsRedeemed?: number;
   pointsRedeemValue?: number;
   pointsEarned?: number;
+  tipAmount?: number;
+  serviceCharge?: number;
+  tax?: number;
+  paymentSplit?: PaymentSplit[];
 };
+
+function methodLabel(m: string) {
+  if (m === "cash") return "Tunai";
+  if (m === "qris") return "QRIS";
+  if (m === "transfer") return "Transfer";
+  return m.toUpperCase();
+}
 
 export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
   {
@@ -43,9 +56,14 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     pointsRedeemed = 0,
     pointsRedeemValue = 0,
     pointsEarned = 0,
+    tipAmount = 0,
+    serviceCharge = 0,
+    tax = 0,
+    paymentSplit = [],
   },
   ref,
 ) {
+  const hasSplit = paymentSplit && paymentSplit.length > 0;
   return (
     <div ref={ref} className="receipt-58">
       <div className="r-center r-bold">{shopName}</div>
@@ -107,16 +125,45 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
           <span>-{formatIDR(pointsRedeemValue)}</span>
         </div>
       )}
+      {serviceCharge > 0 && (
+        <div className="r-row">
+          <span>Service</span>
+          <span>{formatIDR(serviceCharge)}</span>
+        </div>
+      )}
+      {tax > 0 && (
+        <div className="r-row">
+          <span>Pajak</span>
+          <span>{formatIDR(tax)}</span>
+        </div>
+      )}
+      {tipAmount > 0 && (
+        <div className="r-row">
+          <span>Tip</span>
+          <span>{formatIDR(tipAmount)}</span>
+        </div>
+      )}
       <div className="r-row r-bold">
         <span>TOTAL</span>
         <span>{formatIDR(total)}</span>
       </div>
       <div className="r-divider" />
-      <div className="r-row">
-        <span>Bayar ({paymentMethod === "cash" ? "Tunai" : "QRIS"})</span>
-        <span>{formatIDR(amountTendered ?? total)}</span>
-      </div>
-      {paymentMethod === "cash" && (changeDue ?? 0) > 0 && (
+      {hasSplit ? (
+        <>
+          {paymentSplit.map((p, i) => (
+            <div key={i} className="r-row">
+              <span>Bayar ({methodLabel(p.method)})</span>
+              <span>{formatIDR(p.amount)}</span>
+            </div>
+          ))}
+        </>
+      ) : (
+        <div className="r-row">
+          <span>Bayar ({methodLabel(paymentMethod)})</span>
+          <span>{formatIDR(amountTendered ?? total)}</span>
+        </div>
+      )}
+      {!hasSplit && paymentMethod === "cash" && (changeDue ?? 0) > 0 && (
         <div className="r-row">
           <span>Kembalian</span>
           <span>{formatIDR(changeDue ?? 0)}</span>

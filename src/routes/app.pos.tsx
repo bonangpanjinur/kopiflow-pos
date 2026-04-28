@@ -35,8 +35,10 @@ import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
-import { Receipt } from "@/components/pos/receipt";
+import { Receipt, type PaymentSplit } from "@/components/pos/receipt";
 import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
+import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/app/pos")({
   component: POSPage,
@@ -102,6 +104,39 @@ function POSPage() {
   const [hydrated, setHydrated] = useState(false);
   const [openBills, setOpenBills] = useState<OpenBill[]>([]);
   const [tab, setTab] = useState<"register" | "bills">("register");
+  const [shift, setShift] = useState<CashShift | null>(null);
+  const [shiftLoading, setShiftLoading] = useState(true);
+  const [openShiftDlg, setOpenShiftDlg] = useState(false);
+  const [openingCash, setOpeningCash] = useState("");
+
+  async function refreshShift() {
+    if (!outlet) return;
+    setShiftLoading(true);
+    const s = await getActiveShift(outlet.id);
+    setShift(s);
+    setShiftLoading(false);
+  }
+
+  useEffect(() => {
+    if (!outlet) return;
+    refreshShift();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outlet?.id]);
+
+  async function handleOpenShift() {
+    if (!outlet) return;
+    try {
+      await openShift(outlet.id, Number(openingCash || 0));
+      toast.success("Shift dibuka");
+      setOpenShiftDlg(false);
+      setOpeningCash("");
+      await refreshShift();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Gagal buka shift";
+      toast.error(msg);
+    }
+  }
+
 
   const [parkOpen, setParkOpen] = useState(false);
   const [parkLabel, setParkLabel] = useState("");
@@ -447,10 +482,34 @@ function POSPage() {
             )}
           </button>
         </div>
-        <div className="text-xs text-muted-foreground">
-          {shop?.name} · {outlet.name}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {!shiftLoading && shift && (
+            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-600 dark:text-emerald-400">
+              ● Shift open · modal {formatIDR(Number(shift.opening_cash))}
+            </span>
+          )}
+          <span>{shop?.name} · {outlet.name}</span>
         </div>
       </div>
+
+      {!shiftLoading && !shift && (
+        <div className="flex flex-col items-center justify-center gap-3 border-b border-amber-300 bg-amber-50 p-4 text-center dark:border-amber-800 dark:bg-amber-950/30 sm:flex-row sm:justify-between sm:text-left">
+          <div className="text-sm">
+            <div className="font-semibold text-amber-900 dark:text-amber-200">Shift kasir belum dibuka</div>
+            <div className="text-xs text-amber-800/80 dark:text-amber-300/80">
+              Buka shift dulu agar transaksi tercatat ke laci kas hari ini.
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/app/shifts">Buka di halaman Shift</Link>
+            </Button>
+            <Button size="sm" onClick={() => setOpenShiftDlg(true)}>
+              Buka shift sekarang
+            </Button>
+          </div>
+        </div>
+      )}
 
       {tab === "register" ? (
         <div className="flex flex-1 overflow-hidden">
@@ -659,8 +718,16 @@ function POSPage() {
                   <Save className="mr-1.5 h-4 w-4" /> Park
                 </Button>
                 <Button
-                  onClick={() => setCheckoutOpen(true)}
-                  disabled={cart.items.length === 0}
+                  onClick={() => {
+                    if (!shift) {
+                      toast.error("Buka shift dulu sebelum bayar");
+                      setOpenShiftDlg(true);
+                      return;
+                    }
+                    setCheckoutOpen(true);
+                  }}
+                  disabled={cart.items.length === 0 || !shift}
+                  title={!shift ? "Buka shift dulu" : undefined}
                 >
                   Bayar
                 </Button>
@@ -709,6 +776,7 @@ function POSPage() {
           outlet={outlet}
           cashierId={user!.id}
           cashierName={user!.email ?? "Kasir"}
+          shiftId={shift?.id ?? null}
           onSuccess={() => {
             // remove parked bill if checked out from one
             if (cart.id) {
@@ -722,6 +790,34 @@ function POSPage() {
           }}
         />
       )}
+
+      {/* Open shift dialog */}
+      <Dialog open={openShiftDlg} onOpenChange={setOpenShiftDlg}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Buka shift kasir</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="opening-cash">Modal awal laci (Rp)</Label>
+            <Input
+              id="opening-cash"
+              type="number"
+              inputMode="numeric"
+              value={openingCash}
+              onChange={(e) => setOpeningCash(e.target.value)}
+              placeholder="100000"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Hitung uang fisik di laci, lalu masukkan jumlahnya.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpenShiftDlg(false)}>Batal</Button>
+            <Button onClick={handleOpenShift}>Buka shift</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -836,6 +932,7 @@ function CheckoutDialog({
   outlet,
   cashierId,
   cashierName,
+  shiftId,
   onSuccess,
 }: {
   open: boolean;
@@ -845,6 +942,7 @@ function CheckoutDialog({
   outlet: { id: string; name: string };
   cashierId: string;
   cashierName: string;
+  shiftId: string | null;
   onSuccess: () => void;
 }) {
   const [method, setMethod] = useState<"cash" | "qris">("cash");
@@ -854,22 +952,73 @@ function CheckoutDialog({
   const [promoApplying, setPromoApplying] = useState(false);
   const [promo, setPromo] = useState<{ id: string; code: string; discount: number } | null>(null);
   const [manualDiscount, setManualDiscount] = useState<string>("");
+  const [tipInput, setTipInput] = useState<string>("");
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splitCash, setSplitCash] = useState<string>("");
+  const [splitQris, setSplitQris] = useState<string>("");
+  const [taxCfg, setTaxCfg] = useState<{
+    tax_percent: number;
+    service_charge_percent: number;
+    tax_inclusive: boolean;
+  }>({ tax_percent: 0, service_charge_percent: 0, tax_inclusive: false });
   const [done, setDone] = useState<{
     orderNo: string;
     date: Date;
     amountTendered: number;
     changeDue: number;
+    splitUsed: PaymentSplit[];
+    tax: number;
+    service: number;
+    tip: number;
   } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Load shop tax/service config when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    supabase
+      .from("coffee_shops")
+      .select("tax_percent, service_charge_percent, tax_inclusive")
+      .eq("id", shop.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setTaxCfg({
+            tax_percent: Number(data.tax_percent ?? 0),
+            service_charge_percent: Number(data.service_charge_percent ?? 0),
+            tax_inclusive: Boolean(data.tax_inclusive),
+          });
+        }
+      });
+  }, [open, shop.id]);
 
   const subtotal = cartTotal(cart.items);
   const promoDisc = promo?.discount ?? 0;
   const manualDisc = Math.max(0, Math.min(Number(manualDiscount || 0), subtotal - promoDisc));
   const discount = promoDisc + manualDisc;
-  const total = Math.max(0, subtotal - discount);
+  const baseAfterDisc = Math.max(0, subtotal - discount);
+  // Service charge applied on base after discount
+  const service = Math.round((baseAfterDisc * taxCfg.service_charge_percent) / 100);
+  // Tax: if inclusive, tax already included in base; otherwise added on top of (base + service)
+  const taxableBase = baseAfterDisc + service;
+  const tax = taxCfg.tax_inclusive
+    ? Math.round((taxableBase * taxCfg.tax_percent) / (100 + taxCfg.tax_percent))
+    : Math.round((taxableBase * taxCfg.tax_percent) / 100);
+  const tip = Math.max(0, Number(tipInput || 0));
+  const total = taxCfg.tax_inclusive
+    ? baseAfterDisc + service + tip
+    : baseAfterDisc + service + tax + tip;
+
   const tenderedNum = method === "cash" ? Number(tendered || 0) : total;
   const change = Math.max(0, tenderedNum - total);
-  const cashOk = method !== "cash" || tenderedNum >= total;
+
+  const splitCashNum = Math.max(0, Number(splitCash || 0));
+  const splitQrisNum = Math.max(0, Number(splitQris || 0));
+  const splitSum = splitCashNum + splitQrisNum;
+  const cashOk = splitEnabled
+    ? splitSum >= total && splitCashNum > 0 && splitQrisNum > 0
+    : method !== "cash" || tenderedNum >= total;
+
 
   async function applyPromo() {
     if (!promoCode.trim()) return;
@@ -900,6 +1049,20 @@ function CheckoutDialog({
     }
     const orderNo = noData as string;
 
+    const splitArr: PaymentSplit[] = splitEnabled
+      ? [
+          { method: "cash", amount: splitCashNum },
+          { method: "qris", amount: splitQrisNum },
+        ].filter((p) => p.amount > 0)
+      : [];
+    const finalMethod: "cash" | "qris" = splitEnabled
+      ? splitCashNum >= splitQrisNum
+        ? "cash"
+        : "qris"
+      : method;
+    const finalTendered = splitEnabled ? splitSum : method === "cash" ? tenderedNum : total;
+    const finalChange = splitEnabled ? Math.max(0, splitSum - total) : change;
+
     const { data: orderRow, error: oErr } = await supabase
       .from("orders")
       .insert({
@@ -908,11 +1071,16 @@ function CheckoutDialog({
         order_no: orderNo,
         subtotal,
         discount,
+        tax,
+        service_charge: service,
+        tip_amount: tip,
         total,
-        payment_method: method,
-        amount_tendered: method === "cash" ? tenderedNum : total,
-        change_due: change,
+        payment_method: finalMethod,
+        payment_split: splitArr as unknown as never,
+        amount_tendered: finalTendered,
+        change_due: finalChange,
         cashier_id: cashierId,
+        shift_id: shiftId,
         promo_id: promo?.id ?? null,
         promo_code: promo?.code ?? null,
       })
@@ -961,8 +1129,12 @@ function CheckoutDialog({
     setDone({
       orderNo,
       date: new Date(orderRow.created_at),
-      amountTendered: tenderedNum,
-      changeDue: change,
+      amountTendered: finalTendered,
+      changeDue: finalChange,
+      splitUsed: splitArr,
+      tax,
+      service,
+      tip,
     });
     setSaving(false);
     toast.success(`Order #${orderNo} tersimpan`);
@@ -985,6 +1157,10 @@ function CheckoutDialog({
     setPromo(null);
     setPromoCode("");
     setManualDiscount("");
+    setTipInput("");
+    setSplitEnabled(false);
+    setSplitCash("");
+    setSplitQris("");
   }
 
   // Keyboard shortcuts: F2=cash, F3=qris, Enter=confirm, Esc=close
@@ -1016,11 +1192,18 @@ function CheckoutDialog({
               <div className="rounded-lg bg-muted p-4 text-center">
                 <div className="text-xs text-muted-foreground">Total</div>
                 <div className="text-3xl font-bold">{formatIDR(total)}</div>
-                {discount > 0 && (
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Subtotal {formatIDR(subtotal)} − diskon {formatIDR(discount)}
-                  </div>
-                )}
+                <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                  <div>Subtotal {formatIDR(subtotal)}</div>
+                  {discount > 0 && <div>Diskon −{formatIDR(discount)}</div>}
+                  {service > 0 && <div>Service {formatIDR(service)}</div>}
+                  {tax > 0 && (
+                    <div>
+                      Pajak {formatIDR(tax)}
+                      {taxCfg.tax_inclusive && " (incl)"}
+                    </div>
+                  )}
+                  {tip > 0 && <div>Tip {formatIDR(tip)}</div>}
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -1072,53 +1255,114 @@ function CheckoutDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <PayMethodBtn
-                  active={method === "cash"}
-                  onClick={() => setMethod("cash")}
-                  icon={<Banknote className="h-4 w-4" />}
-                  label="Tunai"
-                />
-                <PayMethodBtn
-                  active={method === "qris"}
-                  onClick={() => setMethod("qris")}
-                  icon={<QrCode className="h-4 w-4" />}
-                  label="QRIS"
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tip (Rp)</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={tipInput}
+                  onChange={(e) => setTipInput(e.target.value)}
+                  placeholder="0"
                 />
               </div>
 
-              {method === "cash" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="tendered">Uang diterima</Label>
-                  <Input
-                    id="tendered"
-                    type="number"
-                    inputMode="numeric"
-                    value={tendered}
-                    onChange={(e) => setTendered(e.target.value)}
-                    placeholder={String(total)}
-                    autoFocus
-                  />
-                  <div className="flex flex-wrap gap-1.5">
-                    {[total, 50000, 100000, 200000].map((amt) => (
-                      <button
-                        key={amt}
-                        onClick={() => setTendered(String(amt))}
-                        className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
-                      >
-                        {formatIDR(amt)}
-                      </button>
-                    ))}
+              <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+                <Label htmlFor="split-toggle" className="text-xs cursor-pointer">
+                  Split payment (tunai + QRIS)
+                </Label>
+                <input
+                  id="split-toggle"
+                  type="checkbox"
+                  checked={splitEnabled}
+                  onChange={(e) => setSplitEnabled(e.target.checked)}
+                  className="h-4 w-4"
+                />
+              </div>
+
+              {splitEnabled ? (
+                <div className="space-y-2 rounded-md border border-dashed border-border p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Tunai</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={splitCash}
+                        onChange={(e) => setSplitCash(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">QRIS</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={splitQris}
+                        onChange={(e) => setSplitQris(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
-                  <div className="flex justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
-                    <span className="text-muted-foreground">Kembalian</span>
-                    <span className="font-semibold">{formatIDR(change)}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      Total bayar: {formatIDR(splitSum)} / {formatIDR(total)}
+                    </span>
+                    <span className={splitSum < total ? "font-semibold text-destructive" : "font-semibold text-emerald-600"}>
+                      {splitSum < total ? `Kurang ${formatIDR(total - splitSum)}` : "OK"}
+                    </span>
                   </div>
                 </div>
               ) : (
-                <div className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-                  Tunjukkan QRIS ke pelanggan, lalu konfirmasi pembayaran sukses.
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <PayMethodBtn
+                      active={method === "cash"}
+                      onClick={() => setMethod("cash")}
+                      icon={<Banknote className="h-4 w-4" />}
+                      label="Tunai"
+                    />
+                    <PayMethodBtn
+                      active={method === "qris"}
+                      onClick={() => setMethod("qris")}
+                      icon={<QrCode className="h-4 w-4" />}
+                      label="QRIS"
+                    />
+                  </div>
+
+                  {method === "cash" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="tendered">Uang diterima</Label>
+                      <Input
+                        id="tendered"
+                        type="number"
+                        inputMode="numeric"
+                        value={tendered}
+                        onChange={(e) => setTendered(e.target.value)}
+                        placeholder={String(total)}
+                        autoFocus
+                      />
+                      <div className="flex flex-wrap gap-1.5">
+                        {[total, 50000, 100000, 200000].map((amt) => (
+                          <button
+                            key={amt}
+                            onClick={() => setTendered(String(amt))}
+                            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
+                          >
+                            {formatIDR(amt)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">Kembalian</span>
+                        <span className="font-semibold">{formatIDR(change)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                      Tunjukkan QRIS ke pelanggan, lalu konfirmasi pembayaran sukses.
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <DialogFooter>
@@ -1168,6 +1412,10 @@ function CheckoutDialog({
                     promoCode={promo?.code ?? null}
                     promoDiscount={promoDisc}
                     manualDiscount={manualDisc}
+                    tipAmount={done.tip}
+                    serviceCharge={done.service}
+                    tax={done.tax}
+                    paymentSplit={done.splitUsed}
                   />
                 </div>
               </div>
