@@ -78,6 +78,9 @@ function OnlineOrders() {
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [tab, setTab] = useState<string>("active");
   const [loading, setLoading] = useState(true);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "denied"
+  );
 
   useEffect(() => {
     if (!shop) return;
