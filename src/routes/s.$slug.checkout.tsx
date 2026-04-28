@@ -10,7 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import {
+  validatePromo,
+  getLoyaltySettings,
+  getUserPoints,
+  calcPointsEarned,
+  maxRedeemDiscount,
+  applyPostOrder,
+  type LoyaltySettings,
+} from "@/lib/promo-loyalty";
 
 export const Route = createFileRoute("/s/$slug/checkout")({
   component: CheckoutPage,
