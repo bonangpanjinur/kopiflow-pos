@@ -59,6 +59,8 @@ function CheckoutPage() {
 
   const [items, setItems] = useState<CustomerCartItem[]>([]);
   const [shopId, setShopId] = useState<string | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(["cash"]);
+  const [paymentChoice, setPaymentChoice] = useState<"cash" | "qris" | "transfer">("cash");
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [outletId, setOutletId] = useState<string>("");
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -85,11 +87,17 @@ function CheckoutPage() {
     (async () => {
       const { data: shop } = await supabase
         .from("coffee_shops")
-        .select("id")
+        .select("id, payment_methods_enabled, qris_image_url")
         .eq("slug", slug)
         .maybeSingle();
       if (!shop) return;
       setShopId(shop.id);
+      const methods = (shop.payment_methods_enabled ?? ["cash"]) as string[];
+      // Filter QRIS out if no QR uploaded
+      const usable = methods.filter((m) => m !== "qris" || shop.qris_image_url);
+      const finalMethods = usable.length ? usable : ["cash"];
+      setPaymentMethods(finalMethods);
+      setPaymentChoice(finalMethods[0] as "cash" | "qris" | "transfer");
       const [{ data: o }, { data: s }, { data: z }] = await Promise.all([
         supabase
           .from("outlets")
