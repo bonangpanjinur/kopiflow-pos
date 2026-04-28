@@ -202,6 +202,87 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_settings: {
+        Row: {
+          base_fee: number
+          close_time: string | null
+          created_at: string
+          delivery_enabled: boolean
+          free_above: number | null
+          min_order: number
+          mode: Database["public"]["Enums"]["delivery_mode"]
+          notes: string | null
+          open_time: string | null
+          pickup_enabled: boolean
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_fee?: number
+          close_time?: string | null
+          created_at?: string
+          delivery_enabled?: boolean
+          free_above?: number | null
+          min_order?: number
+          mode?: Database["public"]["Enums"]["delivery_mode"]
+          notes?: string | null
+          open_time?: string | null
+          pickup_enabled?: boolean
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_fee?: number
+          close_time?: string | null
+          created_at?: string
+          delivery_enabled?: boolean
+          free_above?: number | null
+          min_order?: number
+          mode?: Database["public"]["Enums"]["delivery_mode"]
+          notes?: string | null
+          open_time?: string | null
+          pickup_enabled?: boolean
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      delivery_zones: {
+        Row: {
+          area_note: string | null
+          created_at: string
+          fee: number
+          id: string
+          is_active: boolean
+          name: string
+          shop_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          area_note?: string | null
+          created_at?: string
+          fee?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          shop_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          area_note?: string | null
+          created_at?: string
+          fee?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          shop_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ingredients: {
         Row: {
           cost_per_unit: number
@@ -419,6 +500,7 @@ export type Database = {
           customer_user_id: string | null
           delivery_address: string | null
           delivery_fee: number
+          delivery_zone_id: string | null
           discount: number
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
@@ -446,6 +528,7 @@ export type Database = {
           customer_user_id?: string | null
           delivery_address?: string | null
           delivery_fee?: number
+          delivery_zone_id?: string | null
           discount?: number
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -473,6 +556,7 @@ export type Database = {
           customer_user_id?: string | null
           delivery_address?: string | null
           delivery_fee?: number
+          delivery_zone_id?: string | null
           discount?: number
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -811,6 +895,7 @@ export type Database = {
         | "barista"
         | "customer"
         | "manager"
+      delivery_mode: "flat" | "zone"
       fulfillment_type: "dine_in" | "pickup" | "delivery"
       order_channel: "pos" | "online"
       order_status:
@@ -957,6 +1042,7 @@ export const Constants = {
         "customer",
         "manager",
       ],
+      delivery_mode: ["flat", "zone"],
       fulfillment_type: ["dine_in", "pickup", "delivery"],
       order_channel: ["pos", "online"],
       order_status: [
