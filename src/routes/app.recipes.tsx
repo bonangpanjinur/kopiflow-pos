@@ -114,7 +114,7 @@ function RecipesPage() {
 
   if (menus.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-8 py-10">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
         <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
             <ChefHat className="h-6 w-6" />
@@ -131,7 +131,7 @@ function RecipesPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-8 py-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Resep</h1>
         <p className="mt-1 text-sm text-muted-foreground">

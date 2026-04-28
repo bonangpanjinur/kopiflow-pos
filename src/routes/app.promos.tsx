@@ -107,7 +107,7 @@ function PromosPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-6">
+    <div className="mx-auto max-w-5xl space-y-4 px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Promo & Diskon</h1>

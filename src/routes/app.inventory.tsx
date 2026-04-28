@@ -194,7 +194,7 @@ function InventoryPage() {
   const lowStock = items.filter((i) => i.current_stock <= i.min_stock && i.min_stock > 0);
 
   return (
-    <div className="mx-auto max-w-6xl px-8 py-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Inventori</h1>

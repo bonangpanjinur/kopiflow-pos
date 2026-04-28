@@ -109,7 +109,7 @@ function LoyaltyPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
       <header>
         <h1 className="text-2xl font-semibold">Loyalty Point</h1>
         <p className="text-sm text-muted-foreground">
