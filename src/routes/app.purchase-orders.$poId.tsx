@@ -34,7 +34,8 @@ type POItem = {
   received_qty: number;
 };
 type Ingredient = { id: string; name: string; unit: string };
-type Supplier = { id: string; name: string; phone: string | null; contact_name: string | null };
+type Supplier = { id: string; name: string; phone: string | null; contact_name: string | null; address?: string | null; email?: string | null };
+type Shop = { id: string; name: string };
 
 function statusBadge(status: PO["status"]) {
   const map: Record<PO["status"], string> = {
