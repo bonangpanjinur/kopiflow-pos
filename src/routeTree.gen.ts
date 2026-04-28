@@ -21,6 +21,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppScheduleRouteImport } from './routes/app.schedule'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppRecipesRouteImport } from './routes/app.recipes'
+import { Route as AppPromosRouteImport } from './routes/app.promos'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppOnlineOrdersRouteImport } from './routes/app.online-orders'
@@ -97,6 +98,11 @@ const AppReportsRoute = AppReportsRouteImport.update({
 const AppRecipesRoute = AppRecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPromosRoute = AppPromosRouteImport.update({
+  id: '/promos',
+  path: '/promos',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPosRoute = AppPosRouteImport.update({
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/promos': typeof AppPromosRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/promos': typeof AppPromosRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -263,6 +271,7 @@ export interface FileRoutesById {
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/promos': typeof AppPromosRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -296,6 +305,7 @@ export interface FileRouteTypes {
     | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
+    | '/app/promos'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
+    | '/app/promos'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
+    | '/app/promos'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
@@ -466,6 +478,13 @@ declare module '@tanstack/react-router' {
       path: '/recipes'
       fullPath: '/app/recipes'
       preLoaderRoute: typeof AppRecipesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/promos': {
+      id: '/app/promos'
+      path: '/promos'
+      fullPath: '/app/promos'
+      preLoaderRoute: typeof AppPromosRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/pos': {
@@ -602,6 +621,7 @@ interface AppRouteChildren {
   AppOnlineOrdersRoute: typeof AppOnlineOrdersRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
+  AppPromosRoute: typeof AppPromosRoute
   AppRecipesRoute: typeof AppRecipesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppScheduleRoute: typeof AppScheduleRoute
@@ -620,6 +640,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOnlineOrdersRoute: AppOnlineOrdersRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
+  AppPromosRoute: AppPromosRoute,
   AppRecipesRoute: AppRecipesRoute,
   AppReportsRoute: AppReportsRoute,
   AppScheduleRoute: AppScheduleRoute,
