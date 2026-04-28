@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppScheduleRouteImport } from './routes/app.schedule'
+import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppRecipesRouteImport } from './routes/app.recipes'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
@@ -64,6 +65,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
 const AppScheduleRoute = AppScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecipesRoute = AppRecipesRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/invite/$token': typeof InviteTokenRoute
   '/app': typeof AppIndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/recipes': typeof AppRecipesRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
   '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/app/reports'
     | '/app/schedule'
     | '/invite/$token'
     | '/app/'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/app/reports'
     | '/app/schedule'
     | '/invite/$token'
     | '/app'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/pos'
     | '/app/recipes'
+    | '/app/reports'
     | '/app/schedule'
     | '/invite/$token'
     | '/app/'
@@ -284,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppScheduleRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/recipes': {
       id: '/app/recipes'
       path: '/recipes'
@@ -352,6 +371,7 @@ interface AppRouteChildren {
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
   AppRecipesRoute: typeof AppRecipesRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppScheduleRoute: typeof AppScheduleRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -365,6 +385,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
   AppRecipesRoute: AppRecipesRoute,
+  AppReportsRoute: AppReportsRoute,
   AppScheduleRoute: AppScheduleRoute,
   AppIndexRoute: AppIndexRoute,
 }
