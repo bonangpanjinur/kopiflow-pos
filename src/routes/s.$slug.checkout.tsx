@@ -466,15 +466,85 @@ function CheckoutPage() {
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
         </div>
         {fulfillment === "delivery" && (
-          <div className="space-y-1">
-            <Label className="text-xs">Alamat pengiriman</Label>
-            <Textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Jalan, nomor, RT/RW, patokan…"
-              rows={3}
-            />
+          <div className="space-y-2">
+            {savedAddrs.length > 0 && (
+              <div className="space-y-1">
+                <Label className="text-xs">Alamat tersimpan</Label>
+                <div className="grid gap-1.5">
+                  {savedAddrs.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAddrId(a.id);
+                        setAddress(a.address_line);
+                        setName(a.recipient_name);
+                        setPhone(a.phone);
+                      }}
+                      className={`flex items-start gap-2 rounded-lg border p-2 text-left text-xs ${
+                        selectedAddrId === a.id ? "border-primary bg-accent" : "border-border"
+                      }`}
+                    >
+                      <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{a.label} · {a.recipient_name}</p>
+                        <p className="text-muted-foreground line-clamp-2">{a.address_line}</p>
+                      </div>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedAddrId("");
+                      setAddress("");
+                    }}
+                    className="inline-flex items-center gap-1 self-start text-xs text-primary hover:underline"
+                  >
+                    <Plus className="h-3 w-3" /> Pakai alamat baru
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">Alamat pengiriman</Label>
+              <Textarea
+                value={address}
+                onChange={(e) => { setAddress(e.target.value); setSelectedAddrId(""); }}
+                placeholder="Jalan, nomor, RT/RW, patokan…"
+                rows={3}
+              />
+            </div>
+            {!selectedAddrId && address.trim() && user && (
+              <div className="space-y-1.5 rounded-md border border-dashed border-border p-2">
+                <label className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={saveAddr} onChange={(e) => setSaveAddr(e.target.checked)} />
+                  Simpan alamat ini
+                </label>
+                {saveAddr && (
+                  <div className="flex gap-1.5">
+                    {["Rumah", "Kantor", "Lainnya"].map((l) => (
+                      <button
+                        type="button"
+                        key={l}
+                        onClick={() => setSaveAddrLabel(l)}
+                        className={`rounded-full border px-2.5 py-0.5 text-xs ${
+                          saveAddrLabel === l ? "border-primary bg-primary/10" : "border-border"
+                        }`}
+                      >{l}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              ⏱ Estimasi siap dalam ~{prepMinutes} menit setelah pesanan diterima.
+            </p>
           </div>
+        )}
+        {fulfillment === "pickup" && (
+          <p className="text-xs text-muted-foreground">
+            ⏱ Estimasi siap diambil dalam ~{prepMinutes} menit setelah pesanan diterima.
+          </p>
         )}
         <div className="space-y-1">
           <Label className="text-xs">Catatan untuk toko</Label>
