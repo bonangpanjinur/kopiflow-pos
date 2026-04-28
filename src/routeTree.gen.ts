@@ -26,6 +26,7 @@ import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppOnlineOrdersRouteImport } from './routes/app.online-orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
+import { Route as AppLoyaltyRouteImport } from './routes/app.loyalty'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppDeliveryRouteImport } from './routes/app.delivery'
@@ -125,6 +126,11 @@ const AppMenuRoute = AppMenuRouteImport.update({
   path: '/menu',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLoyaltyRoute = AppLoyaltyRouteImport.update({
+  id: '/loyalty',
+  path: '/loyalty',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppInventoryRoute = AppInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
     | '/app/orders'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
     | '/app/orders'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
     | '/app/orders'
@@ -515,6 +527,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMenuRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/loyalty': {
+      id: '/app/loyalty'
+      path: '/loyalty'
+      fullPath: '/app/loyalty'
+      preLoaderRoute: typeof AppLoyaltyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/inventory': {
       id: '/app/inventory'
       path: '/inventory'
@@ -617,6 +636,7 @@ interface AppRouteChildren {
   AppDeliveryRoute: typeof AppDeliveryRoute
   AppEmployeesRoute: typeof AppEmployeesRoute
   AppInventoryRoute: typeof AppInventoryRoute
+  AppLoyaltyRoute: typeof AppLoyaltyRoute
   AppMenuRoute: typeof AppMenuRoute
   AppOnlineOrdersRoute: typeof AppOnlineOrdersRoute
   AppOrdersRoute: typeof AppOrdersRoute
@@ -636,6 +656,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDeliveryRoute: AppDeliveryRoute,
   AppEmployeesRoute: AppEmployeesRoute,
   AppInventoryRoute: AppInventoryRoute,
+  AppLoyaltyRoute: AppLoyaltyRoute,
   AppMenuRoute: AppMenuRoute,
   AppOnlineOrdersRoute: AppOnlineOrdersRoute,
   AppOrdersRoute: AppOrdersRoute,

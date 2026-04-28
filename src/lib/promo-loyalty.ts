@@ -102,10 +102,8 @@ export async function applyPostOrder(args: {
       user_id: userId,
       amount: promoDiscount,
     });
-    // increment usage_count (RLS: owner only — best effort, may fail silently)
-    await supabase.rpc("increment_promo_usage" as never, { _promo_id: promoId } as never).catch(
-      () => {},
-    );
+    // increment usage_count via RPC (works even when RLS blocks update)
+    await supabase.rpc("increment_promo_usage", { _promo_id: promoId });
   }
 
   if (!userId) return;
