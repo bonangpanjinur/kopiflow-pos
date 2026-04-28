@@ -352,9 +352,27 @@ function OrderCard({
               </span>
             </div>
             {order.payment_proof_url && (
-              <a href={order.payment_proof_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+              <button
+                onClick={async () => {
+                  const path = order.payment_proof_url!;
+                  // If legacy signed URL was stored, fall back to opening it directly.
+                  if (path.startsWith("http")) {
+                    window.open(path, "_blank", "noopener");
+                    return;
+                  }
+                  const { data, error } = await supabase.storage
+                    .from("payment-proofs")
+                    .createSignedUrl(path, 60 * 10);
+                  if (error || !data) {
+                    toast.error("Gagal membuka bukti");
+                    return;
+                  }
+                  window.open(data.signedUrl, "_blank", "noopener");
+                }}
+                className="text-primary hover:underline"
+              >
                 Lihat bukti
-              </a>
+              </button>
             )}
           </div>
           {order.payment_status === "awaiting_verification" && (
