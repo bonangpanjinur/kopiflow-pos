@@ -750,6 +750,13 @@ export type Database = {
             foreignKeyName: "order_items_menu_item_id_fkey"
             columns: ["menu_item_id"]
             isOneToOne: false
+            referencedRelation: "menu_hpp_view"
+            referencedColumns: ["menu_item_id"]
+          },
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
             referencedRelation: "menu_items"
             referencedColumns: ["id"]
           },
@@ -1058,6 +1065,112 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          note: string | null
+          po_id: string
+          quantity: number
+          received_qty: number
+          subtotal: number
+          unit_cost: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          note?: string | null
+          po_id: string
+          quantity?: number
+          received_qty?: number
+          subtotal?: number
+          unit_cost?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          note?: string | null
+          po_id?: string
+          quantity?: number
+          received_qty?: number
+          subtotal?: number
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expected_date: string | null
+          id: string
+          note: string | null
+          order_date: string
+          po_no: string
+          received_date: string | null
+          shop_id: string
+          status: Database["public"]["Enums"]["po_status"]
+          subtotal: number
+          supplier_id: string | null
+          tax: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expected_date?: string | null
+          id?: string
+          note?: string | null
+          order_date?: string
+          po_no: string
+          received_date?: string | null
+          shop_id: string
+          status?: Database["public"]["Enums"]["po_status"]
+          subtotal?: number
+          supplier_id?: string | null
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expected_date?: string | null
+          id?: string
+          note?: string | null
+          order_date?: string
+          po_no?: string
+          received_date?: string | null
+          shop_id?: string
+          status?: Database["public"]["Enums"]["po_status"]
+          subtotal?: number
+          supplier_id?: string | null
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           created_at: string
@@ -1238,6 +1351,48 @@ export type Database = {
         }
         Relationships: []
       }
+      suppliers: {
+        Row: {
+          address: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+          phone: string | null
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          note?: string | null
+          phone?: string | null
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          note?: string | null
+          phone?: string | null
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           active_carts: Json
@@ -1296,7 +1451,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      menu_hpp_view: {
+        Row: {
+          hpp: number | null
+          margin: number | null
+          margin_percent: number | null
+          menu_item_id: string | null
+          name: string | null
+          price: number | null
+          shop_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "coffee_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_staff_invitation: { Args: { _token: string }; Returns: Json }
@@ -1360,6 +1534,7 @@ export type Database = {
         Args: { _opening_cash: number; _outlet_id: string }
         Returns: string
       }
+      receive_purchase_order: { Args: { _po_id: string }; Returns: undefined }
       refund_order: {
         Args: {
           _amount: number
@@ -1418,6 +1593,7 @@ export type Database = {
         | "cancelled"
       payment_method: "cash" | "qris"
       payment_status: "unpaid" | "awaiting_verification" | "paid" | "refunded"
+      po_status: "draft" | "ordered" | "received" | "cancelled"
       promo_channel: "pos" | "online" | "all"
       promo_type: "percent" | "nominal"
       shift_status: "open" | "closed"
@@ -1574,6 +1750,7 @@ export const Constants = {
       ],
       payment_method: ["cash", "qris"],
       payment_status: ["unpaid", "awaiting_verification", "paid", "refunded"],
+      po_status: ["draft", "ordered", "received", "cancelled"],
       promo_channel: ["pos", "online", "all"],
       promo_type: ["percent", "nominal"],
       shift_status: ["open", "closed"],
