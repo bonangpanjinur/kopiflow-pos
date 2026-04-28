@@ -127,6 +127,45 @@ export type Database = {
         }
         Relationships: []
       }
+      couriers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+          phone: string
+          plate_number: string | null
+          shop_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          note?: string | null
+          phone: string
+          plate_number?: string | null
+          shop_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          note?: string | null
+          phone?: string
+          plate_number?: string | null
+          shop_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       customer_addresses: {
         Row: {
           address_line: string
@@ -895,6 +934,7 @@ export type Database = {
         | "barista"
         | "customer"
         | "manager"
+        | "courier"
       delivery_mode: "flat" | "zone"
       fulfillment_type: "dine_in" | "pickup" | "delivery"
       order_channel: "pos" | "online"
@@ -1041,6 +1081,7 @@ export const Constants = {
         "barista",
         "customer",
         "manager",
+        "courier",
       ],
       delivery_mode: ["flat", "zone"],
       fulfillment_type: ["dine_in", "pickup", "delivery"],
