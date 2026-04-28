@@ -144,6 +144,17 @@ function CheckoutPage() {
       });
   }, [user]);
 
+  // Load loyalty settings + balance once shop & user are known
+  useEffect(() => {
+    if (!shopId) return;
+    getLoyaltySettings(shopId).then(setLoyalty);
+  }, [shopId]);
+
+  useEffect(() => {
+    if (!shopId || !user) return;
+    getUserPoints(shopId, user.id).then(setPointBalance);
+  }, [shopId, user]);
+
   const subtotal = cartTotal(items);
 
   const deliveryFee = useMemo(() => {
@@ -154,10 +165,31 @@ function CheckoutPage() {
     return z ? Number(z.fee) || 0 : 0;
   }, [settings, fulfillment, subtotal, zones, zoneId]);
 
-  const total = subtotal + deliveryFee;
+  const promoDiscount = promo?.discount ?? 0;
+  const redeemCap = useMemo(
+    () => maxRedeemDiscount(subtotal, pointBalance, loyalty),
+    [subtotal, pointBalance, loyalty],
+  );
+  const effectiveRedeem = Math.min(redeemPoints, redeemCap.maxPoints);
+  const pointsValue = effectiveRedeem * (loyalty?.point_value ?? 0);
+  const total = Math.max(0, subtotal - promoDiscount - pointsValue + deliveryFee);
+  const pointsEarned = calcPointsEarned(Math.max(0, subtotal - promoDiscount), loyalty);
 
   const minOrderOk = !settings || subtotal >= (settings.min_order || 0);
   const hoursOk = !settings || fulfillment === "pickup" || withinHours(settings.open_time, settings.close_time);
+
+  async function applyPromoCode() {
+    if (!shopId || !promoCode.trim()) return;
+    setPromoApplying(true);
+    const res = await validatePromo(shopId, promoCode.trim(), subtotal, "online");
+    setPromoApplying(false);
+    if (res.error || !res.promo_id) {
+      setPromo(null);
+      return toast.error(res.error ?? "Promo tidak valid");
+    }
+    setPromo({ id: res.promo_id, code: res.code, discount: res.discount });
+    toast.success(`Promo ${res.code} dipakai`);
+  }
 
   async function submit() {
     if (!user) {
