@@ -26,6 +26,7 @@ type PO = {
 type Line = { ingredient_id: string; quantity: string; unit_cost: string };
 
 function POPage() {
+  const nav = useNavigate();
   const { shop, loading: shopLoading } = useCurrentShop();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -41,8 +42,7 @@ function POPage() {
   const [lines, setLines] = useState<Line[]>([{ ingredient_id: "", quantity: "", unit_cost: "" }]);
   const [saving, setSaving] = useState(false);
 
-  const [detail, setDetail] = useState<PO | null>(null);
-  const [detailItems, setDetailItems] = useState<any[]>([]);
+  const [itemCounts, setItemCounts] = useState<Record<string, number>>({});
 
   async function load() {
     if (!shop) return;
