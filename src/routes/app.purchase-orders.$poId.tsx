@@ -64,18 +64,20 @@ function PODetailPage() {
     const { data: poData, error } = await supabase.from("purchase_orders").select("*").eq("id", poId).single();
     if (error || !poData) { toast.error(error?.message ?? "PO tidak ditemukan"); setLoading(false); return; }
     setPo(poData as PO);
-    const [itRes, ingRes, supRes] = await Promise.all([
+    const [itRes, ingRes, supRes, shopRes] = await Promise.all([
       supabase.from("purchase_order_items").select("*").eq("po_id", poId),
       supabase.from("ingredients").select("id, name, unit").eq("shop_id", poData.shop_id),
       poData.supplier_id
-        ? supabase.from("suppliers").select("id, name, phone, contact_name").eq("id", poData.supplier_id).single()
+        ? supabase.from("suppliers").select("id, name, phone, contact_name, address, email").eq("id", poData.supplier_id).single()
         : Promise.resolve({ data: null }),
+      supabase.from("coffee_shops").select("id, name").eq("id", poData.shop_id).single(),
     ]);
     setItems((itRes.data ?? []) as POItem[]);
     const map: Record<string, Ingredient> = {};
     ((ingRes.data ?? []) as Ingredient[]).forEach((i) => { map[i.id] = i; });
     setIngMap(map);
     setSupplier((supRes as { data: Supplier | null }).data ?? null);
+    setShop((shopRes as { data: Shop | null }).data ?? null);
     setLoading(false);
   }
 
