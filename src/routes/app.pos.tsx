@@ -940,12 +940,19 @@ function CheckoutDialog({
     }
 
     if (promo) {
+      await supabase.from("promo_redemptions").insert({
+        promo_id: promo.id,
+        order_id: orderRow.id,
+        shop_id: shop.id,
+        user_id: null,
+        amount: promoDisc,
+      });
       await applyPostOrder({
         shopId: shop.id,
         orderId: orderRow.id,
         userId: null,
         promoId: promo.id,
-        promoDiscount: discount,
+        promoDiscount: promoDisc,
         pointsEarned: 0,
         pointsRedeemed: 0,
       });
