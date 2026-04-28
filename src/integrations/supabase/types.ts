@@ -85,6 +85,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ingredients: {
+        Row: {
+          cost_per_unit: number
+          created_at: string
+          current_stock: number
+          id: string
+          is_active: boolean
+          min_stock: number
+          name: string
+          shop_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          cost_per_unit?: number
+          created_at?: string
+          current_stock?: number
+          id?: string
+          is_active?: boolean
+          min_stock?: number
+          name: string
+          shop_id: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          cost_per_unit?: number
+          created_at?: string
+          current_stock?: number
+          id?: string
+          is_active?: boolean
+          min_stock?: number
+          name?: string
+          shop_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category_id: string | null
@@ -97,6 +136,7 @@ export type Database = {
           price: number
           shop_id: string
           sort_order: number
+          track_stock: boolean
           updated_at: string
         }
         Insert: {
@@ -110,6 +150,7 @@ export type Database = {
           price?: number
           shop_id: string
           sort_order?: number
+          track_stock?: boolean
           updated_at?: string
         }
         Update: {
@@ -123,6 +164,7 @@ export type Database = {
           price?: number
           shop_id?: string
           sort_order?: number
+          track_stock?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -396,6 +438,69 @@ export type Database = {
         }
         Relationships: []
       }
+      recipes: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          menu_item_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          menu_item_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          menu_item_id?: string
+          quantity?: number
+        }
+        Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          ingredient_id: string
+          note: string | null
+          order_id: string | null
+          quantity: number
+          shop_id: string
+          type: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ingredient_id: string
+          note?: string | null
+          order_id?: string | null
+          quantity: number
+          shop_id: string
+          type: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ingredient_id?: string
+          note?: string | null
+          order_id?: string | null
+          quantity?: number
+          shop_id?: string
+          type?: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost?: number | null
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           active_carts: Json
@@ -482,6 +587,7 @@ export type Database = {
       app_role: "super_admin" | "owner" | "cashier" | "barista" | "customer"
       order_status: "completed" | "voided" | "refunded"
       payment_method: "cash" | "qris"
+      stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -612,6 +718,7 @@ export const Constants = {
       app_role: ["super_admin", "owner", "cashier", "barista", "customer"],
       order_status: ["completed", "voided", "refunded"],
       payment_method: ["cash", "qris"],
+      stock_movement_type: ["purchase", "adjustment", "sale", "waste"],
     },
   },
 } as const
