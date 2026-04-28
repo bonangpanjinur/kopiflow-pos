@@ -27,7 +27,10 @@ import {
   Printer,
   Check,
   ImageIcon,
+  StickyNote,
+  Percent,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
