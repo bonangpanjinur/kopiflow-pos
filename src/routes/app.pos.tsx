@@ -35,8 +35,10 @@ import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
-import { Receipt } from "@/components/pos/receipt";
+import { Receipt, type PaymentSplit } from "@/components/pos/receipt";
 import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
+import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/app/pos")({
   component: POSPage,
