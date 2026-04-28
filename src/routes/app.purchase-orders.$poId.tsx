@@ -128,7 +128,12 @@ function PODetailPage() {
         <Link to="/app/purchase-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke daftar PO
         </Link>
-        <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+            <Eye className="mr-1.5 h-4 w-4" />Preview
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
+        </div>
       </div>
 
 
