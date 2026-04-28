@@ -300,12 +300,21 @@ function InventoryPage() {
             Kelola bahan baku. Stok berkurang otomatis saat menu yang punya resep terjual.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNew}>
-              <Plus className="mr-2 h-4 w-4" /> Bahan baru
+        <div className="flex flex-wrap items-center gap-2">
+          {lowStock.length > 0 && (
+            <Button variant="outline" onClick={() => setLowOpen(true)}>
+              <ShoppingCart className="mr-1.5 h-4 w-4" /> Pesan stok ({lowStock.length})
             </Button>
-          </DialogTrigger>
+          )}
+          <Button variant="outline" onClick={openBulkOpname} disabled={items.length === 0}>
+            <ListChecks className="mr-1.5 h-4 w-4" /> Opname Massal
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNew}>
+                <Plus className="mr-2 h-4 w-4" /> Bahan baru
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editing ? "Edit bahan" : "Bahan baru"}</DialogTitle>
