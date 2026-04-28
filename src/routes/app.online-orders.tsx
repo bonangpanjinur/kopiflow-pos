@@ -32,6 +32,9 @@ type Order = {
   note: string | null;
   created_at: string;
   courier_id: string | null;
+  payment_status: "unpaid" | "awaiting_verification" | "paid" | "refunded";
+  payment_method: string;
+  payment_proof_url: string | null;
 };
 
 type OrderItem = {
