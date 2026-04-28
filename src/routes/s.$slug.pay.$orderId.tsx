@@ -96,12 +96,11 @@ function PayPage() {
       setUploading(false);
       return;
     }
-    const { data: signed } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 60 * 60 * 24 * 30);
-    const proofUrl = signed?.signedUrl ?? path;
+    // Store the storage path; signed URLs are generated on demand at view time.
     const { error: updErr } = await supabase
       .from("orders")
       .update({
-        payment_proof_url: proofUrl,
+        payment_proof_url: path,
         payment_status: "awaiting_verification",
         payment_method: "qris",
       })
@@ -112,6 +111,18 @@ function PayPage() {
       return;
     }
     toast.success("Bukti bayar terkirim, menunggu verifikasi toko");
+  };
+
+  const viewProof = async () => {
+    if (!order?.payment_proof_url) return;
+    const { data, error } = await supabase.storage
+      .from("payment-proofs")
+      .createSignedUrl(order.payment_proof_url, 60 * 10);
+    if (error || !data) {
+      toast.error("Gagal membuka bukti");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener");
   };
 
   if (authLoading || loading || !order || !shop) {
@@ -168,14 +179,12 @@ function PayPage() {
             Bukti bayar Anda telah dikirim. Toko akan memverifikasi sebentar lagi.
           </p>
           {order.payment_proof_url && (
-            <a
-              href={order.payment_proof_url}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={viewProof}
               className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
               <ImageIcon className="h-3.5 w-3.5" /> Lihat bukti
-            </a>
+            </button>
           )}
           <p className="mt-3 text-xs text-muted-foreground">
             Salah upload?{" "}

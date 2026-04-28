@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";
-import { Loader2, ListOrdered, Banknote, QrCode, Printer } from "lucide-react";
+import { Loader2, ListOrdered, Banknote, QrCode, Printer, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,7 +115,7 @@ function OrdersPage() {
   const countToday = orders.filter((o) => o.status === "completed").length;
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-10">
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Order Hari Ini</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -157,9 +158,14 @@ function OrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {orders.map((o) => (
-                <tr key={o.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-2.5 font-medium">#{o.order_no}</td>
+              {orders.map((o) => {
+                const voided = o.status === "voided" || o.status === "cancelled";
+                return (
+                <tr key={o.id} className={`hover:bg-muted/30 ${voided ? "opacity-60" : ""}`}>
+                  <td className="px-4 py-2.5 font-medium">
+                    #{o.order_no}
+                    {voided && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-800">VOID</span>}
+                  </td>
                   <td className="px-4 py-2.5 text-muted-foreground">
                     {new Date(o.created_at).toLocaleTimeString("id-ID", {
                       hour: "2-digit",
@@ -176,14 +182,15 @@ function OrdersPage() {
                       {o.payment_method === "cash" ? "Tunai" : "QRIS"}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-right font-semibold">{formatIDR(o.total)}</td>
+                  <td className={`px-4 py-2.5 text-right font-semibold ${voided ? "line-through" : ""}`}>{formatIDR(o.total)}</td>
                   <td className="px-4 py-2.5 text-right">
                     <Button variant="ghost" size="sm" onClick={() => openDetail(o)}>
                       Detail
                     </Button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -195,6 +202,10 @@ function OrdersPage() {
           shopName={shop.name}
           outletName={outlet.name}
           onClose={() => setSelected(null)}
+          onVoided={() => {
+            setSelected(null);
+            load();
+          }}
         />
       )}
     </div>
@@ -206,13 +217,17 @@ function DetailDialog({
   shopName,
   outletName,
   onClose,
+  onVoided,
 }: {
   order: OrderDetail;
   shopName: string;
   outletName: string;
   onClose: () => void;
+  onVoided: () => void;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [voiding, setVoiding] = useState(false);
+  const isVoided = order.status === "voided" || order.status === "cancelled";
   const items: CartItem[] = order.order_items.map((i) => ({
     menu_item_id: "",
     name: i.name,

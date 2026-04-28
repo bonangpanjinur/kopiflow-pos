@@ -81,6 +81,7 @@ export function maxRedeemDiscount(
 
 /**
  * After an order is created, record promo redemption + loyalty earn/redeem.
+ * Loyalty path uses a SECURITY DEFINER RPC to bypass RLS safely.
  * Best-effort; failures are logged but don't roll back the order.
  */
 export async function applyPostOrder(args: {
@@ -95,54 +96,27 @@ export async function applyPostOrder(args: {
   const { shopId, orderId, userId, promoId, promoDiscount, pointsEarned, pointsRedeemed } = args;
 
   if (promoId) {
-    await supabase.from("promo_redemptions").insert({
+    const { error } = await supabase.from("promo_redemptions").insert({
       promo_id: promoId,
       order_id: orderId,
       shop_id: shopId,
       user_id: userId,
       amount: promoDiscount,
     });
-    // increment usage_count via RPC (works even when RLS blocks update)
-    await supabase.rpc("increment_promo_usage", { _promo_id: promoId });
+    if (error) console.warn("[promo_redemption] insert failed:", error.message);
+    const { error: incErr } = await supabase.rpc("increment_promo_usage", { _promo_id: promoId });
+    if (incErr) console.warn("[promo_usage] increment failed:", incErr.message);
   }
 
   if (!userId) return;
+  if (pointsEarned <= 0 && pointsRedeemed <= 0) return;
 
-  if (pointsEarned > 0 || pointsRedeemed > 0) {
-    const delta = pointsEarned - pointsRedeemed;
-    const { data: existing } = await supabase
-      .from("loyalty_points")
-      .select("balance,total_earned,total_redeemed")
-      .eq("shop_id", shopId)
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    const next = {
-      shop_id: shopId,
-      user_id: userId,
-      balance: (existing?.balance ?? 0) + delta,
-      total_earned: (existing?.total_earned ?? 0) + pointsEarned,
-      total_redeemed: (existing?.total_redeemed ?? 0) + pointsRedeemed,
-    };
-    await supabase.from("loyalty_points").upsert(next, { onConflict: "shop_id,user_id" });
-
-    if (pointsEarned > 0) {
-      await supabase.from("loyalty_ledger").insert({
-        shop_id: shopId,
-        user_id: userId,
-        order_id: orderId,
-        delta: pointsEarned,
-        reason: "earn",
-      });
-    }
-    if (pointsRedeemed > 0) {
-      await supabase.from("loyalty_ledger").insert({
-        shop_id: shopId,
-        user_id: userId,
-        order_id: orderId,
-        delta: -pointsRedeemed,
-        reason: "redeem",
-      });
-    }
-  }
+  const { error } = await supabase.rpc("apply_loyalty_post_order", {
+    _shop_id: shopId,
+    _user_id: userId,
+    _order_id: orderId,
+    _earned: pointsEarned,
+    _redeemed: pointsRedeemed,
+  });
+  if (error) console.warn("[loyalty] apply failed:", error.message);
 }

@@ -1,94 +1,77 @@
-## Status Saat Ini (Sudah Selesai)
+## Audit Lengkap — Yang Belum Sempurna & Harus Dikerjakan
 
-- **Fase 1 — Fondasi**: Auth (email + Google), onboarding shop/outlet, layout app, RLS dasar, role pemilik
-- **Fase 2 — Katalog**: Kategori, menu/produk, manajemen harga
-- **Fase 3 — POS Inti**: Multi-cart parking orders (DB-backed), Open Bills realtime, checkout Cash/QRIS, struk thermal 58mm, halaman Orders harian, persistence + sync antar device
+Setelah cek semua route, RLS, dan flow ujung-ke-ujung, ini daftar masalah yang ditemukan, diurutkan dari paling kritis.
 
-## Yang Belum Dibangun — Roadmap Per Fase
+### 🔴 Bug Kritis (data tidak tersimpan / fitur broken)
 
-### Fase 4 — Stok & Inventori
-Kontrol bahan & ketersediaan menu agar tidak overselling.
-- Tabel `ingredients`, `recipes` (BOM: menu → ingredient × qty), `stock_movements`
-- Auto-decrement stok saat order completed (via trigger)
-- Halaman `/app/inventory`: daftar bahan, stok current, low-stock alert
-- Halaman `/app/recipes`: link menu → ingredients
-- Toggle "track stock" per menu (opsional untuk minuman simple)
-- Stock-in (purchase/adjustment) dengan catatan
+1. **Loyalty system 100% silent-fail**
+   - Tabel `loyalty_points` & `loyalty_ledger` hanya punya policy SELECT. Skema mengonfirmasi: "Can't INSERT/UPDATE records".
+   - Akibat: setiap kali customer/POS checkout, `applyPostOrder()` memanggil `.insert()` & `.upsert()` ke kedua tabel — selalu ditolak RLS, error di-swallow. **Tidak ada poin yang pernah benar-benar tersimpan**, balance selalu 0, redeem juga gagal mengurangi.
+   - **Fix**: tambah RPC `apply_loyalty_post_order` (SECURITY DEFINER) yang melakukan upsert balance + insert ledger atomik, dan panggil dari client. Hapus path client-side direct insert.
 
-### Fase 5 — Karyawan, Role & Absensi
-Multi-user per shop dengan akses berjenjang + clock-in/out.
-- Tabel `shop_members` (user_id, shop_id, role: owner/manager/cashier/barista)
-- Invite karyawan via email + accept flow
-- RLS update: cashier hanya akses POS+Orders, manager + Inventory, owner full
-- Tabel `attendances` (clock_in, clock_out, shift_id), `shifts` (jadwal mingguan)
-- Halaman `/app/staff`: kelola anggota, role
-- Halaman `/app/schedule`: jadwal kerja per minggu (drag/assign)
-- Halaman `/app/attendance`: tap clock-in/out di POS header, riwayat absensi
+2. **Bukti bayar QRIS tidak bisa diakses owner setelah beberapa hari**
+   - Bucket `payment-proofs` private. Customer pakai `createSignedUrl(60*60*24*30)` (30 hari) — Supabase membatasi maks 7 hari, plus link bisa expired sebelum owner verifikasi.
+   - Owner di online-orders cuma render `<a href={proof_url}>` tanpa re-sign.
+   - **Fix**: simpan **path** (bukan signed URL) di `payment_proof_url`, dan halaman owner generate signed URL on-demand saat klik "Lihat bukti". Halaman customer juga.
 
-### Fase 6 — Laporan & Analitik
-Owner butuh angka harian/mingguan/bulanan.
-- Halaman `/app/reports`: 
-  - Sales summary (hari/minggu/bulan, filter outlet)
-  - Best-seller menu, sales by category
-  - Sales by payment method, by cashier
-  - Hourly heatmap (jam ramai)
-  - Export CSV
-- Dashboard `/app/index` di-upgrade: KPI cards (omzet hari ini, transaksi, AOV, top item)
+3. **Label status order pelanggan inkonsistensi**
+   - `s.$slug.orders` mapping pakai `voided` tapi DB enum punya `cancelled` (yang dipakai owner di online-orders). Order yang dibatalkan tidak menampilkan label/style benar.
+   - **Fix**: tambahkan `cancelled` & `delivering` ke STATUS_LABEL.
 
-### Fase 7 — Marketplace Etalase Publik
-Halaman publik untuk customer order online.
-- Route publik `/s/$shopSlug` (etalase) + `/s/$shopSlug/menu/$menuId`
-- Cart pembeli (localStorage) + checkout flow
-- Pilih mode: **Pickup** atau **Delivery**
-- Auth pembeli (email + Google) terpisah dari owner
-- Tabel `customer_profiles`, `customer_addresses`
+### 🟡 UX / Polish penting
 
-### Fase 8 — Ongkir & Pengaturan Delivery
-Konfigurasi ongkir per coffeeshop.
-- Tabel `delivery_zones` (shop_id, name, polygon/area, fee), `delivery_settings` (mode: flat/zona, base_fee, free_above)
-- Halaman `/app/delivery`: set mode flat (1 nilai) atau zona (multi area + fee)
-- Auto-hitung ongkir saat customer checkout berdasar alamat
-- Min order, jam operasional delivery
+4. **Login redirect dari etalase rusak**
+   - `s.$slug.tsx` header pakai `search={{ redirect: "" }}` → setelah login customer dilempar ke `/` (landing owner), bukan kembali ke etalase toko.
+   - **Fix**: `redirect: \`/s/${slug}\``.
 
-### Fase 9 — Order Online & Kurir Toko
-Order masuk dari marketplace → dikelola di POS.
-- Tabel `delivery_orders` (link ke `orders`), `couriers` (staff dengan role courier)
-- Realtime notif ke owner saat order baru masuk
-- Halaman `/app/online-orders`: terima/tolak, assign kurir, update status (preparing → ready → delivering → delivered)
-- View kurir `/app/courier`: list order yang ditugaskan, tap "picked up", "delivered"
-- Customer tracking page `/track/$orderId`
+5. **Struk POS tidak menampilkan promo & poin**
+   - Field `promo_code`, `points_earned`, `points_redeemed` sudah ada di order tapi `Receipt` component tidak render.
+   - **Fix**: tambahkan baris "Promo (KODE) −Rp X" dan footer "Anda dapat N poin" jika ada.
 
-### Fase 10 — Pembayaran Online (Opsional)
-Saat ini bayar di tempat. Tambahkan QRIS dinamis / payment gateway.
-- Integrasi Midtrans/Xendit (atau Stripe untuk test)
-- Webhook handler di edge function `/api/public/payment-webhook`
-- Status order auto-update saat pembayaran sukses
+6. **Responsive padding terlalu lebar di mobile**
+   - Dashboard, Reports, dan beberapa halaman owner pakai `px-8 py-10` flat (viewport user 888px → masih oke, tapi 375px hp owner akan sumpek).
+   - **Fix**: ganti ke `px-4 sm:px-6 lg:px-8 py-6 lg:py-10`.
 
-### Fase 11 — Promo, Diskon & Loyalty
-- Tabel `promos` (kode, jenis: %/nominal, syarat min order, expiry)
-- Apply promo di POS & marketplace
-- Loyalty points sederhana (1 pt per Rp X, redeem untuk diskon)
+7. **Refund / void order POS**
+   - Owner tidak punya cara batalkan/refund order yang sudah completed dari halaman Orders.
+   - **Fix**: tambah tombol "Batalkan / Refund" di `app.orders.tsx` detail row → set `status='voided'`, `payment_status='refunded'`, dan reverse stock movement (insert balik) bila track_stock.
 
-### Fase 12 — Polish & Operasional
-- Settings shop: jam buka, logo, deskripsi, kontak
-- Multi-outlet switcher di header (sudah ada context, perlu UI)
-- PWA + offline POS (cache menu, sync order saat online)
-- Notifikasi push/email untuk order baru
-- Backup & export data
-- Onboarding wizard yang lebih lengkap (sample data, tour)
+8. **Customer signup confirm email**
+   - Saat ini default Supabase = harus konfirmasi email. Customer marketplace banyak drop di sini.
+   - **Fix**: aktifkan auto-confirm email signup (lebih friendly untuk customer beli kopi).
+
+### 🟢 Quality-of-life
+
+9. **Track page**: tambahkan handling `cancelled` / `delivering` step yang tepat & link "Pesan lagi" ke etalase.
+
+10. **Etalase**: tambahkan info jam buka shop (sudah ada `open_hours` di DB) dan tampilkan "Tutup sekarang — buka jam X" badge bila di luar jam.
+
+11. **Cleanup import unused** (Coffee, Phone, dll) — ringan.
 
 ---
 
-## Rekomendasi Urutan Eksekusi
+## Yang Akan Dikerjakan
 
-**Wajib MVP penuh** (sesuai PRD): Fase 4 → 5 → 6 → 7 → 8 → 9
-**Nice-to-have**: Fase 10, 11, 12
+### Migrasi DB
+- RPC `apply_loyalty_post_order(_shop_id, _user_id, _order_id, _earned, _redeemed)` SECURITY DEFINER → upsert `loyalty_points` + insert `loyalty_ledger`. Validasi: user adalah customer order ITU, atau outlet access (untuk POS).
+- Auth setting: aktifkan auto-confirm email signup.
 
-Saran mulai dari **Fase 4 (Stok)** karena langsung dipakai operasional harian dan saling mengunci dengan fase 5-6. Marketplace (7-9) bisa dikerjakan paralel setelah fase 5.
+### Code
+- `src/lib/promo-loyalty.ts` — ganti applyPostOrder pakai RPC baru.
+- `src/routes/s.$slug.pay.$orderId.tsx` — simpan path saja, generate signed URL untuk preview.
+- `src/routes/app.online-orders.tsx` — tombol "Lihat bukti" generate signed URL on-demand.
+- `src/routes/s.$slug.orders.tsx` — STATUS_LABEL tambah `cancelled`, `delivering`.
+- `src/routes/s.$slug.tsx` — fix login redirect.
+- `src/components/pos/receipt.tsx` — tambahkan promo & poin.
+- `src/routes/app.orders.tsx` — tombol Void/Refund + reverse stock.
+- Dashboard & Reports & beberapa app pages — responsive padding.
+- `src/routes/track.$orderId.tsx` — handle cancelled state lebih baik.
+- `src/routes/s.$slug.index.tsx` — badge jam buka.
+- Cleanup import unused.
 
-## Pertanyaan Sebelum Lanjut
+### Tidak dikerjakan (sengaja)
+- Marketing landing pisah (Pricing, About, dll) — di luar scope "sempurnakan", bukan bug.
+- PWA / offline — fase 12 advanced, butuh diskusi tersendiri.
+- Email transactional — butuh konfigurasi domain.
 
-Mohon konfirmasi:
-1. Setuju urutan di atas? Atau ada fase yang ingin diprioritaskan/diskip?
-2. Mulai dari **Fase 4 (Stok & Inventori)** sekarang?
-3. Tetap simple (track stock manual) atau lengkap (recipes/BOM dengan auto-decrement)?
+Setelah disetujui, saya akan implementasikan semuanya dalam satu batch.

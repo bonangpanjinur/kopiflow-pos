@@ -25,7 +25,9 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   pending: { label: "Menunggu konfirmasi", cls: "bg-yellow-100 text-yellow-800" },
   preparing: { label: "Sedang dibuat", cls: "bg-blue-100 text-blue-800" },
   ready: { label: "Siap diambil", cls: "bg-green-100 text-green-800" },
+  delivering: { label: "Sedang diantar", cls: "bg-purple-100 text-purple-800" },
   completed: { label: "Selesai", cls: "bg-emerald-100 text-emerald-800" },
+  cancelled: { label: "Dibatalkan", cls: "bg-red-100 text-red-800" },
   voided: { label: "Dibatalkan", cls: "bg-red-100 text-red-800" },
   refunded: { label: "Direfund", cls: "bg-gray-100 text-gray-800" },
 };

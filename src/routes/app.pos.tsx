@@ -1089,11 +1089,13 @@ function CheckoutDialog({
                     cashierName={cashierName}
                     date={done.date}
                     items={cart.items}
-                    subtotal={total}
+                    subtotal={subtotal}
                     total={total}
                     paymentMethod={method}
                     amountTendered={done.amountTendered}
                     changeDue={done.changeDue}
+                    promoCode={promo?.code ?? null}
+                    promoDiscount={discount}
                   />
                 </div>
               </div>

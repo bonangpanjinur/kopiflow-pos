@@ -15,6 +15,11 @@ type Props = {
   amountTendered?: number;
   changeDue?: number;
   customerName?: string;
+  promoCode?: string | null;
+  promoDiscount?: number;
+  pointsRedeemed?: number;
+  pointsRedeemValue?: number;
+  pointsEarned?: number;
 };
 
 export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
@@ -31,6 +36,11 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     amountTendered,
     changeDue,
     customerName,
+    promoCode,
+    promoDiscount = 0,
+    pointsRedeemed = 0,
+    pointsRedeemValue = 0,
+    pointsEarned = 0,
   },
   ref,
 ) {
@@ -76,6 +86,18 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
         <span>Subtotal</span>
         <span>{formatIDR(subtotal)}</span>
       </div>
+      {promoDiscount > 0 && (
+        <div className="r-row">
+          <span>Promo{promoCode ? ` (${promoCode})` : ""}</span>
+          <span>-{formatIDR(promoDiscount)}</span>
+        </div>
+      )}
+      {pointsRedeemed > 0 && pointsRedeemValue > 0 && (
+        <div className="r-row">
+          <span>Tukar {pointsRedeemed} poin</span>
+          <span>-{formatIDR(pointsRedeemValue)}</span>
+        </div>
+      )}
       <div className="r-row r-bold">
         <span>TOTAL</span>
         <span>{formatIDR(total)}</span>
@@ -90,6 +112,12 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
           <span>Kembalian</span>
           <span>{formatIDR(changeDue ?? 0)}</span>
         </div>
+      )}
+      {pointsEarned > 0 && (
+        <>
+          <div className="r-divider" />
+          <div className="r-center r-small">Anda mendapat {pointsEarned} poin loyalty ⭐</div>
+        </>
       )}
       <div className="r-divider" />
       <div className="r-center">Terima kasih!</div>
