@@ -2,7 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
