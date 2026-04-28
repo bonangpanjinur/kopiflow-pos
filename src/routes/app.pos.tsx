@@ -33,6 +33,7 @@ import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
 import { Receipt } from "@/components/pos/receipt";
+import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
 
 export const Route = createFileRoute("/app/pos")({
   component: POSPage,
