@@ -234,6 +234,7 @@ function DetailDialog({
     name: i.name,
     unit_price: Number(i.unit_price),
     quantity: i.quantity,
+    note: i.note ?? undefined,
   }));
 
   function handlePrint() {
