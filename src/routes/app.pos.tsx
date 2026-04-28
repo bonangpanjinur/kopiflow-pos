@@ -977,7 +977,25 @@ function CheckoutDialog({
     setMethod("cash");
     setPromo(null);
     setPromoCode("");
+    setManualDiscount("");
   }
+
+  // Keyboard shortcuts: F2=cash, F3=qris, Enter=confirm, Esc=close
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (done) return;
+      if (e.key === "F2") { e.preventDefault(); setMethod("cash"); }
+      else if (e.key === "F3") { e.preventDefault(); setMethod("qris"); }
+      else if (e.key === "Enter" && !saving && cashOk && (e.target as HTMLElement)?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        checkout();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, done, saving, cashOk, method, tenderedNum, total]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? close() : onOpenChange(o))}>
