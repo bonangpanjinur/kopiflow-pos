@@ -39,7 +39,7 @@ const NAV = [
   { to: "/app/employees", label: "Pegawai", icon: Users },
   { to: "/app/schedule", label: "Jadwal", icon: CalendarDays },
   { to: "/app/attendance", label: "Absensi", icon: Clock },
-  { to: "/app/couriers", label: "Kurir", icon: Truck },
+  { to: "/app/delivery", label: "Delivery", icon: Truck },
   { to: "/app/reports", label: "Laporan", icon: BarChart3 },
   { to: "/app/settings", label: "Pengaturan", icon: Settings },
 ];
