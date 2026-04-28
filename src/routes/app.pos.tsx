@@ -1159,7 +1159,8 @@ function CheckoutDialog({
                     amountTendered={done.amountTendered}
                     changeDue={done.changeDue}
                     promoCode={promo?.code ?? null}
-                    promoDiscount={discount}
+                    promoDiscount={promoDisc}
+                    manualDiscount={manualDisc}
                   />
                 </div>
               </div>
