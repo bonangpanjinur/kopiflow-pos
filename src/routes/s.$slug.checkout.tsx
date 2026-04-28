@@ -241,7 +241,7 @@ function CheckoutPage() {
           channel: "online",
           fulfillment,
           status: "pending",
-          payment_method: paymentChoice,
+          payment_method: (paymentChoice === "transfer" ? "qris" : paymentChoice) as "cash" | "qris",
           customer_user_id: user.id,
           customer_name: name.trim(),
           customer_phone: phone.trim(),
