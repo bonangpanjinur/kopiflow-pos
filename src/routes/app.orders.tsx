@@ -257,11 +257,16 @@ function DetailDialog({
           </div>
           <ul className="divide-y divide-border rounded-lg border border-border">
             {items.map((it, k) => (
-              <li key={k} className="flex justify-between gap-2 px-3 py-2 text-sm">
-                <span>
-                  {it.quantity}× {it.name}
-                </span>
-                <span>{formatIDR(it.unit_price * it.quantity)}</span>
+              <li key={k} className="px-3 py-2 text-sm">
+                <div className="flex justify-between gap-2">
+                  <span>
+                    {it.quantity}× {it.name}
+                  </span>
+                  <span>{formatIDR(it.unit_price * it.quantity)}</span>
+                </div>
+                {it.note && (
+                  <div className="mt-0.5 text-xs italic text-muted-foreground">📝 {it.note}</div>
+                )}
               </li>
             ))}
           </ul>
