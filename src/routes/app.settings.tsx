@@ -149,7 +149,7 @@ function SettingsPage() {
         address: form.address,
         instagram: form.instagram,
         whatsapp: form.whatsapp,
-        open_hours: form.open_hours as unknown as object,
+        open_hours: form.open_hours as never,
       })
       .eq("id", shop.id);
     setSaving(false);
