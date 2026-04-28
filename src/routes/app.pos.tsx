@@ -104,6 +104,39 @@ function POSPage() {
   const [hydrated, setHydrated] = useState(false);
   const [openBills, setOpenBills] = useState<OpenBill[]>([]);
   const [tab, setTab] = useState<"register" | "bills">("register");
+  const [shift, setShift] = useState<CashShift | null>(null);
+  const [shiftLoading, setShiftLoading] = useState(true);
+  const [openShiftDlg, setOpenShiftDlg] = useState(false);
+  const [openingCash, setOpeningCash] = useState("");
+
+  async function refreshShift() {
+    if (!outlet) return;
+    setShiftLoading(true);
+    const s = await getActiveShift(outlet.id);
+    setShift(s);
+    setShiftLoading(false);
+  }
+
+  useEffect(() => {
+    if (!outlet) return;
+    refreshShift();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outlet?.id]);
+
+  async function handleOpenShift() {
+    if (!outlet) return;
+    try {
+      await openShift(outlet.id, Number(openingCash || 0));
+      toast.success("Shift dibuka");
+      setOpenShiftDlg(false);
+      setOpeningCash("");
+      await refreshShift();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Gagal buka shift";
+      toast.error(msg);
+    }
+  }
+
 
   const [parkOpen, setParkOpen] = useState(false);
   const [parkLabel, setParkLabel] = useState("");
