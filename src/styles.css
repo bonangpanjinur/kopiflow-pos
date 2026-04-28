@@ -170,6 +170,55 @@
 @media print {
   body * { visibility: hidden !important; }
   .print-area, .print-area * { visibility: visible !important; }
-  .print-area { position: absolute; left: 0; top: 0; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; }
   @page { size: 58mm auto; margin: 0; }
+}
+
+/* PO print sheet — A4 friendly */
+.po-print {
+  display: none;
+}
+@media print {
+  .po-print {
+    display: block;
+    width: 100%;
+    padding: 14mm 12mm;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+    color: #000;
+    background: #fff;
+  }
+  .po-print h1 { font-size: 18pt; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .po-print .muted { color: #555; }
+  .po-print .label { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #666; }
+  .po-print .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .po-print .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .po-print .box { border: 1px solid #d0d0d0; border-radius: 6px; padding: 10px 12px; }
+  .po-print table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 10.5pt; }
+  .po-print thead th {
+    text-align: left; padding: 8px 6px;
+    border-bottom: 2px solid #000; font-weight: 600;
+    text-transform: uppercase; font-size: 8.5pt; letter-spacing: 0.04em;
+  }
+  .po-print tbody td { padding: 7px 6px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+  .po-print tbody tr:last-child td { border-bottom: 1px solid #000; }
+  .po-print .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .po-print .totals { margin-top: 12px; margin-left: auto; width: 42%; font-size: 10.5pt; }
+  .po-print .totals .line { display: flex; justify-content: space-between; padding: 4px 0; }
+  .po-print .totals .grand { border-top: 1.5px solid #000; margin-top: 4px; padding-top: 6px; font-size: 12pt; font-weight: 700; }
+  .po-print .stamp {
+    display: inline-block; padding: 6px 14px;
+    border: 2px solid currentColor; border-radius: 4px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 10pt; transform: rotate(-3deg);
+  }
+  .po-print .stamp.draft { color: #777; }
+  .po-print .stamp.ordered { color: #1d4ed8; }
+  .po-print .stamp.received { color: #047857; }
+  .po-print .stamp.cancelled { color: #b91c1c; text-decoration: line-through; }
+  .po-print .footer { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+  .po-print .sign { padding-top: 56px; border-top: 1px solid #000; text-align: center; font-size: 9.5pt; }
+  .po-print .note { margin-top: 14px; font-size: 10pt; white-space: pre-wrap; }
+  @page { size: A4; margin: 0; }
 }
