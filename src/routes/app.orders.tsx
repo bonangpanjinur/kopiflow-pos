@@ -95,7 +95,7 @@ function OrdersPage() {
     const { data } = await supabase
       .from("orders")
       .select(
-        "id, order_no, total, payment_method, amount_tendered, change_due, status, created_at, customer_name, cashier_id, order_items(name, unit_price, quantity)",
+        "id, order_no, total, payment_method, amount_tendered, change_due, status, created_at, customer_name, cashier_id, order_items(name, unit_price, quantity, note)",
       )
       .eq("id", o.id)
       .single();
