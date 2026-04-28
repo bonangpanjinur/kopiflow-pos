@@ -20,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp, ClipboardCheck } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, AlertTriangle, ArrowDownUp, ClipboardCheck, ListChecks, ShoppingCart, Search } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
+import { LowStockDialog } from "@/components/inventory/low-stock-dialog";
 
 export const Route = createFileRoute("/app/inventory")({
   component: InventoryPage,
@@ -77,6 +78,17 @@ function InventoryPage() {
   const [opnameActual, setOpnameActual] = useState("");
   const [opnameNote, setOpnameNote] = useState("");
   const [opnameSaving, setOpnameSaving] = useState(false);
+
+  // bulk opname
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkValues, setBulkValues] = useState<Record<string, string>>({});
+  const [bulkNote, setBulkNote] = useState("");
+  const [bulkSearch, setBulkSearch] = useState("");
+  const [bulkOnlyChanged, setBulkOnlyChanged] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  // low-stock dialog
+  const [lowOpen, setLowOpen] = useState(false);
 
   async function load() {
     if (!shop) return;
