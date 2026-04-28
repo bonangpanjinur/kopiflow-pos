@@ -403,6 +403,68 @@ function CheckoutPage() {
         </div>
       </section>
 
+      <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold">Promo & Poin</h2>
+        <div>
+          <Label className="text-xs">Kode promo</Label>
+          {promo ? (
+            <div className="mt-1 flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+              <span>
+                <span className="font-mono font-semibold">{promo.code}</span>
+                <span className="ml-2 text-muted-foreground">−{formatIDR(promo.discount)}</span>
+              </span>
+              <button
+                onClick={() => { setPromo(null); setPromoCode(""); }}
+                className="text-xs text-muted-foreground hover:text-destructive"
+              >Hapus</button>
+            </div>
+          ) : (
+            <div className="mt-1 flex gap-2">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                placeholder="HEMAT10"
+              />
+              <Button type="button" variant="outline" onClick={applyPromoCode} disabled={promoApplying || !promoCode.trim()}>
+                {promoApplying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pakai"}
+              </Button>
+            </div>
+          )}
+        </div>
+        {loyalty && pointBalance > 0 && (
+          <div className="space-y-1.5 border-t border-border pt-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Saldo poin kamu</span>
+              <span className="font-semibold">{pointBalance.toLocaleString("id-ID")} poin</span>
+            </div>
+            {redeemCap.maxPoints >= loyalty.min_redeem_points ? (
+              <div className="space-y-1">
+                <Label className="text-xs">Tukar poin (maks {redeemCap.maxPoints})</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={redeemCap.maxPoints}
+                  value={redeemPoints}
+                  onChange={(e) => setRedeemPoints(Math.max(0, Math.min(redeemCap.maxPoints, Number(e.target.value) || 0)))}
+                />
+                {effectiveRedeem > 0 && (
+                  <p className="text-xs text-muted-foreground">Potongan {formatIDR(pointsValue)}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Min {loyalty.min_redeem_points} poin untuk redeem.
+              </p>
+            )}
+          </div>
+        )}
+        {loyalty && pointsEarned > 0 && (
+          <p className="text-xs text-muted-foreground">
+            🎁 Order ini akan dapat <b>{pointsEarned} poin</b>.
+          </p>
+        )}
+      </section>
+
       <section className="space-y-2 rounded-xl border border-border bg-card p-4">
         <h2 className="text-sm font-semibold">Ringkasan</h2>
         <div className="space-y-1 text-sm">
