@@ -102,11 +102,12 @@ function CheckoutPage() {
     (async () => {
       const { data: shop } = await supabase
         .from("coffee_shops")
-        .select("id, payment_methods_enabled, qris_image_url")
+        .select("id, payment_methods_enabled, qris_image_url, prep_minutes")
         .eq("slug", slug)
         .maybeSingle();
       if (!shop) return;
       setShopId(shop.id);
+      setPrepMinutes(Number(shop.prep_minutes ?? 20));
       const methods = (shop.payment_methods_enabled ?? ["cash"]) as string[];
       // Filter QRIS out if no QR uploaded
       const usable = methods.filter((m) => m !== "qris" || shop.qris_image_url);
