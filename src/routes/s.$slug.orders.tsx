@@ -116,6 +116,13 @@ function MyOrders() {
             {o.delivery_address && (
               <p className="mt-1 text-xs text-muted-foreground">📍 {o.delivery_address}</p>
             )}
+            <Link
+              to="/track/$orderId"
+              params={{ orderId: o.id }}
+              className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+            >
+              Lacak pesanan →
+            </Link>
           </div>
         );
       })}
