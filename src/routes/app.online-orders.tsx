@@ -181,6 +181,24 @@ function OnlineOrders() {
       <div className="mb-4 flex items-center gap-2">
         <ShoppingBag className="h-5 w-5" />
         <h1 className="text-xl font-semibold">Order Online</h1>
+        <Button
+          size="sm"
+          variant={notifPerm === "granted" ? "secondary" : "outline"}
+          className="ml-auto gap-1.5"
+          onClick={async () => {
+            const p = await ensureNotificationPermission();
+            setNotifPerm(p);
+            if (p === "granted") {
+              notifyOrder("Notifikasi aktif", "Anda akan mendapat notifikasi pesanan baru");
+              toast.success("Notifikasi aktif");
+            } else if (p === "denied") {
+              toast.error("Izin notifikasi ditolak. Aktifkan dari setelan browser.");
+            }
+          }}
+        >
+          {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+          {notifPerm === "granted" ? "Notif aktif" : "Aktifkan notif"}
+        </Button>
       </div>
 
       <div className="mb-4 flex gap-1 border-b border-border">
