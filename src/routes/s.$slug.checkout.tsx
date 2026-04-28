@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { readCart, cartTotal, clearCart, type CustomerCartItem } from "@/lib/customer-cart";
@@ -17,6 +17,31 @@ export const Route = createFileRoute("/s/$slug/checkout")({
 });
 
 type Outlet = { id: string; name: string; address: string | null };
+type Settings = {
+  mode: "flat" | "zone";
+  base_fee: number;
+  free_above: number | null;
+  min_order: number;
+  pickup_enabled: boolean;
+  delivery_enabled: boolean;
+  open_time: string | null;
+  close_time: string | null;
+  notes: string | null;
+};
+type Zone = { id: string; name: string; fee: number; area_note: string | null };
+
+function withinHours(open: string | null, close: string | null) {
+  if (!open || !close) return true;
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const [oh, om] = open.split(":").map(Number);
+  const [ch, cm] = close.split(":").map(Number);
+  const o = oh * 60 + om;
+  const c = ch * 60 + cm;
+  if (c >= o) return cur >= o && cur <= c;
+  // crosses midnight
+  return cur >= o || cur <= c;
+}
 
 function CheckoutPage() {
   const { slug } = useParams({ from: "/s/$slug/checkout" });
@@ -27,6 +52,9 @@ function CheckoutPage() {
   const [shopId, setShopId] = useState<string | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [outletId, setOutletId] = useState<string>("");
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [zoneId, setZoneId] = useState<string>("");
   const [fulfillment, setFulfillment] = useState<"pickup" | "delivery">("pickup");
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
@@ -47,14 +75,40 @@ function CheckoutPage() {
         .maybeSingle();
       if (!shop) return;
       setShopId(shop.id);
-      const { data: o } = await supabase
-        .from("outlets")
-        .select("id,name,address")
-        .eq("shop_id", shop.id)
-        .eq("is_active", true)
-        .order("created_at");
+      const [{ data: o }, { data: s }, { data: z }] = await Promise.all([
+        supabase
+          .from("outlets")
+          .select("id,name,address")
+          .eq("shop_id", shop.id)
+          .eq("is_active", true)
+          .order("created_at"),
+        supabase.from("delivery_settings").select("*").eq("shop_id", shop.id).maybeSingle(),
+        supabase
+          .from("delivery_zones")
+          .select("id,name,fee,area_note")
+          .eq("shop_id", shop.id)
+          .eq("is_active", true)
+          .order("sort_order"),
+      ]);
       setOutlets((o ?? []) as Outlet[]);
       if (o && o.length > 0) setOutletId(o[0].id);
+      const settingsData = (s as Settings | null) ?? {
+        mode: "flat" as const,
+        base_fee: 0,
+        free_above: null,
+        min_order: 0,
+        pickup_enabled: true,
+        delivery_enabled: true,
+        open_time: null,
+        close_time: null,
+        notes: null,
+      };
+      setSettings(settingsData);
+      setZones((z ?? []) as Zone[]);
+      // Default fulfillment based on enabled
+      if (!settingsData.pickup_enabled && settingsData.delivery_enabled) setFulfillment("delivery");
+      if (settingsData.pickup_enabled && !settingsData.delivery_enabled) setFulfillment("pickup");
+      if (z && z.length > 0) setZoneId(z[0].id);
     })();
   }, [slug]);
 
@@ -76,33 +130,41 @@ function CheckoutPage() {
   }, [user]);
 
   const subtotal = cartTotal(items);
-  const total = subtotal; // delivery fee fase 8
+
+  const deliveryFee = useMemo(() => {
+    if (!settings || fulfillment !== "delivery") return 0;
+    if (settings.free_above != null && subtotal >= settings.free_above) return 0;
+    if (settings.mode === "flat") return Number(settings.base_fee) || 0;
+    const z = zones.find((x) => x.id === zoneId);
+    return z ? Number(z.fee) || 0 : 0;
+  }, [settings, fulfillment, subtotal, zones, zoneId]);
+
+  const total = subtotal + deliveryFee;
+
+  const minOrderOk = !settings || subtotal >= (settings.min_order || 0);
+  const hoursOk = !settings || fulfillment === "pickup" || withinHours(settings.open_time, settings.close_time);
 
   async function submit() {
     if (!user) {
       navigate({ to: "/s/$slug/login", params: { slug }, search: { redirect: `/s/${slug}/checkout` } });
       return;
     }
-    if (!shopId || !outletId) {
-      toast.error("Outlet belum tersedia");
-      return;
+    if (!shopId || !outletId) return toast.error("Outlet belum tersedia");
+    if (items.length === 0) return toast.error("Keranjang kosong");
+    if (!name.trim() || !phone.trim()) return toast.error("Nama dan nomor HP wajib diisi");
+    if (!minOrderOk) return toast.error(`Minimum order ${formatIDR(settings!.min_order)}`);
+    if (!hoursOk) return toast.error("Di luar jam delivery");
+    if (fulfillment === "delivery") {
+      if (!settings?.delivery_enabled) return toast.error("Delivery tidak tersedia");
+      if (!address.trim()) return toast.error("Alamat pengiriman wajib diisi");
+      if (settings.mode === "zone" && !zoneId) return toast.error("Pilih zona pengiriman");
     }
-    if (items.length === 0) {
-      toast.error("Keranjang kosong");
-      return;
-    }
-    if (!name.trim() || !phone.trim()) {
-      toast.error("Nama dan nomor HP wajib diisi");
-      return;
-    }
-    if (fulfillment === "delivery" && !address.trim()) {
-      toast.error("Alamat pengiriman wajib diisi");
-      return;
+    if (fulfillment === "pickup" && !settings?.pickup_enabled) {
+      return toast.error("Pickup tidak tersedia");
     }
 
     setSubmitting(true);
     try {
-      // Upsert customer profile
       await supabase.from("customer_profiles").upsert(
         {
           user_id: user.id,
@@ -113,7 +175,6 @@ function CheckoutPage() {
         { onConflict: "user_id" },
       );
 
-      // Generate order_no via RPC
       const { data: orderNo } = await supabase.rpc("next_order_no", { _outlet_id: outletId });
 
       const { data: order, error: orderErr } = await supabase
@@ -130,11 +191,12 @@ function CheckoutPage() {
           customer_name: name.trim(),
           customer_phone: phone.trim(),
           delivery_address: fulfillment === "delivery" ? address.trim() : null,
+          delivery_zone_id: fulfillment === "delivery" && settings?.mode === "zone" ? zoneId : null,
           note: note.trim() || null,
           subtotal,
           tax: 0,
           discount: 0,
-          delivery_fee: 0,
+          delivery_fee: deliveryFee,
           total,
         })
         .select("id,order_no")
@@ -178,6 +240,9 @@ function CheckoutPage() {
     );
   }
 
+  const pickupOk = settings?.pickup_enabled !== false;
+  const deliveryOk = settings?.delivery_enabled !== false;
+
   return (
     <div className="space-y-4 pb-28">
       <Link
@@ -196,15 +261,21 @@ function CheckoutPage() {
           onValueChange={(v) => setFulfillment(v as "pickup" | "delivery")}
           className="grid grid-cols-2 gap-2"
         >
-          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 ${fulfillment === "pickup" ? "border-primary bg-accent" : "border-border"}`}>
-            <RadioGroupItem value="pickup" />
+          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 ${fulfillment === "pickup" ? "border-primary bg-accent" : "border-border"} ${!pickupOk ? "opacity-50" : ""}`}>
+            <RadioGroupItem value="pickup" disabled={!pickupOk} />
             <span className="text-sm font-medium">Pickup di toko</span>
           </label>
-          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 ${fulfillment === "delivery" ? "border-primary bg-accent" : "border-border"}`}>
-            <RadioGroupItem value="delivery" />
+          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 ${fulfillment === "delivery" ? "border-primary bg-accent" : "border-border"} ${!deliveryOk ? "opacity-50" : ""}`}>
+            <RadioGroupItem value="delivery" disabled={!deliveryOk} />
             <span className="text-sm font-medium">Delivery</span>
           </label>
         </RadioGroup>
+        {settings?.notes && <p className="pt-1 text-xs text-muted-foreground">ℹ️ {settings.notes}</p>}
+        {settings?.open_time && settings?.close_time && fulfillment === "delivery" && (
+          <p className="text-xs text-muted-foreground">
+            Jam delivery: {settings.open_time} – {settings.close_time}
+          </p>
+        )}
       </section>
 
       {outlets.length > 1 && (
@@ -224,15 +295,35 @@ function CheckoutPage() {
         </section>
       )}
 
+      {fulfillment === "delivery" && settings?.mode === "zone" && zones.length > 0 && (
+        <section className="space-y-2 rounded-xl border border-border bg-card p-4">
+          <h2 className="text-sm font-semibold">Zona pengiriman</h2>
+          <RadioGroup value={zoneId} onValueChange={setZoneId} className="space-y-2">
+            {zones.map((z) => (
+              <label key={z.id} className={`flex cursor-pointer items-start justify-between gap-2 rounded-lg border p-3 ${zoneId === z.id ? "border-primary bg-accent" : "border-border"}`}>
+                <div className="flex items-start gap-2">
+                  <RadioGroupItem value={z.id} className="mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">{z.name}</p>
+                    {z.area_note && <p className="text-xs text-muted-foreground">{z.area_note}</p>}
+                  </div>
+                </div>
+                <span className="text-sm font-semibold">{formatIDR(Number(z.fee))}</span>
+              </label>
+            ))}
+          </RadioGroup>
+        </section>
+      )}
+
       <section className="space-y-3 rounded-xl border border-border bg-card p-4">
         <h2 className="text-sm font-semibold">Kontak</h2>
         <div className="space-y-1">
           <Label className="text-xs">Nama</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama penerima" />
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Nomor HP</Label>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" inputMode="tel" />
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
         </div>
         {fulfillment === "delivery" && (
           <div className="space-y-1">
@@ -263,11 +354,29 @@ function CheckoutPage() {
             </div>
           ))}
         </div>
-        <div className="border-t border-border pt-2 text-sm">
+        <div className="space-y-1 border-t border-border pt-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal</span>
             <span>{formatIDR(subtotal)}</span>
           </div>
+          {fulfillment === "delivery" && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Ongkir{settings?.free_above != null && subtotal >= settings.free_above ? " (gratis)" : ""}
+              </span>
+              <span>{formatIDR(deliveryFee)}</span>
+            </div>
+          )}
+          {settings?.free_above != null && subtotal < settings.free_above && fulfillment === "delivery" && (
+            <p className="text-xs text-muted-foreground">
+              Belanja {formatIDR(settings.free_above - subtotal)} lagi untuk gratis ongkir
+            </p>
+          )}
+          {settings?.min_order ? (
+            <p className={`text-xs ${minOrderOk ? "text-muted-foreground" : "text-destructive"}`}>
+              Minimum order {formatIDR(settings.min_order)}
+            </p>
+          ) : null}
           <div className="mt-1 flex justify-between text-base font-semibold">
             <span>Total</span>
             <span>{formatIDR(total)}</span>
@@ -284,7 +393,7 @@ function CheckoutPage() {
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-base font-semibold">{formatIDR(total)}</p>
           </div>
-          <Button onClick={submit} disabled={submitting}>
+          <Button onClick={submit} disabled={submitting || !minOrderOk || !hoursOk}>
             {submitting ? "Mengirim…" : "Kirim pesanan"}
           </Button>
         </div>
