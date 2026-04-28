@@ -212,7 +212,7 @@ function POSPage() {
         .from("open_bills")
         .update({
           label,
-          items: cart.items as unknown as object[],
+          items: cart.items as unknown as never,
           updated_by: user.id,
         })
         .eq("id", cart.id);
@@ -225,7 +225,7 @@ function POSPage() {
           outlet_id: outlet.id,
           shop_id: shop.id,
           label,
-          items: cart.items as unknown as object[],
+          items: cart.items as unknown as never,
           created_by: user.id,
           updated_by: user.id,
         })
