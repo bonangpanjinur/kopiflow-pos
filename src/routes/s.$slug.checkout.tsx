@@ -241,7 +241,7 @@ function CheckoutPage() {
           channel: "online",
           fulfillment,
           status: "pending",
-          payment_method: "cash",
+          payment_method: paymentChoice,
           customer_user_id: user.id,
           customer_name: name.trim(),
           customer_phone: phone.trim(),
@@ -287,7 +287,11 @@ function CheckoutPage() {
 
       clearCart(slug);
       toast.success(`Order #${order.order_no} terkirim!`);
-      navigate({ to: "/s/$slug/orders", params: { slug } });
+      if (paymentChoice === "qris" || paymentChoice === "transfer") {
+        navigate({ to: "/s/$slug/pay/$orderId", params: { slug, orderId: order.id } });
+      } else {
+        navigate({ to: "/s/$slug/orders", params: { slug } });
+      }
     } catch (e) {
       console.error(e);
       toast.error("Gagal membuat pesanan");
