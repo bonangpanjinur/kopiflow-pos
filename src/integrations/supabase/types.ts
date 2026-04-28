@@ -127,6 +127,81 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_addresses: {
+        Row: {
+          address_line: string
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          phone: string
+          recipient_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          phone: string
+          recipient_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          phone?: string
+          recipient_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customer_profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingredients: {
         Row: {
           cost_per_unit: number
@@ -335,16 +410,23 @@ export type Database = {
         Row: {
           amount_tendered: number | null
           business_date: string
-          cashier_id: string
+          cashier_id: string | null
           change_due: number
+          channel: Database["public"]["Enums"]["order_channel"]
           created_at: string
           customer_name: string | null
+          customer_phone: string | null
+          customer_user_id: string | null
+          delivery_address: string | null
+          delivery_fee: number
           discount: number
+          fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
           note: string | null
           order_no: string
           outlet_id: string
           payment_method: Database["public"]["Enums"]["payment_method"]
+          scheduled_for: string | null
           shop_id: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
@@ -355,16 +437,23 @@ export type Database = {
         Insert: {
           amount_tendered?: number | null
           business_date?: string
-          cashier_id: string
+          cashier_id?: string | null
           change_due?: number
+          channel?: Database["public"]["Enums"]["order_channel"]
           created_at?: string
           customer_name?: string | null
+          customer_phone?: string | null
+          customer_user_id?: string | null
+          delivery_address?: string | null
+          delivery_fee?: number
           discount?: number
+          fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           note?: string | null
           order_no: string
           outlet_id: string
           payment_method: Database["public"]["Enums"]["payment_method"]
+          scheduled_for?: string | null
           shop_id: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -375,16 +464,23 @@ export type Database = {
         Update: {
           amount_tendered?: number | null
           business_date?: string
-          cashier_id?: string
+          cashier_id?: string | null
           change_due?: number
+          channel?: Database["public"]["Enums"]["order_channel"]
           created_at?: string
           customer_name?: string | null
+          customer_phone?: string | null
+          customer_user_id?: string | null
+          delivery_address?: string | null
+          delivery_fee?: number
           discount?: number
+          fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           note?: string | null
           order_no?: string
           outlet_id?: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          scheduled_for?: string | null
           shop_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -715,7 +811,15 @@ export type Database = {
         | "barista"
         | "customer"
         | "manager"
-      order_status: "completed" | "voided" | "refunded"
+      fulfillment_type: "dine_in" | "pickup" | "delivery"
+      order_channel: "pos" | "online"
+      order_status:
+        | "completed"
+        | "voided"
+        | "refunded"
+        | "pending"
+        | "preparing"
+        | "ready"
       payment_method: "cash" | "qris"
       stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
     }
@@ -853,7 +957,16 @@ export const Constants = {
         "customer",
         "manager",
       ],
-      order_status: ["completed", "voided", "refunded"],
+      fulfillment_type: ["dine_in", "pickup", "delivery"],
+      order_channel: ["pos", "online"],
+      order_status: [
+        "completed",
+        "voided",
+        "refunded",
+        "pending",
+        "preparing",
+        "ready",
+      ],
       payment_method: ["cash", "qris"],
       stock_movement_type: ["purchase", "adjustment", "sale", "waste"],
     },
