@@ -28,6 +28,9 @@ import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
 import { Route as SSlugIndexRouteImport } from './routes/s.$slug.index'
+import { Route as SSlugOrdersRouteImport } from './routes/s.$slug.orders'
+import { Route as SSlugLoginRouteImport } from './routes/s.$slug.login'
+import { Route as SSlugCheckoutRouteImport } from './routes/s.$slug.checkout'
 import { Route as SSlugCartRouteImport } from './routes/s.$slug.cart'
 import { Route as SSlugMenuMenuIdRouteImport } from './routes/s.$slug.menu.$menuId'
 
@@ -126,6 +129,21 @@ const SSlugIndexRoute = SSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SSlugRoute,
 } as any)
+const SSlugOrdersRoute = SSlugOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => SSlugRoute,
+} as any)
+const SSlugLoginRoute = SSlugLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => SSlugRoute,
+} as any)
+const SSlugCheckoutRoute = SSlugCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => SSlugRoute,
+} as any)
 const SSlugCartRoute = SSlugCartRouteImport.update({
   id: '/cart',
   path: '/cart',
@@ -157,6 +175,9 @@ export interface FileRoutesByFullPath {
   '/s/$slug': typeof SSlugRouteWithChildren
   '/app/': typeof AppIndexRoute
   '/s/$slug/cart': typeof SSlugCartRoute
+  '/s/$slug/checkout': typeof SSlugCheckoutRoute
+  '/s/$slug/login': typeof SSlugLoginRoute
+  '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
 }
@@ -178,6 +199,9 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/app': typeof AppIndexRoute
   '/s/$slug/cart': typeof SSlugCartRoute
+  '/s/$slug/checkout': typeof SSlugCheckoutRoute
+  '/s/$slug/login': typeof SSlugLoginRoute
+  '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug': typeof SSlugIndexRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
 }
@@ -202,6 +226,9 @@ export interface FileRoutesById {
   '/s/$slug': typeof SSlugRouteWithChildren
   '/app/': typeof AppIndexRoute
   '/s/$slug/cart': typeof SSlugCartRoute
+  '/s/$slug/checkout': typeof SSlugCheckoutRoute
+  '/s/$slug/login': typeof SSlugLoginRoute
+  '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
 }
@@ -227,6 +254,9 @@ export interface FileRouteTypes {
     | '/s/$slug'
     | '/app/'
     | '/s/$slug/cart'
+    | '/s/$slug/checkout'
+    | '/s/$slug/login'
+    | '/s/$slug/orders'
     | '/s/$slug/'
     | '/s/$slug/menu/$menuId'
   fileRoutesByTo: FileRoutesByTo
@@ -248,6 +278,9 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/app'
     | '/s/$slug/cart'
+    | '/s/$slug/checkout'
+    | '/s/$slug/login'
+    | '/s/$slug/orders'
     | '/s/$slug'
     | '/s/$slug/menu/$menuId'
   id:
@@ -271,6 +304,9 @@ export interface FileRouteTypes {
     | '/s/$slug'
     | '/app/'
     | '/s/$slug/cart'
+    | '/s/$slug/checkout'
+    | '/s/$slug/login'
+    | '/s/$slug/orders'
     | '/s/$slug/'
     | '/s/$slug/menu/$menuId'
   fileRoutesById: FileRoutesById
@@ -420,6 +456,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugIndexRouteImport
       parentRoute: typeof SSlugRoute
     }
+    '/s/$slug/orders': {
+      id: '/s/$slug/orders'
+      path: '/orders'
+      fullPath: '/s/$slug/orders'
+      preLoaderRoute: typeof SSlugOrdersRouteImport
+      parentRoute: typeof SSlugRoute
+    }
+    '/s/$slug/login': {
+      id: '/s/$slug/login'
+      path: '/login'
+      fullPath: '/s/$slug/login'
+      preLoaderRoute: typeof SSlugLoginRouteImport
+      parentRoute: typeof SSlugRoute
+    }
+    '/s/$slug/checkout': {
+      id: '/s/$slug/checkout'
+      path: '/checkout'
+      fullPath: '/s/$slug/checkout'
+      preLoaderRoute: typeof SSlugCheckoutRouteImport
+      parentRoute: typeof SSlugRoute
+    }
     '/s/$slug/cart': {
       id: '/s/$slug/cart'
       path: '/cart'
@@ -469,12 +526,18 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface SSlugRouteChildren {
   SSlugCartRoute: typeof SSlugCartRoute
+  SSlugCheckoutRoute: typeof SSlugCheckoutRoute
+  SSlugLoginRoute: typeof SSlugLoginRoute
+  SSlugOrdersRoute: typeof SSlugOrdersRoute
   SSlugIndexRoute: typeof SSlugIndexRoute
   SSlugMenuMenuIdRoute: typeof SSlugMenuMenuIdRoute
 }
 
 const SSlugRouteChildren: SSlugRouteChildren = {
   SSlugCartRoute: SSlugCartRoute,
+  SSlugCheckoutRoute: SSlugCheckoutRoute,
+  SSlugLoginRoute: SSlugLoginRoute,
+  SSlugOrdersRoute: SSlugOrdersRoute,
   SSlugIndexRoute: SSlugIndexRoute,
   SSlugMenuMenuIdRoute: SSlugMenuMenuIdRoute,
 }

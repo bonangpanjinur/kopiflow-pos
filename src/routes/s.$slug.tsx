@@ -68,7 +68,7 @@ function ShopLayout() {
                 </Button>
               </Link>
             ) : (
-              <Link to="/s/$slug/login" params={{ slug }}>
+              <Link to="/s/$slug/login" params={{ slug }} search={{ redirect: "" }}>
                 <Button variant="ghost" size="sm">Masuk</Button>
               </Link>
             )}
