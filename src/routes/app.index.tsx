@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState as _useState } from "react";
+import { LowStockDialog } from "@/components/inventory/low-stock-dialog";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";

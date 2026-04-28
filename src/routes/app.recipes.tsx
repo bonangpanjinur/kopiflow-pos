@@ -198,6 +198,33 @@ function RecipesPage() {
                 </div>
               </div>
 
+              {(() => {
+                const h = hpp[current.id];
+                if (!h) return null;
+                const pct = Number(h.margin_percent ?? 0);
+                const tone = pct >= 30 ? "text-emerald-600 bg-emerald-500/15"
+                  : pct >= 10 ? "text-amber-600 bg-amber-500/15"
+                  : "text-destructive bg-destructive/15";
+                return (
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">HPP & Margin</div>
+                        <div className="mt-1 text-sm">
+                          HPP <span className="font-semibold tabular-nums">{formatIDR(Number(h.hpp))}</span>
+                          {" · "}Harga <span className="font-semibold tabular-nums">{formatIDR(Number(h.price))}</span>
+                          {" · "}Margin <span className="font-semibold tabular-nums">{formatIDR(Number(h.margin))}</span>
+                        </div>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-sm font-semibold ${tone}`}>{pct}%</span>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Sumber: {h.recipe_count} bahan dari resep · Diperbarui {new Date(h.last_updated).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="overflow-hidden rounded-xl border border-border bg-card">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
