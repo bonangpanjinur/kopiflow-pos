@@ -31,6 +31,7 @@ function RecipesPage() {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [hpp, setHpp] = useState<Record<string, HPPRow>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMenu, setSelectedMenu] = useState<string | null>(null);
 
@@ -42,14 +43,18 @@ function RecipesPage() {
   async function load() {
     if (!shop) return;
     setLoading(true);
-    const [m, i, r] = await Promise.all([
+    const [m, i, r, h] = await Promise.all([
       supabase.from("menu_items").select("id, name, track_stock").eq("shop_id", shop.id).order("name"),
-      supabase.from("ingredients").select("id, name, unit, current_stock").eq("shop_id", shop.id).eq("is_active", true).order("name"),
+      supabase.from("ingredients").select("id, name, unit, current_stock, cost_per_unit").eq("shop_id", shop.id).eq("is_active", true).order("name"),
       supabase.from("recipes").select("id, menu_item_id, ingredient_id, quantity"),
+      supabase.from("menu_hpp_view").select("menu_item_id, hpp, margin, margin_percent, price, last_updated, recipe_count").eq("shop_id", shop.id),
     ]);
     setMenus((m.data ?? []) as Menu[]);
     setIngredients((i.data ?? []) as Ingredient[]);
     setRecipes((r.data ?? []) as Recipe[]);
+    const hMap: Record<string, HPPRow> = {};
+    ((h.data ?? []) as HPPRow[]).forEach((row) => { if (row.menu_item_id) hMap[row.menu_item_id] = row; });
+    setHpp(hMap);
     setLoading(false);
     if (!selectedMenu && m.data && m.data.length > 0) {
       setSelectedMenu(m.data[0].id);
