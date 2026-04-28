@@ -533,6 +533,7 @@ export type Database = {
           cashier_id: string | null
           change_due: number
           channel: Database["public"]["Enums"]["order_channel"]
+          courier_id: string | null
           created_at: string
           customer_name: string | null
           customer_phone: string | null
@@ -561,6 +562,7 @@ export type Database = {
           cashier_id?: string | null
           change_due?: number
           channel?: Database["public"]["Enums"]["order_channel"]
+          courier_id?: string | null
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
@@ -589,6 +591,7 @@ export type Database = {
           cashier_id?: string | null
           change_due?: number
           channel?: Database["public"]["Enums"]["order_channel"]
+          courier_id?: string | null
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
@@ -905,6 +908,27 @@ export type Database = {
     }
     Functions: {
       accept_staff_invitation: { Args: { _token: string }; Returns: Json }
+      get_order_tracking: {
+        Args: { _order_id: string }
+        Returns: {
+          channel: Database["public"]["Enums"]["order_channel"]
+          courier_name: string
+          courier_phone: string
+          courier_plate: string
+          created_at: string
+          customer_name: string
+          delivery_address: string
+          delivery_fee: number
+          fulfillment: Database["public"]["Enums"]["fulfillment_type"]
+          id: string
+          order_no: string
+          shop_name: string
+          shop_slug: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+          updated_at: string
+        }[]
+      }
       has_outlet_access: {
         Args: { _outlet_id: string; _user_id: string }
         Returns: boolean
@@ -945,6 +969,8 @@ export type Database = {
         | "pending"
         | "preparing"
         | "ready"
+        | "delivering"
+        | "cancelled"
       payment_method: "cash" | "qris"
       stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
     }
@@ -1093,6 +1119,8 @@ export const Constants = {
         "pending",
         "preparing",
         "ready",
+        "delivering",
+        "cancelled",
       ],
       payment_method: ["cash", "qris"],
       stock_movement_type: ["purchase", "adjustment", "sale", "waste"],
