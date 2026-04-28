@@ -112,6 +112,30 @@ function Dashboard() {
         <Kpi icon={ShoppingBag} label="Open bills" value={String(openBills)} />
       </div>
 
+      {shop && (
+        <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">Etalase publik aktif</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                Bagikan link ke pelanggan untuk pesan online (pickup/delivery).
+              </div>
+              <code className="mt-1 inline-block max-w-full truncate rounded bg-background px-2 py-0.5 text-xs">
+                {typeof window !== "undefined" ? window.location.origin : ""}/s/{shop.slug}
+              </code>
+            </div>
+            <a
+              href={`/s/${shop.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Buka etalase <ArrowRight className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
+      )}
+
       {lowStock.length > 0 && (
         <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
           <div className="flex items-start gap-3">
