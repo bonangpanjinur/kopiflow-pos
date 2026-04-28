@@ -59,6 +59,7 @@ function CheckoutPage() {
 
   const [items, setItems] = useState<CustomerCartItem[]>([]);
   const [shopId, setShopId] = useState<string | null>(null);
+  const [prepMinutes, setPrepMinutes] = useState<number>(20);
   const [paymentMethods, setPaymentMethods] = useState<string[]>(["cash"]);
   const [paymentChoice, setPaymentChoice] = useState<"cash" | "qris" | "transfer">("cash");
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -78,6 +79,20 @@ function CheckoutPage() {
   const [loyalty, setLoyalty] = useState<LoyaltySettings | null>(null);
   const [pointBalance, setPointBalance] = useState(0);
   const [redeemPoints, setRedeemPoints] = useState(0);
+
+  // Address book
+  type SavedAddr = {
+    id: string;
+    label: string;
+    recipient_name: string;
+    phone: string;
+    address_line: string;
+    is_default: boolean;
+  };
+  const [savedAddrs, setSavedAddrs] = useState<SavedAddr[]>([]);
+  const [selectedAddrId, setSelectedAddrId] = useState<string>("");
+  const [saveAddr, setSaveAddr] = useState<boolean>(false);
+  const [saveAddrLabel, setSaveAddrLabel] = useState<string>("Rumah");
 
   useEffect(() => {
     setItems(readCart(slug));
