@@ -39,6 +39,7 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     customerName,
     promoCode,
     promoDiscount = 0,
+    manualDiscount = 0,
     pointsRedeemed = 0,
     pointsRedeemValue = 0,
     pointsEarned = 0,
