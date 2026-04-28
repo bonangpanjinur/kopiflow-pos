@@ -55,6 +55,7 @@ function PODetailPage() {
   const [items, setItems] = useState<POItem[]>([]);
   const [ingMap, setIngMap] = useState<Record<string, Ingredient>>({});
   const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
