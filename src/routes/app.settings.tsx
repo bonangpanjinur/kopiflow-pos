@@ -64,6 +64,8 @@ function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const qrisFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingQris, setUploadingQris] = useState(false);
   const [form, setForm] = useState<ShopRow | null>(null);
 
   useEffect(() => {
@@ -72,13 +74,14 @@ function SettingsPage() {
       setLoading(true);
       const { data } = await supabase
         .from("coffee_shops")
-        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours")
+        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours, qris_image_url, qris_merchant_name, payment_methods_enabled")
         .eq("id", shop.id)
         .maybeSingle();
       if (data) {
         setForm({
           ...data,
           open_hours: (data.open_hours as OpenHours | null) ?? DEFAULT_HOURS,
+          payment_methods_enabled: (data.payment_methods_enabled ?? ["cash", "qris"]) as PaymentMethod[],
         } as ShopRow);
       }
       setLoading(false);
@@ -139,6 +142,37 @@ function SettingsPage() {
 
   const onRemoveLogo = () => update("logo_url", null);
 
+  const onUploadQris = async (file: File) => {
+    if (!shop) return;
+    if (!file.type.startsWith("image/")) return toast.error("File harus berupa gambar");
+    if (file.size > 2 * 1024 * 1024) return toast.error("Ukuran maksimal 2MB");
+    setUploadingQris(true);
+    const ext = file.name.split(".").pop() ?? "png";
+    const path = `${shop.id}/qris-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("shop-logos").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (upErr) {
+      toast.error(upErr.message);
+      setUploadingQris(false);
+      return;
+    }
+    const { data: pub } = supabase.storage.from("shop-logos").getPublicUrl(path);
+    update("qris_image_url", pub.publicUrl);
+    setUploadingQris(false);
+    toast.success("QRIS terunggah, simpan untuk menerapkan");
+  };
+
+  const togglePayment = (m: PaymentMethod) => {
+    setForm((f) => {
+      if (!f) return f;
+      const enabled = f.payment_methods_enabled ?? [];
+      const next = enabled.includes(m) ? enabled.filter((x) => x !== m) : [...enabled, m];
+      return { ...f, payment_methods_enabled: next.length ? next : ["cash"] };
+    });
+  };
+
   const onSave = async () => {
     if (!shop || !form) return;
     setSaving(true);
@@ -155,6 +189,9 @@ function SettingsPage() {
         instagram: form.instagram,
         whatsapp: form.whatsapp,
         open_hours: form.open_hours as never,
+        qris_image_url: form.qris_image_url,
+        qris_merchant_name: form.qris_merchant_name,
+        payment_methods_enabled: form.payment_methods_enabled,
       })
       .eq("id", shop.id);
     setSaving(false);
