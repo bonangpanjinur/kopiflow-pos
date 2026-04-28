@@ -255,6 +255,7 @@ function OnlineOrders() {
               onExpand={() => loadItems(o.id)}
               onUpdateStatus={(s) => updateStatus(o.id, s)}
               onAssign={(cid) => assignCourier(o.id, cid)}
+              onVerifyPayment={(paid) => verifyPayment(o.id, paid)}
             />
           ))}
         </div>
@@ -270,6 +271,7 @@ function OrderCard({
   onExpand,
   onUpdateStatus,
   onAssign,
+  onVerifyPayment,
 }: {
   order: Order;
   items: OrderItem[] | undefined;
@@ -277,6 +279,7 @@ function OrderCard({
   onExpand: () => void;
   onUpdateStatus: (s: string) => void;
   onAssign: (cid: string | null) => void;
+  onVerifyPayment: (paid: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const isDelivery = order.fulfillment === "delivery";
