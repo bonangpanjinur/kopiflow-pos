@@ -1140,6 +1140,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_promo_usage: { Args: { _promo_id: string }; Returns: undefined }
       next_order_no: { Args: { _outlet_id: string }; Returns: string }
       validate_promo: {
         Args: {
