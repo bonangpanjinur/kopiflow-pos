@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState as _useState } from "react";
 import { LowStockDialog } from "@/components/inventory/low-stock-dialog";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +34,7 @@ function Dashboard() {
   const [topItems, setTopItems] = useState<{ name: string; qty: number }[]>([]);
   const [recent, setRecent] = useState<Order[]>([]);
   const [lowStock, setLowStock] = useState<{ id: string; name: string; current_stock: number; unit: string }[]>([]);
+  const [lowOpen, setLowOpen] = useState(false);
 
   useEffect(() => {
     if (!shop) return;
@@ -139,8 +139,22 @@ function Dashboard() {
       )}
 
       {lowStock.length > 0 && shop && (
-        <LowStockBanner items={lowStock} shopId={shop.id} />
+        <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+            <div className="flex-1">
+              <div className="font-semibold text-sm">Bahan menipis</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {lowStock.map((l) => `${l.name} (${l.current_stock} ${l.unit})`).join(" · ")}
+              </div>
+            </div>
+            <button onClick={() => setLowOpen(true)} className="text-sm font-medium text-primary hover:underline whitespace-nowrap">
+              Lihat & Pesan →
+            </button>
+          </div>
+        </div>
       )}
+      {shop && <LowStockDialog open={lowOpen} onOpenChange={setLowOpen} shopId={shop.id} />}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Panel title="Menu terlaris hari ini" linkTo="/app/reports" linkLabel="Lihat laporan">
