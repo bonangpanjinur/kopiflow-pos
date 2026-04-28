@@ -853,6 +853,7 @@ function CheckoutDialog({
   const [promoCode, setPromoCode] = useState("");
   const [promoApplying, setPromoApplying] = useState(false);
   const [promo, setPromo] = useState<{ id: string; code: string; discount: number } | null>(null);
+  const [manualDiscount, setManualDiscount] = useState<string>("");
   const [done, setDone] = useState<{
     orderNo: string;
     date: Date;
@@ -862,7 +863,9 @@ function CheckoutDialog({
   const printRef = useRef<HTMLDivElement>(null);
 
   const subtotal = cartTotal(cart.items);
-  const discount = promo?.discount ?? 0;
+  const promoDisc = promo?.discount ?? 0;
+  const manualDisc = Math.max(0, Math.min(Number(manualDiscount || 0), subtotal - promoDisc));
+  const discount = promoDisc + manualDisc;
   const total = Math.max(0, subtotal - discount);
   const tenderedNum = method === "cash" ? Number(tendered || 0) : total;
   const change = Math.max(0, tenderedNum - total);
