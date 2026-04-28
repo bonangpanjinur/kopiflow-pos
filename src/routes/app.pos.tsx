@@ -1157,6 +1157,10 @@ function CheckoutDialog({
     setPromo(null);
     setPromoCode("");
     setManualDiscount("");
+    setTipInput("");
+    setSplitEnabled(false);
+    setSplitCash("");
+    setSplitQris("");
   }
 
   // Keyboard shortcuts: F2=cash, F3=qris, Enter=confirm, Esc=close
