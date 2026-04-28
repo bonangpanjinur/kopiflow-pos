@@ -715,7 +715,13 @@ export type Database = {
         | "barista"
         | "customer"
         | "manager"
-      order_status: "completed" | "voided" | "refunded"
+      order_status:
+        | "completed"
+        | "voided"
+        | "refunded"
+        | "pending"
+        | "preparing"
+        | "ready"
       payment_method: "cash" | "qris"
       stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
     }
@@ -853,7 +859,14 @@ export const Constants = {
         "customer",
         "manager",
       ],
-      order_status: ["completed", "voided", "refunded"],
+      order_status: [
+        "completed",
+        "voided",
+        "refunded",
+        "pending",
+        "preparing",
+        "ready",
+      ],
       payment_method: ["cash", "qris"],
       stock_movement_type: ["purchase", "adjustment", "sale", "waste"],
     },
