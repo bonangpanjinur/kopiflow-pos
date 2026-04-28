@@ -1211,6 +1211,10 @@ export type Database = {
           promo_id: string
         }[]
       }
+      void_order: {
+        Args: { _order_id: string; _reason?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
