@@ -110,6 +110,7 @@ export type Database = {
           owner_id: string
           payment_methods_enabled: string[]
           phone: string | null
+          prep_minutes: number
           qris_image_url: string | null
           qris_merchant_name: string | null
           slug: string
@@ -132,6 +133,7 @@ export type Database = {
           owner_id: string
           payment_methods_enabled?: string[]
           phone?: string | null
+          prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
           slug: string
@@ -154,6 +156,7 @@ export type Database = {
           owner_id?: string
           payment_methods_enabled?: string[]
           phone?: string | null
+          prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
           slug?: string

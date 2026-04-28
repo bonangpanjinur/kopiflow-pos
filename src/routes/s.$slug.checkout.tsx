@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Plus } from "lucide-react";
 import {
   validatePromo,
   getLoyaltySettings,
@@ -59,6 +59,7 @@ function CheckoutPage() {
 
   const [items, setItems] = useState<CustomerCartItem[]>([]);
   const [shopId, setShopId] = useState<string | null>(null);
+  const [prepMinutes, setPrepMinutes] = useState<number>(20);
   const [paymentMethods, setPaymentMethods] = useState<string[]>(["cash"]);
   const [paymentChoice, setPaymentChoice] = useState<"cash" | "qris" | "transfer">("cash");
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -79,6 +80,20 @@ function CheckoutPage() {
   const [pointBalance, setPointBalance] = useState(0);
   const [redeemPoints, setRedeemPoints] = useState(0);
 
+  // Address book
+  type SavedAddr = {
+    id: string;
+    label: string;
+    recipient_name: string;
+    phone: string;
+    address_line: string;
+    is_default: boolean;
+  };
+  const [savedAddrs, setSavedAddrs] = useState<SavedAddr[]>([]);
+  const [selectedAddrId, setSelectedAddrId] = useState<string>("");
+  const [saveAddr, setSaveAddr] = useState<boolean>(false);
+  const [saveAddrLabel, setSaveAddrLabel] = useState<string>("Rumah");
+
   useEffect(() => {
     setItems(readCart(slug));
   }, [slug]);
@@ -87,11 +102,12 @@ function CheckoutPage() {
     (async () => {
       const { data: shop } = await supabase
         .from("coffee_shops")
-        .select("id, payment_methods_enabled, qris_image_url")
+        .select("id, payment_methods_enabled, qris_image_url, prep_minutes")
         .eq("slug", slug)
         .maybeSingle();
       if (!shop) return;
       setShopId(shop.id);
+      setPrepMinutes(Number(shop.prep_minutes ?? 20));
       const methods = (shop.payment_methods_enabled ?? ["cash"]) as string[];
       // Filter QRIS out if no QR uploaded
       const usable = methods.filter((m) => m !== "qris" || shop.qris_image_url);
@@ -152,6 +168,28 @@ function CheckoutPage() {
       });
   }, [user]);
 
+  // Load saved addresses
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("customer_addresses")
+      .select("id,label,recipient_name,phone,address_line,is_default")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const list = (data ?? []) as SavedAddr[];
+        setSavedAddrs(list);
+        const def = list.find((a) => a.is_default) ?? list[0];
+        if (def) {
+          setSelectedAddrId(def.id);
+          setAddress(def.address_line);
+          setName((n) => n || def.recipient_name);
+          setPhone((p) => p || def.phone);
+        }
+      });
+  }, [user]);
+
   // Load loyalty settings + balance once shop & user are known
   useEffect(() => {
     if (!shopId) return;
@@ -199,6 +237,11 @@ function CheckoutPage() {
     toast.success(`Promo ${res.code} dipakai`);
   }
 
+  function validatePhone(p: string) {
+    const clean = p.replace(/[\s\-]/g, "");
+    return /^(\+62|62|0)8[0-9]{7,12}$/.test(clean);
+  }
+
   async function submit() {
     if (!user) {
       navigate({ to: "/s/$slug/login", params: { slug }, search: { redirect: `/s/${slug}/checkout` } });
@@ -207,6 +250,7 @@ function CheckoutPage() {
     if (!shopId || !outletId) return toast.error("Outlet belum tersedia");
     if (items.length === 0) return toast.error("Keranjang kosong");
     if (!name.trim() || !phone.trim()) return toast.error("Nama dan nomor HP wajib diisi");
+    if (!validatePhone(phone)) return toast.error("Nomor HP tidak valid (contoh: 0812xxxx)");
     if (!minOrderOk) return toast.error(`Minimum order ${formatIDR(settings!.min_order)}`);
     if (!hoursOk) return toast.error("Di luar jam delivery");
     if (fulfillment === "delivery") {
@@ -229,6 +273,18 @@ function CheckoutPage() {
         },
         { onConflict: "user_id" },
       );
+
+      // Save new address if requested
+      if (fulfillment === "delivery" && saveAddr && address.trim()) {
+        await supabase.from("customer_addresses").insert({
+          user_id: user.id,
+          label: saveAddrLabel || "Alamat",
+          recipient_name: name.trim(),
+          phone: phone.trim(),
+          address_line: address.trim(),
+          is_default: savedAddrs.length === 0,
+        });
+      }
 
       const { data: orderNo } = await supabase.rpc("next_order_no", { _outlet_id: outletId });
 
@@ -275,6 +331,17 @@ function CheckoutPage() {
       const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
       if (itemsErr) throw itemsErr;
 
+      // Record promo redemption
+      if (promo?.id && promoDiscount > 0) {
+        await supabase.from("promo_redemptions").insert({
+          promo_id: promo.id,
+          order_id: order.id,
+          shop_id: shopId,
+          user_id: user.id,
+          amount: promoDiscount,
+        });
+      }
+
       await applyPostOrder({
         shopId,
         orderId: order.id,
@@ -290,7 +357,7 @@ function CheckoutPage() {
       if (paymentChoice === "qris" || paymentChoice === "transfer") {
         navigate({ to: "/s/$slug/pay/$orderId", params: { slug, orderId: order.id } });
       } else {
-        navigate({ to: "/s/$slug/orders", params: { slug } });
+        navigate({ to: "/track/$orderId", params: { orderId: order.id } });
       }
     } catch (e) {
       console.error(e);
@@ -399,15 +466,85 @@ function CheckoutPage() {
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
         </div>
         {fulfillment === "delivery" && (
-          <div className="space-y-1">
-            <Label className="text-xs">Alamat pengiriman</Label>
-            <Textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Jalan, nomor, RT/RW, patokan…"
-              rows={3}
-            />
+          <div className="space-y-2">
+            {savedAddrs.length > 0 && (
+              <div className="space-y-1">
+                <Label className="text-xs">Alamat tersimpan</Label>
+                <div className="grid gap-1.5">
+                  {savedAddrs.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAddrId(a.id);
+                        setAddress(a.address_line);
+                        setName(a.recipient_name);
+                        setPhone(a.phone);
+                      }}
+                      className={`flex items-start gap-2 rounded-lg border p-2 text-left text-xs ${
+                        selectedAddrId === a.id ? "border-primary bg-accent" : "border-border"
+                      }`}
+                    >
+                      <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{a.label} · {a.recipient_name}</p>
+                        <p className="text-muted-foreground line-clamp-2">{a.address_line}</p>
+                      </div>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedAddrId("");
+                      setAddress("");
+                    }}
+                    className="inline-flex items-center gap-1 self-start text-xs text-primary hover:underline"
+                  >
+                    <Plus className="h-3 w-3" /> Pakai alamat baru
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">Alamat pengiriman</Label>
+              <Textarea
+                value={address}
+                onChange={(e) => { setAddress(e.target.value); setSelectedAddrId(""); }}
+                placeholder="Jalan, nomor, RT/RW, patokan…"
+                rows={3}
+              />
+            </div>
+            {!selectedAddrId && address.trim() && user && (
+              <div className="space-y-1.5 rounded-md border border-dashed border-border p-2">
+                <label className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={saveAddr} onChange={(e) => setSaveAddr(e.target.checked)} />
+                  Simpan alamat ini
+                </label>
+                {saveAddr && (
+                  <div className="flex gap-1.5">
+                    {["Rumah", "Kantor", "Lainnya"].map((l) => (
+                      <button
+                        type="button"
+                        key={l}
+                        onClick={() => setSaveAddrLabel(l)}
+                        className={`rounded-full border px-2.5 py-0.5 text-xs ${
+                          saveAddrLabel === l ? "border-primary bg-primary/10" : "border-border"
+                        }`}
+                      >{l}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              ⏱ Estimasi siap dalam ~{prepMinutes} menit setelah pesanan diterima.
+            </p>
           </div>
+        )}
+        {fulfillment === "pickup" && (
+          <p className="text-xs text-muted-foreground">
+            ⏱ Estimasi siap diambil dalam ~{prepMinutes} menit setelah pesanan diterima.
+          </p>
         )}
         <div className="space-y-1">
           <Label className="text-xs">Catatan untuk toko</Label>

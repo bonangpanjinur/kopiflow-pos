@@ -160,9 +160,20 @@ function CourierView() {
                   </a>
                 )}
                 {o.delivery_address && (
-                  <p className="flex items-start gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" /> {o.delivery_address}
-                  </p>
+                  <div className="flex items-start gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p>{o.delivery_address}</p>
+                      <a
+                        href={`https://maps.google.com/?q=${encodeURIComponent(o.delivery_address)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        Buka di Google Maps →
+                      </a>
+                    </div>
+                  </div>
                 )}
                 {o.note && <p className="text-muted-foreground">📝 {o.note}</p>}
                 <p className="mt-1 font-semibold">{formatIDR(Number(o.total))}</p>
