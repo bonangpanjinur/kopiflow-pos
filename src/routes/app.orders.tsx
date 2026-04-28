@@ -2,10 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";
-import { Loader2, ListOrdered, Banknote, QrCode, Printer, XCircle } from "lucide-react";
+import { Loader2, ListOrdered, Banknote, QrCode, Printer, XCircle, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +19,7 @@ import {
 import { Receipt } from "@/components/pos/receipt";
 import type { CartItem } from "@/lib/cart";
 import { useRef } from "react";
+import { refundOrder } from "@/lib/shift";
 
 export const Route = createFileRoute("/app/orders")({
   component: OrdersPage,
