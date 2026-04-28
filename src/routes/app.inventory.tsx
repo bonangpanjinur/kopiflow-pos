@@ -360,8 +360,11 @@ function InventoryPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openOpname(i)}>
+                          <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Opname
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => openMove(i)}>
-                          <ArrowDownUp className="mr-1.5 h-3.5 w-3.5" /> Stok masuk/keluar
+                          <ArrowDownUp className="mr-1.5 h-3.5 w-3.5" /> Stok
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => openEdit(i)}>
                           <Pencil className="h-3.5 w-3.5" />
