@@ -237,6 +237,11 @@ function CheckoutPage() {
     toast.success(`Promo ${res.code} dipakai`);
   }
 
+  function validatePhone(p: string) {
+    const clean = p.replace(/[\s\-]/g, "");
+    return /^(\+62|62|0)8[0-9]{7,12}$/.test(clean);
+  }
+
   async function submit() {
     if (!user) {
       navigate({ to: "/s/$slug/login", params: { slug }, search: { redirect: `/s/${slug}/checkout` } });
@@ -245,6 +250,7 @@ function CheckoutPage() {
     if (!shopId || !outletId) return toast.error("Outlet belum tersedia");
     if (items.length === 0) return toast.error("Keranjang kosong");
     if (!name.trim() || !phone.trim()) return toast.error("Nama dan nomor HP wajib diisi");
+    if (!validatePhone(phone)) return toast.error("Nomor HP tidak valid (contoh: 0812xxxx)");
     if (!minOrderOk) return toast.error(`Minimum order ${formatIDR(settings!.min_order)}`);
     if (!hoursOk) return toast.error("Di luar jam delivery");
     if (fulfillment === "delivery") {
@@ -267,6 +273,18 @@ function CheckoutPage() {
         },
         { onConflict: "user_id" },
       );
+
+      // Save new address if requested
+      if (fulfillment === "delivery" && saveAddr && address.trim()) {
+        await supabase.from("customer_addresses").insert({
+          user_id: user.id,
+          label: saveAddrLabel || "Alamat",
+          recipient_name: name.trim(),
+          phone: phone.trim(),
+          address_line: address.trim(),
+          is_default: savedAddrs.length === 0,
+        });
+      }
 
       const { data: orderNo } = await supabase.rpc("next_order_no", { _outlet_id: outletId });
 
@@ -313,6 +331,17 @@ function CheckoutPage() {
       const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
       if (itemsErr) throw itemsErr;
 
+      // Record promo redemption
+      if (promo?.id && promoDiscount > 0) {
+        await supabase.from("promo_redemptions").insert({
+          promo_id: promo.id,
+          order_id: order.id,
+          shop_id: shopId,
+          user_id: user.id,
+          amount: promoDiscount,
+        });
+      }
+
       await applyPostOrder({
         shopId,
         orderId: order.id,
@@ -328,7 +357,7 @@ function CheckoutPage() {
       if (paymentChoice === "qris" || paymentChoice === "transfer") {
         navigate({ to: "/s/$slug/pay/$orderId", params: { slug, orderId: order.id } });
       } else {
-        navigate({ to: "/s/$slug/orders", params: { slug } });
+        navigate({ to: "/track/$orderId", params: { orderId: order.id } });
       }
     } catch (e) {
       console.error(e);
