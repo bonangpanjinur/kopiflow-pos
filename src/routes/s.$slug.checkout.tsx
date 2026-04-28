@@ -420,6 +420,18 @@ function CheckoutPage() {
             <span className="text-muted-foreground">Subtotal</span>
             <span>{formatIDR(subtotal)}</span>
           </div>
+          {promoDiscount > 0 && (
+            <div className="flex justify-between text-primary">
+              <span>Promo {promo?.code}</span>
+              <span>−{formatIDR(promoDiscount)}</span>
+            </div>
+          )}
+          {pointsValue > 0 && (
+            <div className="flex justify-between text-primary">
+              <span>Tukar {effectiveRedeem} poin</span>
+              <span>−{formatIDR(pointsValue)}</span>
+            </div>
+          )}
           {fulfillment === "delivery" && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">
