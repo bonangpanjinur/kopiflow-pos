@@ -38,6 +38,8 @@ const DEFAULT_HOURS: OpenHours = {
   sun: { open: "08:00", close: "22:00", closed: false },
 };
 
+type PaymentMethod = "cash" | "qris" | "transfer";
+
 type ShopRow = {
   id: string;
   name: string;
@@ -51,6 +53,9 @@ type ShopRow = {
   instagram: string | null;
   whatsapp: string | null;
   open_hours: OpenHours | null;
+  qris_image_url: string | null;
+  qris_merchant_name: string | null;
+  payment_methods_enabled: PaymentMethod[];
 };
 
 function SettingsPage() {
