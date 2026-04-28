@@ -15,9 +15,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppRecipesRouteImport } from './routes/app.recipes'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
+import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 
 const SignupRoute = SignupRouteImport.update({
@@ -50,6 +52,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRecipesRoute = AppRecipesRouteImport.update({
+  id: '/recipes',
+  path: '/recipes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPosRoute = AppPosRouteImport.update({
   id: '/pos',
   path: '/pos',
@@ -65,6 +72,11 @@ const AppMenuRoute = AppMenuRouteImport.update({
   path: '/menu',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInventoryRoute = AppInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCategoriesRoute = AppCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -78,9 +90,11 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/recipes': typeof AppRecipesRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,9 +103,11 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/recipes': typeof AppRecipesRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -102,9 +118,11 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
+  '/app/inventory': typeof AppInventoryRoute
   '/app/menu': typeof AppMenuRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/recipes': typeof AppRecipesRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -116,9 +134,11 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/app/categories'
+    | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
+    | '/app/recipes'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,9 +147,11 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/app/categories'
+    | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
+    | '/app/recipes'
     | '/app'
   id:
     | '__root__'
@@ -139,9 +161,11 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/app/categories'
+    | '/app/inventory'
     | '/app/menu'
     | '/app/orders'
     | '/app/pos'
+    | '/app/recipes'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -197,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/recipes': {
+      id: '/app/recipes'
+      path: '/recipes'
+      fullPath: '/app/recipes'
+      preLoaderRoute: typeof AppRecipesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/pos': {
       id: '/app/pos'
       path: '/pos'
@@ -218,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMenuRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/inventory': {
+      id: '/app/inventory'
+      path: '/inventory'
+      fullPath: '/app/inventory'
+      preLoaderRoute: typeof AppInventoryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/categories': {
       id: '/app/categories'
       path: '/categories'
@@ -230,17 +268,21 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
+  AppInventoryRoute: typeof AppInventoryRoute
   AppMenuRoute: typeof AppMenuRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
+  AppRecipesRoute: typeof AppRecipesRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
+  AppInventoryRoute: AppInventoryRoute,
   AppMenuRoute: AppMenuRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
+  AppRecipesRoute: AppRecipesRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
