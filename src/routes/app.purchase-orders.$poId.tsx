@@ -2,7 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -58,6 +59,7 @@ function PODetailPage() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -126,7 +128,12 @@ function PODetailPage() {
         <Link to="/app/purchase-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke daftar PO
         </Link>
-        <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+            <Eye className="mr-1.5 h-4 w-4" />Preview
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
+        </div>
       </div>
 
 
@@ -239,6 +246,44 @@ function PODetailPage() {
 
     {/* Print-only sheet (A4) */}
     <div className="po-print">
+      <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} />
+    </div>
+
+    {/* Print preview dialog */}
+    <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+      <DialogContent className="max-w-[min(95vw,240mm)] max-h-[92vh] overflow-y-auto p-0 gap-0 bg-muted/40">
+        <DialogHeader className="px-5 pt-5 pb-3 print:hidden">
+          <DialogTitle>Preview cetak — {po.po_no}</DialogTitle>
+        </DialogHeader>
+        <div className="px-4 pb-4">
+          <div className="po-preview">
+            <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} />
+          </div>
+        </div>
+        <DialogFooter className="px-5 py-3 border-t bg-background print:hidden">
+          <Button variant="outline" onClick={() => setPreviewOpen(false)}>Tutup</Button>
+          <Button onClick={() => { setPreviewOpen(false); setTimeout(() => window.print(), 150); }}>
+            <Printer className="mr-1.5 h-4 w-4" /> Cetak sekarang
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
+}
+
+function POSheetBody({
+  po, items, ingMap, supplier, shop, statusLabel,
+}: {
+  po: PO;
+  items: POItem[];
+  ingMap: Record<string, Ingredient>;
+  supplier: Supplier | null;
+  shop: Shop | null;
+  statusLabel: string;
+}) {
+  return (
+    <>
       <div className="row">
         <div>
           <h1>Purchase Order</h1>
@@ -323,7 +368,6 @@ function PODetailPage() {
         <div className="sign">Hormat kami,<br/>{shop?.name ?? ""}</div>
         <div className="sign">Penerima,<br/>{supplier?.name ?? ""}</div>
       </div>
-    </div>
     </>
   );
 }
