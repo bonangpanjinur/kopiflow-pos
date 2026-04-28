@@ -581,6 +581,80 @@ function InventoryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Stok Opname Massal</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input className="pl-8" placeholder="Cari bahan..." value={bulkSearch} onChange={(e) => setBulkSearch(e.target.value)} />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input type="checkbox" checked={bulkOnlyChanged} onChange={(e) => setBulkOnlyChanged(e.target.checked)} />
+                Hanya yang berubah
+              </label>
+            </div>
+            <div className="overflow-hidden rounded-md border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Bahan</th>
+                    <th className="px-3 py-2 text-right">Sistem</th>
+                    <th className="px-3 py-2 text-right">Aktual</th>
+                    <th className="px-3 py-2 text-right">Selisih</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {items
+                    .filter((i) => i.name.toLowerCase().includes(bulkSearch.toLowerCase()))
+                    .filter((i) => {
+                      if (!bulkOnlyChanged) return true;
+                      const v = bulkValues[i.id];
+                      return v !== undefined && v !== "" && Number(v) !== Number(i.current_stock);
+                    })
+                    .map((i) => {
+                      const raw = bulkValues[i.id] ?? "";
+                      const actual = raw === "" ? null : Number(raw);
+                      const delta = actual !== null && !Number.isNaN(actual) ? actual - Number(i.current_stock) : 0;
+                      const invalid = raw !== "" && (Number.isNaN(actual!) || (actual ?? 0) < 0);
+                      return (
+                        <tr key={i.id}>
+                          <td className="px-3 py-2 font-medium">{i.name} <span className="text-xs text-muted-foreground">({i.unit})</span></td>
+                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{i.current_stock}</td>
+                          <td className="px-3 py-2 text-right">
+                            <Input
+                              type="number" min="0" step="0.01"
+                              className={`h-8 w-24 ml-auto text-right tabular-nums ${invalid ? "border-destructive" : ""}`}
+                              value={raw}
+                              onChange={(e) => setBulkValues((m) => ({ ...m, [i.id]: e.target.value }))}
+                            />
+                          </td>
+                          <td className={`px-3 py-2 text-right tabular-nums font-semibold ${delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-600" : "text-destructive"}`}>
+                            {delta === 0 ? "—" : `${delta > 0 ? "+" : ""}${delta}`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Catatan opname (opsional)</Label>
+              <Input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="Mis. Opname akhir bulan April" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)}>Batal</Button>
+            <Button onClick={saveBulkOpname} disabled={bulkSaving}>
+              {bulkSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan Opname
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <LowStockDialog open={lowOpen} onOpenChange={setLowOpen} shopId={shop?.id ?? null} />
     </div>
   );
 }
