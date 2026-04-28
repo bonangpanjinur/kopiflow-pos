@@ -480,6 +480,40 @@ function InventoryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={opnameOpen} onOpenChange={setOpnameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Stok Opname — {opnameTarget?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="rounded-md bg-muted/30 px-3 py-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Stok sistem</span>
+                <span className="tabular-nums font-medium">{opnameTarget?.current_stock} {opnameTarget?.unit}</span></div>
+              {opnameActual !== "" && !Number.isNaN(Number(opnameActual)) && opnameTarget && (
+                <div className="mt-1 flex justify-between border-t border-border pt-1"><span className="text-muted-foreground">Selisih</span>
+                  <span className={`tabular-nums font-semibold ${Number(opnameActual) - opnameTarget.current_stock < 0 ? "text-destructive" : "text-emerald-600"}`}>
+                    {Number(opnameActual) - opnameTarget.current_stock > 0 ? "+" : ""}{Number(opnameActual) - opnameTarget.current_stock} {opnameTarget.unit}
+                  </span></div>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Stok aktual hasil hitung fisik ({opnameTarget?.unit})</Label>
+              <Input type="number" value={opnameActual} onChange={(e) => setOpnameActual(e.target.value)} placeholder="0" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Catatan (opsional)</Label>
+              <Input value={opnameNote} onChange={(e) => setOpnameNote(e.target.value)} placeholder="Mis. Opname akhir bulan" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpnameOpen(false)}>Batal</Button>
+            <Button onClick={saveOpname} disabled={opnameSaving}>
+              {opnameSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
