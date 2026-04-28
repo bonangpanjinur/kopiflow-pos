@@ -1255,53 +1255,114 @@ function CheckoutDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <PayMethodBtn
-                  active={method === "cash"}
-                  onClick={() => setMethod("cash")}
-                  icon={<Banknote className="h-4 w-4" />}
-                  label="Tunai"
-                />
-                <PayMethodBtn
-                  active={method === "qris"}
-                  onClick={() => setMethod("qris")}
-                  icon={<QrCode className="h-4 w-4" />}
-                  label="QRIS"
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tip (Rp)</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={tipInput}
+                  onChange={(e) => setTipInput(e.target.value)}
+                  placeholder="0"
                 />
               </div>
 
-              {method === "cash" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="tendered">Uang diterima</Label>
-                  <Input
-                    id="tendered"
-                    type="number"
-                    inputMode="numeric"
-                    value={tendered}
-                    onChange={(e) => setTendered(e.target.value)}
-                    placeholder={String(total)}
-                    autoFocus
-                  />
-                  <div className="flex flex-wrap gap-1.5">
-                    {[total, 50000, 100000, 200000].map((amt) => (
-                      <button
-                        key={amt}
-                        onClick={() => setTendered(String(amt))}
-                        className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
-                      >
-                        {formatIDR(amt)}
-                      </button>
-                    ))}
+              <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+                <Label htmlFor="split-toggle" className="text-xs cursor-pointer">
+                  Split payment (tunai + QRIS)
+                </Label>
+                <input
+                  id="split-toggle"
+                  type="checkbox"
+                  checked={splitEnabled}
+                  onChange={(e) => setSplitEnabled(e.target.checked)}
+                  className="h-4 w-4"
+                />
+              </div>
+
+              {splitEnabled ? (
+                <div className="space-y-2 rounded-md border border-dashed border-border p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Tunai</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={splitCash}
+                        onChange={(e) => setSplitCash(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">QRIS</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={splitQris}
+                        onChange={(e) => setSplitQris(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
-                  <div className="flex justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
-                    <span className="text-muted-foreground">Kembalian</span>
-                    <span className="font-semibold">{formatIDR(change)}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      Total bayar: {formatIDR(splitSum)} / {formatIDR(total)}
+                    </span>
+                    <span className={splitSum < total ? "font-semibold text-destructive" : "font-semibold text-emerald-600"}>
+                      {splitSum < total ? `Kurang ${formatIDR(total - splitSum)}` : "OK"}
+                    </span>
                   </div>
                 </div>
               ) : (
-                <div className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-                  Tunjukkan QRIS ke pelanggan, lalu konfirmasi pembayaran sukses.
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <PayMethodBtn
+                      active={method === "cash"}
+                      onClick={() => setMethod("cash")}
+                      icon={<Banknote className="h-4 w-4" />}
+                      label="Tunai"
+                    />
+                    <PayMethodBtn
+                      active={method === "qris"}
+                      onClick={() => setMethod("qris")}
+                      icon={<QrCode className="h-4 w-4" />}
+                      label="QRIS"
+                    />
+                  </div>
+
+                  {method === "cash" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="tendered">Uang diterima</Label>
+                      <Input
+                        id="tendered"
+                        type="number"
+                        inputMode="numeric"
+                        value={tendered}
+                        onChange={(e) => setTendered(e.target.value)}
+                        placeholder={String(total)}
+                        autoFocus
+                      />
+                      <div className="flex flex-wrap gap-1.5">
+                        {[total, 50000, 100000, 200000].map((amt) => (
+                          <button
+                            key={amt}
+                            onClick={() => setTendered(String(amt))}
+                            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
+                          >
+                            {formatIDR(amt)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">Kembalian</span>
+                        <span className="font-semibold">{formatIDR(change)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                      Tunjukkan QRIS ke pelanggan, lalu konfirmasi pembayaran sukses.
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <DialogFooter>
