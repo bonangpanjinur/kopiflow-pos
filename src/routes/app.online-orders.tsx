@@ -169,6 +169,18 @@ function OnlineOrders() {
     else toast.success(courier_id ? "Kurir ditugaskan" : "Penugasan dibatalkan");
   };
 
+  const verifyPayment = async (id: string, paid: boolean) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        payment_status: paid ? "paid" : "unpaid",
+        paid_at: paid ? new Date().toISOString() : null,
+      })
+      .eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success(paid ? "Pembayaran diverifikasi" : "Pembayaran ditolak");
+  };
+
   if (loadingShop || loading) {
     return (
       <div className="flex h-64 items-center justify-center">
