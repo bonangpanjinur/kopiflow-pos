@@ -28,6 +28,7 @@ const NAV = [
   { to: "/app/pos", label: "POS", icon: ShoppingBag },
   { to: "/app/orders", label: "Order", icon: ListOrdered },
   { to: "/app/menu", label: "Menu", icon: UtensilsCrossed },
+  { to: "/app/categories", label: "Kategori", icon: ListOrdered },
   { to: "/app/employees", label: "Pegawai", icon: Users },
   { to: "/app/couriers", label: "Kurir", icon: Truck },
   { to: "/app/reports", label: "Laporan", icon: BarChart3 },
