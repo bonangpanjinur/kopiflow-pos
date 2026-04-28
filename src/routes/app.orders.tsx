@@ -39,6 +39,7 @@ type OrderDetail = Order & {
     name: string;
     unit_price: number;
     quantity: number;
+    note: string | null;
   }[];
 };
 
