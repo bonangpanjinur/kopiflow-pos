@@ -339,6 +339,97 @@ function SettingsPage() {
         </div>
       </Section>
 
+      {/* Pembayaran */}
+      <Section icon={CreditCard} title="Pembayaran" desc="Metode pembayaran yang ditawarkan ke pelanggan online.">
+        <div className="space-y-3">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(["cash", "qris", "transfer"] as PaymentMethod[]).map((m) => {
+              const active = (form.payment_methods_enabled ?? []).includes(m);
+              const labels: Record<PaymentMethod, string> = {
+                cash: "Cash di tempat",
+                qris: "QRIS (statis)",
+                transfer: "Transfer bank",
+              };
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => togglePayment(m)}
+                  className={`rounded-lg border px-3 py-2.5 text-sm text-left transition-colors ${
+                    active ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{labels[m]}</span>
+                    {active && <span className="text-primary text-xs">✓</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {(form.payment_methods_enabled ?? []).includes("qris") && (
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <QrCode className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">QRIS statis</h3>
+              </div>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Upload gambar QR code statis dari merchant Anda. Pelanggan akan scan & upload bukti bayar untuk verifikasi manual.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
+                <div>
+                  <div className="relative h-40 w-40 overflow-hidden rounded-lg border border-dashed border-border bg-background flex items-center justify-center">
+                    {form.qris_image_url ? (
+                      <img src={form.qris_image_url} alt="QRIS" className="h-full w-full object-contain" />
+                    ) : (
+                      <QrCode className="h-10 w-10 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={uploadingQris}
+                      onClick={() => qrisFileRef.current?.click()}
+                    >
+                      {uploadingQris ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    </Button>
+                    {form.qris_image_url && (
+                      <Button size="sm" variant="outline" onClick={() => update("qris_image_url", null)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <input
+                      ref={qrisFileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) onUploadQris(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <Label>Nama merchant</Label>
+                    <Input
+                      placeholder="Mis. Toko Kopi Sahabat"
+                      value={form.qris_merchant_name ?? ""}
+                      onChange={(e) => update("qris_merchant_name", e.target.value)}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Tampil di halaman pembayaran pelanggan.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Section>
+
       {/* Share */}
       <Section icon={Share2} title="Bagikan etalase" desc="Salin link untuk dibagikan ke pelanggan.">
         <div className="flex gap-2">
