@@ -242,9 +242,13 @@ function CheckoutPage() {
           note: note.trim() || null,
           subtotal,
           tax: 0,
-          discount: 0,
+          discount: promoDiscount + pointsValue,
           delivery_fee: deliveryFee,
           total,
+          promo_id: promo?.id ?? null,
+          promo_code: promo?.code ?? null,
+          points_earned: pointsEarned,
+          points_redeemed: effectiveRedeem,
         })
         .select("id,order_no")
         .single();
@@ -262,6 +266,16 @@ function CheckoutPage() {
       }));
       const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
       if (itemsErr) throw itemsErr;
+
+      await applyPostOrder({
+        shopId,
+        orderId: order.id,
+        userId: user.id,
+        promoId: promo?.id ?? null,
+        promoDiscount,
+        pointsEarned,
+        pointsRedeemed: effectiveRedeem,
+      });
 
       clearCart(slug);
       toast.success(`Order #${order.order_no} terkirim!`);
