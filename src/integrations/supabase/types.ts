@@ -108,7 +108,10 @@ export type Database = {
           name: string
           open_hours: Json
           owner_id: string
+          payment_methods_enabled: string[]
           phone: string | null
+          qris_image_url: string | null
+          qris_merchant_name: string | null
           slug: string
           tagline: string | null
           updated_at: string
@@ -127,7 +130,10 @@ export type Database = {
           name: string
           open_hours?: Json
           owner_id: string
+          payment_methods_enabled?: string[]
           phone?: string | null
+          qris_image_url?: string | null
+          qris_merchant_name?: string | null
           slug: string
           tagline?: string | null
           updated_at?: string
@@ -146,7 +152,10 @@ export type Database = {
           name?: string
           open_hours?: Json
           owner_id?: string
+          payment_methods_enabled?: string[]
           phone?: string | null
+          qris_image_url?: string | null
+          qris_merchant_name?: string | null
           slug?: string
           tagline?: string | null
           updated_at?: string
@@ -667,7 +676,10 @@ export type Database = {
           note: string | null
           order_no: string
           outlet_id: string
+          paid_at: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_proof_url: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           points_earned: number
           points_redeemed: number
           promo_code: string | null
@@ -700,7 +712,10 @@ export type Database = {
           note?: string | null
           order_no: string
           outlet_id: string
+          paid_at?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_proof_url?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           points_earned?: number
           points_redeemed?: number
           promo_code?: string | null
@@ -733,7 +748,10 @@ export type Database = {
           note?: string | null
           order_no?: string
           outlet_id?: string
+          paid_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_proof_url?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           points_earned?: number
           points_redeemed?: number
           promo_code?: string | null
@@ -1206,6 +1224,7 @@ export type Database = {
         | "delivering"
         | "cancelled"
       payment_method: "cash" | "qris"
+      payment_status: "unpaid" | "awaiting_verification" | "paid" | "refunded"
       promo_channel: "pos" | "online" | "all"
       promo_type: "percent" | "nominal"
       stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
@@ -1359,6 +1378,7 @@ export const Constants = {
         "cancelled",
       ],
       payment_method: ["cash", "qris"],
+      payment_status: ["unpaid", "awaiting_verification", "paid", "refunded"],
       promo_channel: ["pos", "online", "all"],
       promo_type: ["percent", "nominal"],
       stock_movement_type: ["purchase", "adjustment", "sale", "waste"],
