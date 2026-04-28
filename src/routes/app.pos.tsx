@@ -931,6 +931,7 @@ function CheckoutDialog({
       unit_price: i.unit_price,
       quantity: i.quantity,
       subtotal: i.unit_price * i.quantity,
+      note: i.note ?? null,
     }));
     const { error: iErr } = await supabase.from("order_items").insert(rows);
     if (iErr) {
