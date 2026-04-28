@@ -56,6 +56,101 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          order_id: string | null
+          shift_id: string
+          type: Database["public"]["Enums"]["cash_movement_type"]
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          shift_id: string
+          type: Database["public"]["Enums"]["cash_movement_type"]
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          shift_id?: string
+          type?: Database["public"]["Enums"]["cash_movement_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "cash_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_shifts: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          closing_cash: number | null
+          created_at: string
+          expected_cash: number | null
+          id: string
+          note: string | null
+          opened_at: string
+          opened_by: string
+          opening_cash: number
+          outlet_id: string
+          shop_id: string
+          status: Database["public"]["Enums"]["shift_status"]
+          updated_at: string
+          variance: number | null
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_cash?: number | null
+          created_at?: string
+          expected_cash?: number | null
+          id?: string
+          note?: string | null
+          opened_at?: string
+          opened_by: string
+          opening_cash?: number
+          outlet_id: string
+          shop_id: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+          variance?: number | null
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_cash?: number | null
+          created_at?: string
+          expected_cash?: number | null
+          id?: string
+          note?: string | null
+          opened_at?: string
+          opened_by?: string
+          opening_cash?: number
+          outlet_id?: string
+          shop_id?: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+          variance?: number | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -113,8 +208,11 @@ export type Database = {
           prep_minutes: number
           qris_image_url: string | null
           qris_merchant_name: string | null
+          service_charge_percent: number
           slug: string
           tagline: string | null
+          tax_inclusive: boolean
+          tax_percent: number
           updated_at: string
           whatsapp: string | null
         }
@@ -136,8 +234,11 @@ export type Database = {
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
+          service_charge_percent?: number
           slug: string
           tagline?: string | null
+          tax_inclusive?: boolean
+          tax_percent?: number
           updated_at?: string
           whatsapp?: string | null
         }
@@ -159,8 +260,11 @@ export type Database = {
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
+          service_charge_percent?: number
           slug?: string
           tagline?: string | null
+          tax_inclusive?: boolean
+          tax_percent?: number
           updated_at?: string
           whatsapp?: string | null
         }
@@ -682,16 +786,20 @@ export type Database = {
           paid_at: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_proof_url: string | null
+          payment_split: Json
           payment_status: Database["public"]["Enums"]["payment_status"]
           points_earned: number
           points_redeemed: number
           promo_code: string | null
           promo_id: string | null
           scheduled_for: string | null
+          service_charge: number
+          shift_id: string | null
           shop_id: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
+          tip_amount: number
           total: number
           updated_at: string
         }
@@ -718,16 +826,20 @@ export type Database = {
           paid_at?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_proof_url?: string | null
+          payment_split?: Json
           payment_status?: Database["public"]["Enums"]["payment_status"]
           points_earned?: number
           points_redeemed?: number
           promo_code?: string | null
           promo_id?: string | null
           scheduled_for?: string | null
+          service_charge?: number
+          shift_id?: string | null
           shop_id: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
+          tip_amount?: number
           total?: number
           updated_at?: string
         }
@@ -754,16 +866,20 @@ export type Database = {
           paid_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_proof_url?: string | null
+          payment_split?: Json
           payment_status?: Database["public"]["Enums"]["payment_status"]
           points_earned?: number
           points_redeemed?: number
           promo_code?: string | null
           promo_id?: string | null
           scheduled_for?: string | null
+          service_charge?: number
+          shift_id?: string | null
           shop_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
+          tip_amount?: number
           total?: number
           updated_at?: string
         }
@@ -966,6 +1082,42 @@ export type Database = {
         }
         Relationships: []
       }
+      refunds: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          order_id: string
+          outlet_id: string
+          reason: string | null
+          refund_method: string
+          shop_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id: string
+          outlet_id: string
+          reason?: string | null
+          refund_method?: string
+          shop_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string
+          outlet_id?: string
+          reason?: string | null
+          refund_method?: string
+          shop_id?: string
+        }
+        Relationships: []
+      }
       shifts: {
         Row: {
           created_at: string
@@ -1158,6 +1310,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      close_shift: {
+        Args: { _closing_cash: number; _note?: string; _shift_id: string }
+        Returns: Json
+      }
       get_order_tracking: {
         Args: { _order_id: string }
         Returns: {
@@ -1200,6 +1356,19 @@ export type Database = {
       }
       increment_promo_usage: { Args: { _promo_id: string }; Returns: undefined }
       next_order_no: { Args: { _outlet_id: string }; Returns: string }
+      open_shift: {
+        Args: { _opening_cash: number; _outlet_id: string }
+        Returns: string
+      }
+      refund_order: {
+        Args: {
+          _amount: number
+          _method?: string
+          _order_id: string
+          _reason?: string
+        }
+        Returns: string
+      }
       validate_promo: {
         Args: {
           _channel: string
@@ -1228,6 +1397,13 @@ export type Database = {
         | "customer"
         | "manager"
         | "courier"
+      cash_movement_type:
+        | "in"
+        | "out"
+        | "sale"
+        | "refund"
+        | "opening"
+        | "closing"
       delivery_mode: "flat" | "zone"
       fulfillment_type: "dine_in" | "pickup" | "delivery"
       order_channel: "pos" | "online"
@@ -1244,6 +1420,7 @@ export type Database = {
       payment_status: "unpaid" | "awaiting_verification" | "paid" | "refunded"
       promo_channel: "pos" | "online" | "all"
       promo_type: "percent" | "nominal"
+      shift_status: "open" | "closed"
       stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
     }
     CompositeTypes: {
@@ -1381,6 +1558,7 @@ export const Constants = {
         "manager",
         "courier",
       ],
+      cash_movement_type: ["in", "out", "sale", "refund", "opening", "closing"],
       delivery_mode: ["flat", "zone"],
       fulfillment_type: ["dine_in", "pickup", "delivery"],
       order_channel: ["pos", "online"],
@@ -1398,6 +1576,7 @@ export const Constants = {
       payment_status: ["unpaid", "awaiting_verification", "paid", "refunded"],
       promo_channel: ["pos", "online", "all"],
       promo_type: ["percent", "nominal"],
+      shift_status: ["open", "closed"],
       stock_movement_type: ["purchase", "adjustment", "sale", "waste"],
     },
   },
