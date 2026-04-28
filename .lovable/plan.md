@@ -1,158 +1,127 @@
-# Plan: 4 Batch Penyempurnaan KopiHub
+## Ringkasan
 
-Tanpa payment gateway (tetap manual QRIS). Semua dikerjakan bertahap, 1 batch = 1 sesi besar. Saya rekomendasikan eksekusi berurutan **Batch 4 → 5 → 7 → 6** karena Batch 6 (push notif & live tracking) paling kompleks.
-
----
-
-## BATCH 4 — Money: Shift, Refund, Split Payment, Multi-tax
-
-### Tujuan
-Owner punya kontrol kas penuh: tahu berapa uang di laci awal/akhir shift, bisa refund, bisa terima pembayaran campuran.
-
-### Database
-Migrasi baru:
-- Tabel **`cash_shifts`**: `id, outlet_id, shop_id, opened_by, opened_at, opening_cash, closed_by, closed_at, closing_cash, expected_cash, variance, note, status (open/closed)`.
-- Tabel **`cash_movements`**: `id, shift_id, type (in/out/sale/refund), amount, note, created_by, created_at` — log semua arus kas dalam shift.
-- Tabel **`refunds`**: `id, order_id, amount, reason, refund_method, created_by, created_at`.
-- Kolom baru di `orders`:
-  - `shift_id uuid` (link ke shift saat order dibuat)
-  - `tip_amount numeric default 0`
-  - `service_charge numeric default 0`
-  - `payment_split jsonb default '[]'` — array `[{method, amount}]` untuk split payment
-- Kolom baru di `coffee_shops`:
-  - `tax_percent numeric default 0`
-  - `service_charge_percent numeric default 0`
-  - `tax_inclusive boolean default false`
-- RPC **`open_shift(_outlet_id, _opening_cash)`** & **`close_shift(_shift_id, _closing_cash, _note)`** dengan auto-hitung expected & variance.
-- RPC **`refund_order(_order_id, _amount, _reason, _method)`** — insert refund + cash_movement, update order.payment_status='refunded'.
-
-### UI
-- **`app.shifts.tsx`** (route baru): list shift, detail (cash in/out, sales, expected vs actual). Tombol "Buka Shift" & "Tutup Shift".
-- **`app.pos.tsx`**: 
-  - Block POS jika tidak ada shift open (banner "Buka shift dulu").
-  - Tombol "Split Payment" di dialog bayar → 2+ input method+amount, validasi total.
-  - Input tip & service charge opsional.
-  - Auto-isi `shift_id` saat create order.
-- **`app.orders.tsx`**: tombol "Refund" di detail order (parsial atau penuh) dengan dialog alasan.
-- **`app.settings.tsx`**: section Pajak & Service (% pajak, % service, tax inclusive toggle).
-- **`receipt.tsx`**: tampilkan tip, service, split payment breakdown.
+Empat peningkatan untuk Inventory Pro:
+1. **Halaman detail PO** sebagai route tersendiri (bukan dialog) dengan aksi Receive
+2. **Stock Opname** versi multi-item (bulk) dengan validasi & log
+3. **HPP & margin real-time** di halaman Recipes dan Menu
+4. **Dialog Low-Stock** dengan rekomendasi supplier + tombol "Buat PO dari template"
 
 ---
 
-## BATCH 5 — Inventory Pro: Low Stock, HPP, Supplier, PO
+## 1. Halaman Detail Purchase Order
 
-### Tujuan
-Owner tidak kehabisan bahan baku tanpa sadar; tahu margin tiap menu; bisa kelola supplier & purchase order.
+**File baru**: `src/routes/app.purchase-orders.$poId.tsx`
 
-### Database
-Migrasi:
-- Tabel **`suppliers`**: `id, shop_id, name, contact_name, phone, email, address, note, is_active`.
-- Tabel **`purchase_orders`**: `id, shop_id, supplier_id, po_no, status (draft/sent/received/cancelled), order_date, received_date, total, note, created_by`.
-- Tabel **`purchase_order_items`**: `id, po_id, ingredient_id, quantity, unit_cost, subtotal`.
-- Kolom baru `ingredients`:
-  - `supplier_id uuid` (default supplier)
-  - `last_purchase_cost numeric` (auto-update saat PO received)
-- Trigger: saat `purchase_orders.status` berubah ke `received`, auto-insert `stock_movements` type='purchase' untuk semua item + update `ingredients.last_purchase_cost`.
-- View **`menu_hpp_view`**: hitung HPP per menu = SUM(recipe.qty * ingredient.cost_per_unit) → owner lihat margin.
+Konten:
+- Header: No PO, status badge, tanggal order/expected/received, supplier (link ke `/app/suppliers`)
+- Tabel item: bahan, qty, satuan, harga/unit, subtotal, **received_qty** (tampilkan saat status `received`)
+- Ringkasan: subtotal, tax, total
+- Catatan PO
+- Tombol aksi (kondisional status):
+  - `draft` → **Order ke supplier** (status → `ordered`), **Batal**, **Hapus**
+  - `ordered` → **Terima & update stok** (panggil RPC `receive_purchase_order`), **Batal**
+  - `received` → tampilkan ringkasan stok update (read-only) + tombol **Cetak**
+  - `cancelled` → read-only
 
-### UI
-- **`app.suppliers.tsx`** (route baru): CRUD supplier.
-- **`app.purchase-orders.tsx`** (route baru): list PO, create PO (pilih supplier + add items), tombol "Tandai Diterima".
-- **`app.inventory.tsx`**: 
-  - Badge merah untuk ingredient yang `current_stock < min_stock`.
-  - Filter "Stok Menipis".
-  - Tombol "Stock Opname" → dialog input stok aktual + alasan, otomatis insert `stock_movements` type='adjustment'.
-- **`app.menu.tsx`**: kolom HPP & margin per item (dari view).
-- **`app.index.tsx`** (dashboard): widget "Stok menipis" (top 5 ingredient di bawah min_stock).
-- Notif toast di sidebar saat ada low stock (poll tiap 5 menit).
+Aksi Receive memanggil RPC yang sudah ada (`receive_purchase_order`) yang otomatis: insert stock_movements (purchase) → trigger naikkan stok → update HPP weighted average.
+
+**Update di** `src/routes/app.purchase-orders.tsx`:
+- Hapus dialog detail; ubah `onClick` row tabel jadi `<Link to="/app/purchase-orders/$poId">`
+- Tambah kolom "Item" (jumlah baris) di list
 
 ---
 
-## BATCH 6 — Customer Delight: Push Notif, Review, Live Tracking, Voucher
+## 2. Stock Opname (versi lengkap)
 
-### Tujuan
-Customer dapat notifikasi otomatis, bisa rating, bisa lacak kurir live, bisa share voucher.
+**Update** `src/routes/app.inventory.tsx`:
 
-### Database
-Migrasi:
-- Tabel **`order_reviews`**: `id, order_id, shop_id, user_id, rating (1-5), comment, created_at`.
-- Tabel **`menu_reviews`** (turunan otomatis dari order_reviews): `id, menu_item_id, order_id, user_id, rating, created_at`.
-- Tabel **`courier_locations`**: `id, courier_id, order_id, lat, lng, updated_at` — kurir kirim posisi tiap 30 detik saat status='delivering'.
-- Tabel **`push_subscriptions`**: `id, user_id, endpoint, p256dh, auth, created_at` (Web Push API).
-- Kolom baru `promos`: `is_referral boolean default false`, `referrer_user_id uuid` — voucher yang dibagikan customer.
+Tambah tombol header **"Opname Massal"** yang membuka dialog full-width:
+- Tabel semua bahan aktif: nama, satuan, **stok sistem** (read-only), input **stok aktual** (number, min 0), kolom **selisih** (auto, badge merah/hijau), input **catatan/baris**
+- Filter: search nama, opsi "tampilkan hanya yang berubah"
+- Validasi: aktual harus angka ≥ 0; tolak NaN; abaikan baris tanpa perubahan
+- Tombol **Simpan Opname** → loop insert `stock_movements`:
+  - Selisih positif → type=`adjustment` (qty=delta)
+  - Selisih negatif → type=`waste` (qty=|delta|)
+  - Note format: `Opname [tanggal]: sistem X → aktual Y` + catatan user
+- Tampilkan ringkasan hasil: jumlah item disesuaikan, total nilai selisih (qty × cost_per_unit) dalam IDR
+- Toast sukses + reload
 
-### UI / Logic
-- **PWA Service Worker** (`public/sw.js`): handle push events, cache shell.
-- **`s.$slug.orders.tsx`**: 
-  - Tombol "Beri Rating" di order completed → dialog 5-star + komentar per menu.
-  - Tampilkan rating rata-rata di setiap order history.
-- **`track.$orderId.tsx`**: 
-  - Embed Leaflet map (open-source, no API key) menampilkan posisi kurir live.
-  - Subscribe realtime ke `courier_locations`.
-- **`app.courier.tsx`**: 
-  - Auto-share location pakai `navigator.geolocation.watchPosition` saat order status='delivering'.
-- **`s.$slug.menu.$menuId.tsx`**: tampilkan rating + review terbaru per menu.
-- **`s.$slug.checkout.tsx`**: input "Kode referral" → validasi & apply.
-- **Push notification flow**:
-  - Setelah login customer, prompt "Aktifkan notifikasi" → register service worker → simpan subscription.
-  - Trigger via DB trigger pada `orders` status change → call edge endpoint `/api/public/push-notify` → kirim Web Push.
-
-### Catatan teknis
-- Web Push butuh VAPID keys (generate sekali, simpan sebagai env var).
-- Map: pakai **Leaflet + OpenStreetMap** (gratis, tanpa API key).
-- Voucher referral: setiap customer punya kode unik auto-generate.
+Opname per-item yang sudah ada (tombol per row) tetap dipertahankan untuk koreksi cepat.
 
 ---
 
-## BATCH 7 — Analytics Pro: Charts, Export, Best-seller, Shift Report
+## 3. HPP & Margin Real-time
 
-### Tujuan
-Owner punya dashboard insight bisnis dengan grafik & bisa export laporan.
+View `menu_hpp_view` sudah ada (kolom: hpp, margin, margin_percent, price). Tambahkan kolom **last_updated** dengan migration baru:
 
-### Database
-- View **`sales_hourly_view`**: agregat penjualan per jam.
-- View **`menu_performance_view`**: penjualan per menu (qty, revenue, %).
-- View **`shift_summary_view`**: ringkasan per shift (sales, refund, variance).
+```sql
+DROP VIEW IF EXISTS public.menu_hpp_view;
+CREATE VIEW public.menu_hpp_view WITH (security_invoker=true) AS
+SELECT 
+  m.id AS menu_item_id, m.shop_id, m.name, m.price,
+  COALESCE(SUM(r.quantity * i.cost_per_unit), 0) AS hpp,
+  m.price - COALESCE(SUM(r.quantity * i.cost_per_unit), 0) AS margin,
+  CASE WHEN m.price > 0 
+    THEN ROUND(((m.price - COALESCE(SUM(r.quantity * i.cost_per_unit),0)) / m.price * 100)::numeric, 2)
+    ELSE 0 END AS margin_percent,
+  GREATEST(m.updated_at, COALESCE(MAX(i.updated_at), m.updated_at)) AS last_updated,
+  COUNT(r.id) AS recipe_count
+FROM menu_items m
+LEFT JOIN recipes r ON r.menu_item_id = m.id
+LEFT JOIN ingredients i ON i.id = r.ingredient_id
+GROUP BY m.id;
+```
 
-### UI
-- **`app.index.tsx`** (dashboard revamp):
-  - Line chart: penjualan 7/30 hari (Recharts, sudah di stack).
-  - Bar chart: jam tersibuk hari ini.
-  - Pie chart: revenue per kategori.
-  - Comparison card: minggu ini vs minggu lalu (% growth).
-- **`app.reports.tsx`**:
-  - Tab baru: **Best-seller** (sortable table per menu, filter range tanggal).
-  - Tab baru: **Shift Report** (X-report = shift berjalan, Z-report = shift ditutup).
-  - Tombol **Export PDF** & **Export Excel** untuk semua tab — pakai library `jspdf` + `xlsx`.
-- **Email harian** (opsional, pakai cron pg_net):
-  - Cron `0 22 * * *` → call `/api/public/daily-report` → kirim email summary ke owner.
-  - Skip kalau email infra belum setup, fallback: simpan di tabel `daily_reports` untuk dilihat owner.
+**Update** `src/routes/app.recipes.tsx`:
+- Ambil `menu_hpp_view` paralel dengan menus
+- Di sidebar menu list: tampilkan margin% kecil (warna hijau >30%, kuning 10-30%, merah <10%)
+- Di panel detail menu: card "HPP & Margin" dengan:
+  - HPP (IDR), Harga jual (IDR), Margin (IDR), Margin% (badge berwarna)
+  - "Sumber: N bahan dari resep" + tombol "Lihat breakdown" yang expand list bahan dengan `qty × cost_per_unit = subtotal` per baris
+  - "Terakhir diperbarui: [relative time]"
 
----
-
-## Yang TIDAK Dikerjakan
-
-- Payment gateway (Midtrans/Xendit) — sesuai keputusan, tetap manual QRIS.
-- Multi-outlet switcher (cukup 1 outlet untuk fase ini).
-- Push notif iOS Safari (butuh setup khusus, coverage rendah).
-- GoFood/GrabFood integration (butuh akses partner API).
-- Email transactional otomatis ke customer (butuh domain custom).
-
----
-
-## Detail Teknis Singkat
-
-| Batch | Tabel baru | RPC baru | Library tambahan |
-|-------|------------|----------|------------------|
-| 4 | cash_shifts, cash_movements, refunds | open_shift, close_shift, refund_order | — |
-| 5 | suppliers, purchase_orders, purchase_order_items | (trigger only) | — |
-| 6 | order_reviews, courier_locations, push_subscriptions | — | leaflet, web-push |
-| 7 | (views only) | — | jspdf, xlsx |
-
-Semua RLS akan mengikuti pattern eksisting (`owner_all` + role-specific).
+**Update** `src/routes/app.menu.tsx`:
+- Tambah kolom **HPP** dan **Margin%** di tabel menu
+- Indicator visual: dot warna sesuai margin level
+- Empty state HPP jika belum ada resep ("Atur resep →")
 
 ---
 
-## Pertanyaan Eksekusi
+## 4. Dialog Low-Stock dari Widget Dashboard
 
-Apakah saya mulai dari **Batch 4 (Money)** dulu sekarang? Atau Anda mau urutan lain?
+**File baru**: `src/components/inventory/low-stock-dialog.tsx`
+
+Komponen dialog reusable yang menerima `shopId` dan menampilkan:
+- Tabel ingredient low-stock: nama, stok sekarang, min, **kekurangan** (min - current), satuan, supplier rekomendasi
+- Logika rekomendasi supplier: ambil supplier terakhir yang pernah supply ingredient itu via `purchase_order_items` join `purchase_orders` (urut `created_at` desc, ambil yang `status='received'`); fallback "Belum ada riwayat"
+- Group by supplier: kelompokkan ingredient per supplier yang sama
+- Tombol **"Buat PO untuk supplier ini"** per group:
+  - Insert `purchase_orders` (status=`draft`, po_no auto-generate, supplier_id, shop_id)
+  - Insert `purchase_order_items` untuk tiap ingredient dengan `quantity = max(min_stock × 2 − current_stock, min_stock)`, `unit_cost = ingredient.cost_per_unit`
+  - Hitung subtotal/total
+  - Redirect ke `/app/purchase-orders/$poId` (halaman detail baru) untuk review/edit sebelum order
+- Tombol "Buka Inventori" untuk manual handling
+
+**Update** `src/routes/app.index.tsx`:
+- Ubah widget low-stock di dashboard: tambah tombol **"Lihat & Pesan"** di samping "Kelola →" yang membuka `LowStockDialog`
+
+**Update** `src/routes/app.inventory.tsx`:
+- Tombol kecil di banner low-stock untuk juga membuka dialog yang sama
+
+---
+
+## File Changes
+
+**Baru:**
+- `src/routes/app.purchase-orders.$poId.tsx` (route detail PO)
+- `src/components/inventory/low-stock-dialog.tsx`
+- `supabase/migrations/<ts>_menu_hpp_view_v2.sql` (recreate view dengan last_updated & recipe_count)
+
+**Diedit:**
+- `src/routes/app.purchase-orders.tsx` (hapus dialog detail, link ke route baru, kolom item count)
+- `src/routes/app.inventory.tsx` (opname massal dialog, low-stock dialog trigger)
+- `src/routes/app.recipes.tsx` (HPP card, margin badge, breakdown)
+- `src/routes/app.menu.tsx` (kolom HPP & margin)
+- `src/routes/app.index.tsx` (trigger low-stock dialog)
+
+Migrasi hanya recreate view (aman, view tidak menyimpan data).
