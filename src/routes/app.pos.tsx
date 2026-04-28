@@ -65,6 +65,24 @@ function newCart(label = "Cart 1"): LocalCart {
   return { id: null, label, items: [] };
 }
 
+function storageKey(outletId: string) {
+  return `kopihub.pos.carts.${outletId}`;
+}
+
+type Persisted = { carts: LocalCart[]; activeIdx: number };
+
+function loadPersisted(outletId: string): Persisted | null {
+  try {
+    const raw = localStorage.getItem(storageKey(outletId));
+    if (!raw) return null;
+    const p = JSON.parse(raw) as Persisted;
+    if (!Array.isArray(p.carts) || p.carts.length === 0) return null;
+    return p;
+  } catch {
+    return null;
+  }
+}
+
 function POSPage() {
   const { user } = useAuth();
   const { shop, outlet, loading: shopLoading } = useCurrentShop();
@@ -77,6 +95,7 @@ function POSPage() {
 
   const [carts, setCarts] = useState<LocalCart[]>([newCart()]);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
   const [openBills, setOpenBills] = useState<OpenBill[]>([]);
   const [tab, setTab] = useState<"register" | "bills">("register");
 
@@ -112,32 +131,129 @@ function POSPage() {
     })();
   }, [shop?.id]);
 
-  // Load + subscribe open bills
+  // Hydrate local tabs from localStorage + reconcile with server
   useEffect(() => {
     if (!outlet) return;
     let mounted = true;
+    (async () => {
+      const persisted = loadPersisted(outlet.id);
+      const serverBills = await supabase
+        .from("open_bills")
+        .select("id, label, items, updated_at")
+        .eq("outlet_id", outlet.id)
+        .order("updated_at", { ascending: false });
+      if (!mounted) return;
 
-    async function load() {
+      const bills = (serverBills.data ?? []) as OpenBill[];
+      setOpenBills(bills);
+      const byId = new Map(bills.map((b) => [b.id, b]));
+
+      if (persisted) {
+        const reconciled: LocalCart[] = persisted.carts.map((c) => {
+          if (!c.id) return c; // local-only, keep
+          const fresh = byId.get(c.id);
+          if (!fresh) {
+            // bill removed on server → keep items locally as new draft
+            return { id: null, label: c.label, items: c.items };
+          }
+          // refresh from server (server is source of truth)
+          return {
+            id: fresh.id,
+            label: fresh.label,
+            items: (fresh.items ?? []) as CartItem[],
+          };
+        });
+        setCarts(reconciled);
+        setActiveIdx(Math.min(persisted.activeIdx, reconciled.length - 1));
+      }
+      setHydrated(true);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [outlet?.id]);
+
+  // Persist local tabs whenever they change
+  useEffect(() => {
+    if (!outlet || !hydrated) return;
+    try {
+      localStorage.setItem(storageKey(outlet.id), JSON.stringify({ carts, activeIdx }));
+    } catch {
+      /* ignore quota */
+    }
+  }, [carts, activeIdx, outlet?.id, hydrated]);
+
+  // Auto-push edits on already-parked carts to server (debounced)
+  const lastPushedRef = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    if (!hydrated || !user) return;
+    const parked = carts.filter((c): c is LocalCart & { id: string } => !!c.id);
+    if (parked.length === 0) return;
+
+    const handle = setTimeout(() => {
+      parked.forEach(async (c) => {
+        const fingerprint = JSON.stringify({ label: c.label, items: c.items });
+        if (lastPushedRef.current.get(c.id) === fingerprint) return;
+        lastPushedRef.current.set(c.id, fingerprint);
+        const { error } = await supabase
+          .from("open_bills")
+          .update({
+            label: c.label,
+            items: c.items as unknown as never,
+            updated_by: user.id,
+          })
+          .eq("id", c.id);
+        if (error) {
+          // allow retry on next change
+          lastPushedRef.current.delete(c.id);
+        }
+      });
+    }, 600);
+
+    return () => clearTimeout(handle);
+  }, [carts, hydrated, user]);
+
+  // Subscribe to open_bills realtime updates
+  useEffect(() => {
+    if (!outlet) return;
+
+    async function reload() {
       const { data } = await supabase
         .from("open_bills")
         .select("id, label, items, updated_at")
         .eq("outlet_id", outlet!.id)
         .order("updated_at", { ascending: false });
-      if (mounted) setOpenBills((data ?? []) as OpenBill[]);
+      const bills = (data ?? []) as OpenBill[];
+      setOpenBills(bills);
+      // Sync any open local tab that mirrors a server bill
+      setCarts((cs) => {
+        const byId = new Map(bills.map((b) => [b.id, b]));
+        return cs.map((c) => {
+          if (!c.id) return c;
+          const fresh = byId.get(c.id);
+          if (!fresh) {
+            // server bill gone — detach so local edits become a new draft
+            return { id: null, label: c.label, items: c.items };
+          }
+          return {
+            id: fresh.id,
+            label: fresh.label,
+            items: (fresh.items ?? []) as CartItem[],
+          };
+        });
+      });
     }
-    load();
 
     const channel = supabase
       .channel(`open_bills_${outlet.id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "open_bills", filter: `outlet_id=eq.${outlet.id}` },
-        () => load(),
+        () => reload(),
       )
       .subscribe();
 
     return () => {
-      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [outlet?.id]);
@@ -186,18 +302,27 @@ function POSPage() {
   }
 
   function newCartTab() {
-    setCarts((cs) => [...cs, newCart(`Cart ${cs.length + 1}`)]);
-    setActiveIdx(carts.length);
+    setCarts((cs) => {
+      const next = [...cs, newCart(`Cart ${cs.length + 1}`)];
+      setActiveIdx(next.length - 1);
+      return next;
+    });
   }
 
   function closeCartTab(i: number) {
-    if (carts.length === 1) {
-      setCarts([newCart()]);
-      setActiveIdx(0);
-      return;
-    }
-    setCarts((cs) => cs.filter((_, idx) => idx !== i));
-    setActiveIdx((cur) => Math.max(0, cur - (i <= cur ? 1 : 0)));
+    setCarts((cs) => {
+      if (cs.length === 1) {
+        setActiveIdx(0);
+        return [newCart()];
+      }
+      const next = cs.filter((_, idx) => idx !== i);
+      setActiveIdx((cur) => {
+        if (i < cur) return cur - 1;
+        if (i === cur) return Math.min(cur, next.length - 1);
+        return cur;
+      });
+      return next;
+    });
   }
 
   async function parkCart() {
@@ -217,6 +342,10 @@ function POSPage() {
         })
         .eq("id", cart.id);
       if (error) return toast.error(error.message);
+      // reflect new label locally
+      setCarts((cs) =>
+        cs.map((c, i) => (i === activeIdx ? { ...c, label } : c)),
+      );
       toast.success("Bill diperbarui");
     } else {
       const { data, error } = await supabase
@@ -231,13 +360,14 @@ function POSPage() {
         })
         .select("id")
         .single();
-      if (error) return toast.error(error.message);
+      if (error || !data) return toast.error(error?.message ?? "Gagal");
       // park & remove from local tabs
       setCarts((cs) => {
         const next = cs.filter((_, i) => i !== activeIdx);
-        return next.length ? next : [newCart()];
+        const final = next.length ? next : [newCart()];
+        setActiveIdx(0);
+        return final;
       });
-      setActiveIdx(0);
       toast.success(`Bill "${label}" diparkir`);
     }
     setParkOpen(false);
@@ -245,12 +375,18 @@ function POSPage() {
   }
 
   async function resumeBill(b: OpenBill) {
-    // bring into a new local tab
-    setCarts((cs) => [
-      ...cs,
-      { id: b.id, label: b.label, items: (b.items ?? []) as CartItem[] },
-    ]);
-    setActiveIdx(carts.length);
+    // If already open in a local tab, just switch to it
+    const existingIdx = carts.findIndex((c) => c.id === b.id);
+    if (existingIdx >= 0) {
+      setActiveIdx(existingIdx);
+      setTab("register");
+      return;
+    }
+    setCarts((cs) => {
+      const next = [...cs, { id: b.id, label: b.label, items: (b.items ?? []) as CartItem[] }];
+      setActiveIdx(next.length - 1);
+      return next;
+    });
     setTab("register");
   }
 
