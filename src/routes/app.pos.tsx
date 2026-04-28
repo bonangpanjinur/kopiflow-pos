@@ -281,7 +281,7 @@ function POSPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full min-h-screen flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-1 rounded-lg bg-muted p-1">

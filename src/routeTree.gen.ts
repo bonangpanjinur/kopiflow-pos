@@ -16,6 +16,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppPosRouteImport } from './routes/app.pos'
+import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 
@@ -54,6 +55,11 @@ const AppPosRoute = AppPosRouteImport.update({
   path: '/pos',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOrdersRoute = AppOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMenuRoute = AppMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/menu': typeof AppMenuRoute
+  '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/': typeof AppIndexRoute
 }
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/menu': typeof AppMenuRoute
+  '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app': typeof AppIndexRoute
 }
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/menu': typeof AppMenuRoute
+  '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
   '/app/': typeof AppIndexRoute
 }
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/categories'
     | '/app/menu'
+    | '/app/orders'
     | '/app/pos'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/categories'
     | '/app/menu'
+    | '/app/orders'
     | '/app/pos'
     | '/app'
   id:
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/categories'
     | '/app/menu'
+    | '/app/orders'
     | '/app/pos'
     | '/app/'
   fileRoutesById: FileRoutesById
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/orders': {
+      id: '/app/orders'
+      path: '/orders'
+      fullPath: '/app/orders'
+      preLoaderRoute: typeof AppOrdersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/menu': {
       id: '/app/menu'
       path: '/menu'
@@ -212,6 +231,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppMenuRoute: typeof AppMenuRoute
+  AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -219,6 +239,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppMenuRoute: AppMenuRoute,
+  AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
   AppIndexRoute: AppIndexRoute,
 }
