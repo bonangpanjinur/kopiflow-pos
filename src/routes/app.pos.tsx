@@ -183,6 +183,36 @@ function POSPage() {
     }
   }, [carts, activeIdx, outlet?.id, hydrated]);
 
+  // Auto-push edits on already-parked carts to server (debounced)
+  const lastPushedRef = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    if (!hydrated || !user) return;
+    const parked = carts.filter((c): c is LocalCart & { id: string } => !!c.id);
+    if (parked.length === 0) return;
+
+    const handle = setTimeout(() => {
+      parked.forEach(async (c) => {
+        const fingerprint = JSON.stringify({ label: c.label, items: c.items });
+        if (lastPushedRef.current.get(c.id) === fingerprint) return;
+        lastPushedRef.current.set(c.id, fingerprint);
+        const { error } = await supabase
+          .from("open_bills")
+          .update({
+            label: c.label,
+            items: c.items as unknown as never,
+            updated_by: user.id,
+          })
+          .eq("id", c.id);
+        if (error) {
+          // allow retry on next change
+          lastPushedRef.current.delete(c.id);
+        }
+      });
+    }, 600);
+
+    return () => clearTimeout(handle);
+  }, [carts, hydrated, user]);
+
   // Subscribe to open_bills realtime updates
   useEffect(() => {
     if (!outlet) return;
