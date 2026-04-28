@@ -23,6 +23,8 @@ import {
   LogOut,
   Loader2,
   Store,
+  TicketPercent,
+  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -47,6 +49,8 @@ const NAV = [
   { to: "/app/couriers", label: "Kurir", icon: Bike },
   { to: "/app/courier", label: "Pengantaran", icon: Navigation },
   { to: "/app/reports", label: "Laporan", icon: BarChart3 },
+  { to: "/app/promos", label: "Promo", icon: TicketPercent },
+  { to: "/app/loyalty", label: "Loyalty", icon: Award },
   { to: "/app/settings", label: "Pengaturan", icon: Settings },
 ];
 

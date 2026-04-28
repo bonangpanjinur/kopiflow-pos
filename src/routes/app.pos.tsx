@@ -33,6 +33,7 @@ import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
 import { Receipt } from "@/components/pos/receipt";
+import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
 
 export const Route = createFileRoute("/app/pos")({
   component: POSPage,
@@ -820,6 +821,9 @@ function CheckoutDialog({
   const [method, setMethod] = useState<"cash" | "qris">("cash");
   const [tendered, setTendered] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promo, setPromo] = useState<{ id: string; code: string; discount: number } | null>(null);
   const [done, setDone] = useState<{
     orderNo: string;
     date: Date;
@@ -828,14 +832,33 @@ function CheckoutDialog({
   } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
-  const total = cartTotal(cart.items);
+  const subtotal = cartTotal(cart.items);
+  const discount = promo?.discount ?? 0;
+  const total = Math.max(0, subtotal - discount);
   const tenderedNum = method === "cash" ? Number(tendered || 0) : total;
   const change = Math.max(0, tenderedNum - total);
   const cashOk = method !== "cash" || tenderedNum >= total;
 
+  async function applyPromo() {
+    if (!promoCode.trim()) return;
+    setPromoApplying(true);
+    const res = await validatePromo(shop.id, promoCode.trim(), subtotal, "pos");
+    setPromoApplying(false);
+    if (res.error || !res.promo_id) {
+      setPromo(null);
+      return toast.error(res.error ?? "Promo tidak valid");
+    }
+    setPromo({ id: res.promo_id, code: res.code, discount: res.discount });
+    toast.success(`Promo ${res.code} dipakai: -${formatIDR(res.discount)}`);
+  }
+
+  function clearPromo() {
+    setPromo(null);
+    setPromoCode("");
+  }
+
   async function checkout() {
     setSaving(true);
-    // 1. get next order number
     const { data: noData, error: noErr } = await supabase.rpc("next_order_no", {
       _outlet_id: outlet.id,
     });
@@ -845,19 +868,21 @@ function CheckoutDialog({
     }
     const orderNo = noData as string;
 
-    // 2. insert order
     const { data: orderRow, error: oErr } = await supabase
       .from("orders")
       .insert({
         shop_id: shop.id,
         outlet_id: outlet.id,
         order_no: orderNo,
-        subtotal: total,
+        subtotal,
+        discount,
         total,
         payment_method: method,
         amount_tendered: method === "cash" ? tenderedNum : total,
         change_due: change,
         cashier_id: cashierId,
+        promo_id: promo?.id ?? null,
+        promo_code: promo?.code ?? null,
       })
       .select("id, created_at")
       .single();
@@ -867,7 +892,6 @@ function CheckoutDialog({
       return toast.error(oErr?.message ?? "Gagal simpan order");
     }
 
-    // 3. insert items
     const rows = cart.items.map((i) => ({
       order_id: orderRow.id,
       menu_item_id: i.menu_item_id,
@@ -880,6 +904,18 @@ function CheckoutDialog({
     if (iErr) {
       setSaving(false);
       return toast.error(iErr.message);
+    }
+
+    if (promo) {
+      await applyPostOrder({
+        shopId: shop.id,
+        orderId: orderRow.id,
+        userId: null,
+        promoId: promo.id,
+        promoDiscount: discount,
+        pointsEarned: 0,
+        pointsRedeemed: 0,
+      });
     }
 
     setDone({
@@ -906,6 +942,8 @@ function CheckoutDialog({
     setDone(null);
     setTendered("");
     setMethod("cash");
+    setPromo(null);
+    setPromoCode("");
   }
 
   return (
@@ -920,6 +958,47 @@ function CheckoutDialog({
               <div className="rounded-lg bg-muted p-4 text-center">
                 <div className="text-xs text-muted-foreground">Total</div>
                 <div className="text-3xl font-bold">{formatIDR(total)}</div>
+                {discount > 0 && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Subtotal {formatIDR(subtotal)} − diskon {formatIDR(discount)}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Kode promo</Label>
+                {promo ? (
+                  <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+                    <span>
+                      <span className="font-mono font-semibold">{promo.code}</span>
+                      <span className="ml-2 text-muted-foreground">
+                        −{formatIDR(promo.discount)}
+                      </span>
+                    </span>
+                    <button
+                      onClick={clearPromo}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      placeholder="HEMAT10"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={applyPromo}
+                      disabled={promoApplying || !promoCode.trim()}
+                    >
+                      {promoApplying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pakai"}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2">

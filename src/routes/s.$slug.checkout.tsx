@@ -10,7 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import {
+  validatePromo,
+  getLoyaltySettings,
+  getUserPoints,
+  calcPointsEarned,
+  maxRedeemDiscount,
+  applyPostOrder,
+  type LoyaltySettings,
+} from "@/lib/promo-loyalty";
 
 export const Route = createFileRoute("/s/$slug/checkout")({
   component: CheckoutPage,
@@ -61,6 +70,12 @@ function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promo, setPromo] = useState<{ id: string; code: string; discount: number } | null>(null);
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [loyalty, setLoyalty] = useState<LoyaltySettings | null>(null);
+  const [pointBalance, setPointBalance] = useState(0);
+  const [redeemPoints, setRedeemPoints] = useState(0);
 
   useEffect(() => {
     setItems(readCart(slug));
@@ -129,6 +144,17 @@ function CheckoutPage() {
       });
   }, [user]);
 
+  // Load loyalty settings + balance once shop & user are known
+  useEffect(() => {
+    if (!shopId) return;
+    getLoyaltySettings(shopId).then(setLoyalty);
+  }, [shopId]);
+
+  useEffect(() => {
+    if (!shopId || !user) return;
+    getUserPoints(shopId, user.id).then(setPointBalance);
+  }, [shopId, user]);
+
   const subtotal = cartTotal(items);
 
   const deliveryFee = useMemo(() => {
@@ -139,10 +165,31 @@ function CheckoutPage() {
     return z ? Number(z.fee) || 0 : 0;
   }, [settings, fulfillment, subtotal, zones, zoneId]);
 
-  const total = subtotal + deliveryFee;
+  const promoDiscount = promo?.discount ?? 0;
+  const redeemCap = useMemo(
+    () => maxRedeemDiscount(subtotal, pointBalance, loyalty),
+    [subtotal, pointBalance, loyalty],
+  );
+  const effectiveRedeem = Math.min(redeemPoints, redeemCap.maxPoints);
+  const pointsValue = effectiveRedeem * (loyalty?.point_value ?? 0);
+  const total = Math.max(0, subtotal - promoDiscount - pointsValue + deliveryFee);
+  const pointsEarned = calcPointsEarned(Math.max(0, subtotal - promoDiscount), loyalty);
 
   const minOrderOk = !settings || subtotal >= (settings.min_order || 0);
   const hoursOk = !settings || fulfillment === "pickup" || withinHours(settings.open_time, settings.close_time);
+
+  async function applyPromoCode() {
+    if (!shopId || !promoCode.trim()) return;
+    setPromoApplying(true);
+    const res = await validatePromo(shopId, promoCode.trim(), subtotal, "online");
+    setPromoApplying(false);
+    if (res.error || !res.promo_id) {
+      setPromo(null);
+      return toast.error(res.error ?? "Promo tidak valid");
+    }
+    setPromo({ id: res.promo_id, code: res.code, discount: res.discount });
+    toast.success(`Promo ${res.code} dipakai`);
+  }
 
   async function submit() {
     if (!user) {
@@ -195,9 +242,13 @@ function CheckoutPage() {
           note: note.trim() || null,
           subtotal,
           tax: 0,
-          discount: 0,
+          discount: promoDiscount + pointsValue,
           delivery_fee: deliveryFee,
           total,
+          promo_id: promo?.id ?? null,
+          promo_code: promo?.code ?? null,
+          points_earned: pointsEarned,
+          points_redeemed: effectiveRedeem,
         })
         .select("id,order_no")
         .single();
@@ -215,6 +266,16 @@ function CheckoutPage() {
       }));
       const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
       if (itemsErr) throw itemsErr;
+
+      await applyPostOrder({
+        shopId,
+        orderId: order.id,
+        userId: user.id,
+        promoId: promo?.id ?? null,
+        promoDiscount,
+        pointsEarned,
+        pointsRedeemed: effectiveRedeem,
+      });
 
       clearCart(slug);
       toast.success(`Order #${order.order_no} terkirim!`);
@@ -342,6 +403,68 @@ function CheckoutPage() {
         </div>
       </section>
 
+      <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold">Promo & Poin</h2>
+        <div>
+          <Label className="text-xs">Kode promo</Label>
+          {promo ? (
+            <div className="mt-1 flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+              <span>
+                <span className="font-mono font-semibold">{promo.code}</span>
+                <span className="ml-2 text-muted-foreground">−{formatIDR(promo.discount)}</span>
+              </span>
+              <button
+                onClick={() => { setPromo(null); setPromoCode(""); }}
+                className="text-xs text-muted-foreground hover:text-destructive"
+              >Hapus</button>
+            </div>
+          ) : (
+            <div className="mt-1 flex gap-2">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                placeholder="HEMAT10"
+              />
+              <Button type="button" variant="outline" onClick={applyPromoCode} disabled={promoApplying || !promoCode.trim()}>
+                {promoApplying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pakai"}
+              </Button>
+            </div>
+          )}
+        </div>
+        {loyalty && pointBalance > 0 && (
+          <div className="space-y-1.5 border-t border-border pt-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Saldo poin kamu</span>
+              <span className="font-semibold">{pointBalance.toLocaleString("id-ID")} poin</span>
+            </div>
+            {redeemCap.maxPoints >= loyalty.min_redeem_points ? (
+              <div className="space-y-1">
+                <Label className="text-xs">Tukar poin (maks {redeemCap.maxPoints})</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={redeemCap.maxPoints}
+                  value={redeemPoints}
+                  onChange={(e) => setRedeemPoints(Math.max(0, Math.min(redeemCap.maxPoints, Number(e.target.value) || 0)))}
+                />
+                {effectiveRedeem > 0 && (
+                  <p className="text-xs text-muted-foreground">Potongan {formatIDR(pointsValue)}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Min {loyalty.min_redeem_points} poin untuk redeem.
+              </p>
+            )}
+          </div>
+        )}
+        {loyalty && pointsEarned > 0 && (
+          <p className="text-xs text-muted-foreground">
+            🎁 Order ini akan dapat <b>{pointsEarned} poin</b>.
+          </p>
+        )}
+      </section>
+
       <section className="space-y-2 rounded-xl border border-border bg-card p-4">
         <h2 className="text-sm font-semibold">Ringkasan</h2>
         <div className="space-y-1 text-sm">
@@ -359,6 +482,18 @@ function CheckoutPage() {
             <span className="text-muted-foreground">Subtotal</span>
             <span>{formatIDR(subtotal)}</span>
           </div>
+          {promoDiscount > 0 && (
+            <div className="flex justify-between text-primary">
+              <span>Promo {promo?.code}</span>
+              <span>−{formatIDR(promoDiscount)}</span>
+            </div>
+          )}
+          {pointsValue > 0 && (
+            <div className="flex justify-between text-primary">
+              <span>Tukar {effectiveRedeem} poin</span>
+              <span>−{formatIDR(pointsValue)}</span>
+            </div>
+          )}
           {fulfillment === "delivery" && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">

@@ -21,10 +21,12 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppScheduleRouteImport } from './routes/app.schedule'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppRecipesRouteImport } from './routes/app.recipes'
+import { Route as AppPromosRouteImport } from './routes/app.promos'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppOnlineOrdersRouteImport } from './routes/app.online-orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
+import { Route as AppLoyaltyRouteImport } from './routes/app.loyalty'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppDeliveryRouteImport } from './routes/app.delivery'
@@ -99,6 +101,11 @@ const AppRecipesRoute = AppRecipesRouteImport.update({
   path: '/recipes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPromosRoute = AppPromosRouteImport.update({
+  id: '/promos',
+  path: '/promos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPosRoute = AppPosRouteImport.update({
   id: '/pos',
   path: '/pos',
@@ -117,6 +124,11 @@ const AppOnlineOrdersRoute = AppOnlineOrdersRouteImport.update({
 const AppMenuRoute = AppMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLoyaltyRoute = AppLoyaltyRouteImport.update({
+  id: '/loyalty',
+  path: '/loyalty',
   getParentRoute: () => AppRoute,
 } as any)
 const AppInventoryRoute = AppInventoryRouteImport.update({
@@ -198,10 +210,12 @@ export interface FileRoutesByFullPath {
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/promos': typeof AppPromosRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -228,10 +242,12 @@ export interface FileRoutesByTo {
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/promos': typeof AppPromosRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -259,10 +275,12 @@ export interface FileRoutesById {
   '/app/delivery': typeof AppDeliveryRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/pos': typeof AppPosRoute
+  '/app/promos': typeof AppPromosRoute
   '/app/recipes': typeof AppRecipesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/schedule': typeof AppScheduleRoute
@@ -292,10 +310,12 @@ export interface FileRouteTypes {
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
+    | '/app/promos'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
@@ -322,10 +342,12 @@ export interface FileRouteTypes {
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
+    | '/app/promos'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
@@ -352,10 +374,12 @@ export interface FileRouteTypes {
     | '/app/delivery'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
     | '/app/orders'
     | '/app/pos'
+    | '/app/promos'
     | '/app/recipes'
     | '/app/reports'
     | '/app/schedule'
@@ -468,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRecipesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/promos': {
+      id: '/app/promos'
+      path: '/promos'
+      fullPath: '/app/promos'
+      preLoaderRoute: typeof AppPromosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/pos': {
       id: '/app/pos'
       path: '/pos'
@@ -494,6 +525,13 @@ declare module '@tanstack/react-router' {
       path: '/menu'
       fullPath: '/app/menu'
       preLoaderRoute: typeof AppMenuRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/loyalty': {
+      id: '/app/loyalty'
+      path: '/loyalty'
+      fullPath: '/app/loyalty'
+      preLoaderRoute: typeof AppLoyaltyRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/inventory': {
@@ -598,10 +636,12 @@ interface AppRouteChildren {
   AppDeliveryRoute: typeof AppDeliveryRoute
   AppEmployeesRoute: typeof AppEmployeesRoute
   AppInventoryRoute: typeof AppInventoryRoute
+  AppLoyaltyRoute: typeof AppLoyaltyRoute
   AppMenuRoute: typeof AppMenuRoute
   AppOnlineOrdersRoute: typeof AppOnlineOrdersRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppPosRoute: typeof AppPosRoute
+  AppPromosRoute: typeof AppPromosRoute
   AppRecipesRoute: typeof AppRecipesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppScheduleRoute: typeof AppScheduleRoute
@@ -616,10 +656,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppDeliveryRoute: AppDeliveryRoute,
   AppEmployeesRoute: AppEmployeesRoute,
   AppInventoryRoute: AppInventoryRoute,
+  AppLoyaltyRoute: AppLoyaltyRoute,
   AppMenuRoute: AppMenuRoute,
   AppOnlineOrdersRoute: AppOnlineOrdersRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppPosRoute: AppPosRoute,
+  AppPromosRoute: AppPromosRoute,
   AppRecipesRoute: AppRecipesRoute,
   AppReportsRoute: AppReportsRoute,
   AppScheduleRoute: AppScheduleRoute,

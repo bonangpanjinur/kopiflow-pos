@@ -361,6 +361,99 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_ledger: {
+        Row: {
+          created_at: string
+          delta: number
+          id: string
+          order_id: string | null
+          reason: string
+          shop_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          id?: string
+          order_id?: string | null
+          reason: string
+          shop_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          id?: string
+          order_id?: string | null
+          reason?: string
+          shop_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_points: {
+        Row: {
+          balance: number
+          id: string
+          shop_id: string
+          total_earned: number
+          total_redeemed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          shop_id: string
+          total_earned?: number
+          total_redeemed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          shop_id?: string
+          total_earned?: number
+          total_redeemed?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_settings: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          max_redeem_percent: number
+          min_redeem_points: number
+          point_value: number
+          rupiah_per_point: number
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          max_redeem_percent?: number
+          min_redeem_points?: number
+          point_value?: number
+          rupiah_per_point?: number
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          max_redeem_percent?: number
+          min_redeem_points?: number
+          point_value?: number
+          rupiah_per_point?: number
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category_id: string | null
@@ -548,6 +641,10 @@ export type Database = {
           order_no: string
           outlet_id: string
           payment_method: Database["public"]["Enums"]["payment_method"]
+          points_earned: number
+          points_redeemed: number
+          promo_code: string | null
+          promo_id: string | null
           scheduled_for: string | null
           shop_id: string
           status: Database["public"]["Enums"]["order_status"]
@@ -577,6 +674,10 @@ export type Database = {
           order_no: string
           outlet_id: string
           payment_method: Database["public"]["Enums"]["payment_method"]
+          points_earned?: number
+          points_redeemed?: number
+          promo_code?: string | null
+          promo_id?: string | null
           scheduled_for?: string | null
           shop_id: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -606,6 +707,10 @@ export type Database = {
           order_no?: string
           outlet_id?: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          points_earned?: number
+          points_redeemed?: number
+          promo_code?: string | null
+          promo_id?: string | null
           scheduled_for?: string | null
           shop_id?: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -699,6 +804,93 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          order_id: string
+          promo_id: string
+          shop_id: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          order_id: string
+          promo_id: string
+          shop_id: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          order_id?: string
+          promo_id?: string
+          shop_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      promos: {
+        Row: {
+          channel: Database["public"]["Enums"]["promo_channel"]
+          code: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_discount: number | null
+          min_order: number
+          shop_id: string
+          starts_at: string | null
+          type: Database["public"]["Enums"]["promo_type"]
+          updated_at: string
+          usage_count: number
+          usage_limit: number | null
+          value: number
+        }
+        Insert: {
+          channel?: Database["public"]["Enums"]["promo_channel"]
+          code: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          min_order?: number
+          shop_id: string
+          starts_at?: string | null
+          type?: Database["public"]["Enums"]["promo_type"]
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+          value?: number
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["promo_channel"]
+          code?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          min_order?: number
+          shop_id?: string
+          starts_at?: string | null
+          type?: Database["public"]["Enums"]["promo_type"]
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+          value?: number
         }
         Relationships: []
       }
@@ -948,7 +1140,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_promo_usage: { Args: { _promo_id: string }; Returns: undefined }
       next_order_no: { Args: { _outlet_id: string }; Returns: string }
+      validate_promo: {
+        Args: {
+          _channel: string
+          _code: string
+          _shop_id: string
+          _subtotal: number
+        }
+        Returns: {
+          code: string
+          discount: number
+          error: string
+          promo_id: string
+        }[]
+      }
     }
     Enums: {
       app_role:
@@ -972,6 +1179,8 @@ export type Database = {
         | "delivering"
         | "cancelled"
       payment_method: "cash" | "qris"
+      promo_channel: "pos" | "online" | "all"
+      promo_type: "percent" | "nominal"
       stock_movement_type: "purchase" | "adjustment" | "sale" | "waste"
     }
     CompositeTypes: {
@@ -1123,6 +1332,8 @@ export const Constants = {
         "cancelled",
       ],
       payment_method: ["cash", "qris"],
+      promo_channel: ["pos", "online", "all"],
+      promo_type: ["percent", "nominal"],
       stock_movement_type: ["purchase", "adjustment", "sale", "waste"],
     },
   },
