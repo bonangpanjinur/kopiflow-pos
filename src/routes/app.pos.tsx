@@ -579,13 +579,39 @@ function POSPage() {
                           <div className="text-xs text-muted-foreground">
                             {formatIDR(line.unit_price)}
                           </div>
+                          {line.note && (
+                            <div className="mt-1 text-xs italic text-muted-foreground">
+                              📝 {line.note}
+                            </div>
+                          )}
                         </div>
-                        <button
-                          onClick={() => removeLine(i)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              const v = prompt("Catatan untuk item ini (mis. less sugar)", line.note ?? "");
+                              if (v === null) return;
+                              setCarts((cs) => {
+                                const next = cs.slice();
+                                const c = { ...next[activeIdx] };
+                                c.items = c.items.map((x, k) =>
+                                  k === i ? { ...x, note: v.trim() || undefined } : x,
+                                );
+                                next[activeIdx] = c;
+                                return next;
+                              });
+                            }}
+                            className="text-muted-foreground hover:text-primary"
+                            title="Catatan"
+                          >
+                            <StickyNote className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => removeLine(i)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
                         <div className="flex items-center gap-1 rounded-md border border-border">
