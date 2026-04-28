@@ -1052,6 +1052,19 @@ function CheckoutDialog({
                 )}
               </div>
 
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1">
+                  <Percent className="h-3 w-3" /> Diskon manual (Rp)
+                </Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={manualDiscount}
+                  onChange={(e) => setManualDiscount(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <PayMethodBtn
                   active={method === "cash"}
