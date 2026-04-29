@@ -22,7 +22,7 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, Upload, ImageIcon } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, Upload, ImageIcon, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -39,6 +39,32 @@ type MenuItem = {
   image_url: string | null;
   is_available: boolean;
   category_id: string | null;
+  track_stock: boolean;
+  recipe_yield: number;
+};
+
+type HPPRow = {
+  menu_item_id: string;
+  hpp: number;
+  margin: number;
+  margin_percent: number;
+  recipe_count: number;
+};
+
+type RecipeRow = {
+  id: string;
+  menu_item_id: string;
+  ingredient_id: string;
+  quantity: number;
+};
+
+type IngredientRow = {
+  id: string;
+  name: string;
+  unit: string;
+  current_stock: number;
+  min_stock: number;
+  cost_per_unit: number;
 };
 
 const NO_CATEGORY = "__none__";
