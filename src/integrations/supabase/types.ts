@@ -1797,6 +1797,16 @@ export type Database = {
         }[]
       }
       expire_stale_pending_invoices: { Args: never; Returns: number }
+      get_billing_settings_public: {
+        Args: never
+        Returns: {
+          account_name: string
+          account_no: string
+          bank_name: string
+          instructions: string
+          qris_image_url: string
+        }[]
+      }
       get_order_tracking: {
         Args: { _order_id: string }
         Returns: {

@@ -41,11 +41,12 @@ function BillingPage() {
     const [{ data: ps }, { data: invs }, { data: bs }] = await Promise.all([
       supabase.from("plans").select("*").eq("is_active", true).order("sort_order"),
       supabase.from("plan_invoices").select("id, invoice_no, amount_idr, status, payment_proof_url, created_at, notes, plans(name)").eq("shop_id", shop.id).order("created_at", { ascending: false }),
-      supabase.from("billing_settings").select("bank_name, account_no, account_name, instructions, qris_image_url").eq("id", 1).maybeSingle(),
+      supabase.rpc("get_billing_settings_public"),
     ]);
     setPlans((ps as Plan[]) ?? []);
     setInvoices((invs as unknown as Invoice[]) ?? []);
-    setSettings(bs as BillingSettings | null);
+    const row = Array.isArray(bs) ? (bs[0] ?? null) : null;
+    setSettings(row as BillingSettings | null);
   };
 
   useEffect(() => { reload(); }, [shop]);
