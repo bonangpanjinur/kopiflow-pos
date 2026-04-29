@@ -8,8 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
-import { Loader2, Upload, CheckCircle2, Clock, XCircle, Copy } from "lucide-react";
-import { createPlanInvoice, submitPaymentProof } from "@/server/billing.functions";
+import { Loader2, Upload, CheckCircle2, Clock, XCircle, Copy, Eye } from "lucide-react";
+import { createPlanInvoice, submitPaymentProof, cancelPlanInvoice, getProofSignedUrl } from "@/server/billing.functions";
 
 export const Route = createFileRoute("/app/billing")({
   component: BillingPage,
@@ -65,15 +65,15 @@ function BillingPage() {
 
   const onUploadProof = async (inv: Invoice, file: File) => {
     if (!shop) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File maks 5MB"); return; }
     setBusy(inv.id);
     try {
-      const path = `${shop.id}/${inv.invoice_no}-${Date.now()}-${file.name}`;
-      const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, file, { upsert: false });
+      const ext = (file.name.split(".").pop() ?? "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const path = `${shop.id}/${inv.invoice_no}-${Date.now()}.${ext || "bin"}`;
+      const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, file, { upsert: false, contentType: file.type });
       if (upErr) throw upErr;
-      const { data: signed } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 60 * 60 * 24 * 365);
-      const proofUrl = signed?.signedUrl;
-      if (!proofUrl) throw new Error("Gagal membuat URL bukti");
-      await submitPaymentProof({ data: { invoiceId: inv.id, proofUrl } });
+      // Store the storage path (not a signed URL) so admin & owner can re-sign on demand.
+      await submitPaymentProof({ data: { invoiceId: inv.id, proofUrl: path } });
       toast.success("Bukti terkirim. Menunggu review super admin.");
       await reload();
     } catch (e) {
@@ -81,6 +81,24 @@ function BillingPage() {
     } finally {
       setBusy(null);
     }
+  };
+
+  const onCancel = async (inv: Invoice) => {
+    if (!confirm(`Batalkan tagihan ${inv.invoice_no}?`)) return;
+    setBusy(inv.id);
+    try {
+      await cancelPlanInvoice({ data: { invoiceId: inv.id } });
+      toast.success("Tagihan dibatalkan");
+      await reload();
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(null); }
+  };
+
+  const onViewProof = async (inv: Invoice) => {
+    try {
+      const { url } = await getProofSignedUrl({ data: { invoiceId: inv.id } });
+      if (url) window.open(url, "_blank"); else toast.error("Bukti tidak tersedia");
+    } catch (e) { toast.error((e as Error).message); }
   };
 
   const copy = (t: string) => { navigator.clipboard.writeText(t); toast.success("Disalin"); };
