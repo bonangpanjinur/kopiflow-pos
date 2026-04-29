@@ -17,6 +17,7 @@ export const Route = createFileRoute("/app/suppliers")({ component: SuppliersPag
 type Supplier = {
   id: string; name: string; contact_name: string | null; phone: string | null;
   email: string | null; address: string | null; note: string | null; is_active: boolean;
+  lead_time_days: number; payment_terms: string | null;
 };
 
 function SuppliersPage() {
@@ -25,7 +26,7 @@ function SuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
-  const [form, setForm] = useState({ name: "", contact_name: "", phone: "", email: "", address: "", note: "" });
+  const [form, setForm] = useState({ name: "", contact_name: "", phone: "", email: "", address: "", note: "", lead_time_days: "0", payment_terms: "" });
   const [saving, setSaving] = useState(false);
 
   async function load() {
@@ -41,7 +42,7 @@ function SuppliersPage() {
 
   function openNew() {
     setEditing(null);
-    setForm({ name: "", contact_name: "", phone: "", email: "", address: "", note: "" });
+    setForm({ name: "", contact_name: "", phone: "", email: "", address: "", note: "", lead_time_days: "0", payment_terms: "" });
     setOpen(true);
   }
   function openEdit(s: Supplier) {
@@ -49,12 +50,15 @@ function SuppliersPage() {
     setForm({
       name: s.name, contact_name: s.contact_name ?? "", phone: s.phone ?? "",
       email: s.email ?? "", address: s.address ?? "", note: s.note ?? "",
+      lead_time_days: String(s.lead_time_days ?? 0),
+      payment_terms: s.payment_terms ?? "",
     });
     setOpen(true);
   }
   async function save() {
     if (!shop || !form.name.trim()) return;
     setSaving(true);
+    const lt = Math.max(0, Math.floor(Number(form.lead_time_days) || 0));
     const payload = {
       shop_id: shop.id, name: form.name.trim(),
       contact_name: form.contact_name.trim() || null,
@@ -62,6 +66,8 @@ function SuppliersPage() {
       email: form.email.trim() || null,
       address: form.address.trim() || null,
       note: form.note.trim() || null,
+      lead_time_days: lt,
+      payment_terms: form.payment_terms.trim() || null,
     };
     const { error } = editing
       ? await supabase.from("suppliers").update(payload).eq("id", editing.id)
@@ -102,6 +108,21 @@ function SuppliersPage() {
               </div>
               <div className="space-y-1.5"><Label>Email</Label>
                 <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Lead time (hari)</Label>
+                  <Input type="number" min={0} value={form.lead_time_days}
+                    onChange={(e) => setForm({ ...form, lead_time_days: e.target.value })}
+                    placeholder="0" />
+                  <p className="text-[11px] text-muted-foreground">Estimasi waktu kirim setelah PO.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Termin pembayaran</Label>
+                  <Input value={form.payment_terms}
+                    onChange={(e) => setForm({ ...form, payment_terms: e.target.value })}
+                    placeholder="Mis. NET 14, COD" />
+                </div>
+              </div>
               <div className="space-y-1.5"><Label>Alamat</Label>
                 <Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Catatan</Label>
