@@ -174,16 +174,25 @@
   @page { size: 58mm auto; margin: 0; }
 }
 
-/* PO print sheet — A4 friendly. Shared styles applied to both the
-   hidden print layer (.po-print) and the on-screen preview (.po-preview). */
+/* PO print sheet — A4/Letter friendly. Shared styles applied to both the
+   hidden print layer (.po-print) and the on-screen preview (.po-preview).
+   Paper size + margins are controlled via CSS custom properties so the
+   user can switch them at runtime from the Print Preview dialog. */
 .po-print { display: none; }
 
 .po-preview {
-  width: 210mm;
-  min-height: 297mm;
+  --po-paper-w: 210mm;
+  --po-paper-h: 297mm;
+  --po-pad-y: 14mm;
+  --po-pad-x: 12mm;
+  --po-zoom: 1;
+  width: var(--po-paper-w);
+  min-height: var(--po-paper-h);
   margin: 0 auto;
-  padding: 14mm 12mm;
+  padding: var(--po-pad-y) var(--po-pad-x);
   background: #fff;
+  transform: scale(var(--po-zoom));
+  transform-origin: top center;
   color: #000;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 11pt;
