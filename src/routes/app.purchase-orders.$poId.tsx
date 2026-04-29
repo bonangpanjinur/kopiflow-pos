@@ -504,7 +504,9 @@ function PODetailPage() {
                 <SelectContent>
                   <SelectItem value="__none">— Tanpa preset —</SelectItem>
                   {presets.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}{defaultPresetId === p.id ? "  · default" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
