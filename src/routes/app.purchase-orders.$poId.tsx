@@ -9,7 +9,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer, Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer, Eye, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -44,27 +45,43 @@ type Ingredient = { id: string; name: string; unit: string };
 type Supplier = { id: string; name: string; phone: string | null; contact_name: string | null; address?: string | null; email?: string | null };
 type Shop = { id: string; name: string; address?: string | null; phone?: string | null; email?: string | null };
 
-type PaperSize = "a4" | "letter";
+type PaperSize = "a4" | "letter" | "thermal80" | "thermal58";
 type MarginMode = "narrow" | "normal" | "wide";
+type Orientation = "portrait" | "landscape";
 type PrintPrefs = {
   paper: PaperSize;
   margin: MarginMode;
+  orientation: Orientation;
+  tray: string;        // free-text printer tray hint, e.g. "Tray 1"
+  printerName: string; // free-text printer name, just a reminder
   zoom: number;       // 0.5 – 1.4
   fitToPage: boolean;
   showTax: boolean;
   showNotes: boolean;
   showShipping: boolean;
+  activePresetId: string | null;
+};
+
+type PrinterPreset = {
+  id: string;
+  name: string;
+  prefs: Omit<PrintPrefs, "activePresetId">;
 };
 
 const PREFS_KEY = "po-print-prefs/v1";
+const PRESETS_KEY = "po-printer-presets/v1";
 const DEFAULT_PREFS: PrintPrefs = {
   paper: "a4",
   margin: "normal",
+  orientation: "portrait",
+  tray: "",
+  printerName: "",
   zoom: 1,
   fitToPage: false,
   showTax: true,
   showNotes: true,
   showShipping: true,
+  activePresetId: null,
 };
 
 function loadPrefs(): PrintPrefs {
@@ -75,6 +92,27 @@ function loadPrefs(): PrintPrefs {
     return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
   } catch { return DEFAULT_PREFS; }
 }
+
+function loadPresets(): PrinterPreset[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function savePresets(list: PrinterPreset[]) {
+  try { localStorage.setItem(PRESETS_KEY, JSON.stringify(list)); } catch { /* noop */ }
+}
+
+const PAPER_LABEL: Record<PaperSize, string> = {
+  a4: "A4 (210 × 297 mm)",
+  letter: "Letter (216 × 279 mm)",
+  thermal80: "Thermal 80 mm",
+  thermal58: "Thermal 58 mm",
+};
 
 /** Format a YYYY-MM-DD or ISO date to id-ID long form: "29 April 2026". */
 function formatDateID(d: string | null | undefined): string {
@@ -114,6 +152,8 @@ function PODetailPage() {
   const [busy, setBusy] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [prefs, setPrefs] = useState<PrintPrefs>(() => loadPrefs());
+  const [presets, setPresets] = useState<PrinterPreset[]>(() => loadPresets());
+  const [presetName, setPresetName] = useState("");
 
   // Persist prefs whenever they change
   useEffect(() => {
@@ -125,11 +165,13 @@ function PODetailPage() {
     const b = document.body;
     b.dataset.poPaper = prefs.paper;
     b.dataset.poMargin = prefs.margin;
+    b.dataset.poOrient = prefs.orientation;
     return () => {
       delete b.dataset.poPaper;
       delete b.dataset.poMargin;
+      delete b.dataset.poOrient;
     };
-  }, [prefs.paper, prefs.margin]);
+  }, [prefs.paper, prefs.margin, prefs.orientation]);
 
   // Inject a per-paper @page rule for the actual printout
   useEffect(() => {
@@ -140,10 +182,53 @@ function PODetailPage() {
       style.id = id;
       document.head.appendChild(style);
     }
-    const size = prefs.paper === "letter" ? "Letter portrait" : "A4 portrait";
+    const orient = prefs.orientation;
+    let size: string;
+    switch (prefs.paper) {
+      case "letter":    size = `Letter ${orient}`; break;
+      case "thermal80": size = "80mm auto"; break;
+      case "thermal58": size = "58mm auto"; break;
+      default:          size = `A4 ${orient}`; break;
+    }
     style.textContent = `@media print { @page { size: ${size}; margin: 0; } }`;
     return () => { if (style) style.textContent = ""; };
-  }, [prefs.paper]);
+  }, [prefs.paper, prefs.orientation]);
+
+  function applyPreset(id: string) {
+    const found = presets.find((p) => p.id === id);
+    if (!found) return;
+    setPrefs({ ...found.prefs, activePresetId: found.id });
+    toast.success(`Preset "${found.name}" diterapkan`);
+  }
+  function saveCurrentAsPreset() {
+    const name = presetName.trim();
+    if (!name) { toast.error("Beri nama preset dulu"); return; }
+    const id = crypto.randomUUID();
+    const { activePresetId: _omit, ...rest } = prefs;
+    void _omit;
+    const next = [...presets, { id, name, prefs: rest }];
+    setPresets(next); savePresets(next);
+    setPrefs((p) => ({ ...p, activePresetId: id }));
+    setPresetName("");
+    toast.success(`Preset "${name}" disimpan di perangkat ini`);
+  }
+  function updateActivePreset() {
+    if (!prefs.activePresetId) return;
+    const { activePresetId: _omit, ...rest } = prefs;
+    void _omit;
+    const next = presets.map((p) => p.id === prefs.activePresetId ? { ...p, prefs: rest } : p);
+    setPresets(next); savePresets(next);
+    toast.success("Preset diperbarui");
+  }
+  function deleteActivePreset() {
+    if (!prefs.activePresetId) return;
+    const target = presets.find((p) => p.id === prefs.activePresetId);
+    if (!target) return;
+    if (!confirm(`Hapus preset "${target.name}"?`)) return;
+    const next = presets.filter((p) => p.id !== prefs.activePresetId);
+    setPresets(next); savePresets(next);
+    setPrefs((p) => ({ ...p, activePresetId: null }));
+  }
 
   async function load() {
     setLoading(true);
@@ -198,7 +283,17 @@ function PODetailPage() {
 
   // Compute fit-to-page zoom: scale paper width to fit available preview area.
   const previewMaxPx = 760; // approximate inner dialog width budget
-  const paperPx = prefs.paper === "letter" ? 816 : 794; // 216mm/210mm @ ~96dpi
+  const basePaperPx: Record<PaperSize, number> = {
+    a4: 794,         // 210mm @ ~96dpi
+    letter: 816,     // 216mm
+    thermal80: 302,  // 80mm
+    thermal58: 219,  // 58mm
+  };
+  const isThermal = prefs.paper === "thermal80" || prefs.paper === "thermal58";
+  const isLandscape = prefs.orientation === "landscape" && !isThermal;
+  const paperPx = isLandscape
+    ? (prefs.paper === "letter" ? 1054 : 1123) // 279mm/297mm @ ~96dpi
+    : basePaperPx[prefs.paper];
   const fitZoom = useMemo(
     () => Math.min(1, previewMaxPx / paperPx),
     [paperPx],
@@ -349,15 +444,75 @@ function PODetailPage() {
           <DialogTitle>Preview cetak — {formatPONo(po.po_no)}</DialogTitle>
         </DialogHeader>
 
+        {/* Printer presets — saved per device (localStorage) */}
+        <div className="border-y bg-accent/30 px-5 py-3 print:hidden">
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <Settings2 className="h-3.5 w-3.5" /> Preset printer (tersimpan di perangkat ini)
+          </div>
+          <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={prefs.activePresetId ?? "__none"}
+                onValueChange={(v) => v === "__none"
+                  ? setPrefs((p) => ({ ...p, activePresetId: null }))
+                  : applyPreset(v)}
+              >
+                <SelectTrigger className="h-8 w-[220px]"><SelectValue placeholder="Pilih preset…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— Tanpa preset —</SelectItem>
+                  {presets.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {prefs.activePresetId && (
+                <>
+                  <Button variant="outline" size="sm" onClick={updateActivePreset}>Simpan perubahan</Button>
+                  <Button variant="ghost" size="sm" onClick={deleteActivePreset} className="text-destructive hover:text-destructive">
+                    <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="mis. Epson Kasir A4"
+                className="h-8 w-[220px]"
+              />
+              <Button size="sm" onClick={saveCurrentAsPreset}>
+                <Save className="mr-1 h-3.5 w-3.5" /> Simpan sebagai baru
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Toolbar */}
-        <div className="grid gap-3 border-y bg-background px-5 py-3 text-sm md:grid-cols-2 lg:grid-cols-3 print:hidden">
+        <div className="grid gap-3 border-b bg-background px-5 py-3 text-sm md:grid-cols-2 lg:grid-cols-3 print:hidden">
           <div className="flex items-center gap-2">
             <Label className="w-20 shrink-0 text-xs text-muted-foreground">Kertas</Label>
             <Select value={prefs.paper} onValueChange={(v) => setPrefs((p) => ({ ...p, paper: v as PaperSize }))}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="a4">A4 (210 × 297 mm)</SelectItem>
-                <SelectItem value="letter">Letter (216 × 279 mm)</SelectItem>
+                <SelectItem value="a4">{PAPER_LABEL.a4}</SelectItem>
+                <SelectItem value="letter">{PAPER_LABEL.letter}</SelectItem>
+                <SelectItem value="thermal80">{PAPER_LABEL.thermal80}</SelectItem>
+                <SelectItem value="thermal58">{PAPER_LABEL.thermal58}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Orientasi</Label>
+            <Select
+              value={prefs.orientation}
+              onValueChange={(v) => setPrefs((p) => ({ ...p, orientation: v as Orientation }))}
+              disabled={isThermal}
+            >
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="portrait">Portrait</SelectItem>
+                <SelectItem value="landscape">Landscape</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -371,6 +526,24 @@ function PODetailPage() {
                 <SelectItem value="wide">Lebar (20–22 mm)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Printer</Label>
+            <Input
+              value={prefs.printerName}
+              onChange={(e) => setPrefs((p) => ({ ...p, printerName: e.target.value }))}
+              placeholder="mis. Epson L3210"
+              className="h-8"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Tray</Label>
+            <Input
+              value={prefs.tray}
+              onChange={(e) => setPrefs((p) => ({ ...p, tray: e.target.value }))}
+              placeholder="mis. Tray 1 / Manual"
+              className="h-8"
+            />
           </div>
           <div className="flex items-center gap-3">
             <Label className="w-20 shrink-0 text-xs text-muted-foreground">Zoom</Label>
@@ -402,6 +575,11 @@ function PODetailPage() {
             <Label htmlFor="ship" className="text-xs">Alamat pengiriman</Label>
           </div>
           <div className="flex items-center justify-end gap-2 lg:col-span-3">
+            {(prefs.tray || prefs.printerName) && (
+              <span className="mr-auto text-xs text-muted-foreground">
+                Tip: pilih “{prefs.printerName || "printer Anda"}”{prefs.tray ? ` · ${prefs.tray}` : ""} di dialog cetak browser.
+              </span>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setPrefs(DEFAULT_PREFS)}>Reset</Button>
           </div>
         </div>
