@@ -239,10 +239,18 @@
 .po-preview .footer, .po-print .footer { page-break-inside: avoid; break-inside: avoid; }
 
 /* Runtime paper-size + margin overrides (driven by body[data-po-*]) */
-body[data-po-paper="letter"] .po-preview { --po-paper-w: 216mm; --po-paper-h: 279mm; }
+body[data-po-paper="letter"]    .po-preview { --po-paper-w: 216mm; --po-paper-h: 279mm; }
+body[data-po-paper="thermal80"] .po-preview { --po-paper-w: 80mm;  --po-paper-h: auto; }
+body[data-po-paper="thermal58"] .po-preview { --po-paper-w: 58mm;  --po-paper-h: auto; }
 body[data-po-margin="narrow"] .po-preview { --po-pad-y: 8mm;  --po-pad-x: 8mm; }
 body[data-po-margin="normal"] .po-preview { --po-pad-y: 14mm; --po-pad-x: 12mm; }
 body[data-po-margin="wide"]   .po-preview { --po-pad-y: 22mm; --po-pad-x: 20mm; }
+/* Thermal margins are tighter regardless of margin mode */
+body[data-po-paper="thermal80"] .po-preview,
+body[data-po-paper="thermal58"] .po-preview { --po-pad-y: 4mm; --po-pad-x: 3mm; font-size: 9.5pt; }
+/* Landscape orientation swaps width/height for the preview sheet */
+body[data-po-orient="landscape"][data-po-paper="a4"]     .po-preview { --po-paper-w: 297mm; --po-paper-h: 210mm; }
+body[data-po-orient="landscape"][data-po-paper="letter"] .po-preview { --po-paper-w: 279mm; --po-paper-h: 216mm; }
 
 @media print {
   /* Paper size + margins for the actual printout */
