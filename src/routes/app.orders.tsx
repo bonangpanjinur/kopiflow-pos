@@ -242,6 +242,9 @@ function DetailDialog({
   onVoided: () => void;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    applyReceiptPaper();
+  }, []);
   const [voiding, setVoiding] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundAmount, setRefundAmount] = useState<string>(String(order.total));
