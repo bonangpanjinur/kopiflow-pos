@@ -182,6 +182,16 @@ function SettingsPage() {
   const onSave = async () => {
     if (!shop || !form) return;
     setSaving(true);
+
+    // Detect branding-field changes against currently loaded shop snapshot
+    type BrandField = "name" | "logo_url" | "address" | "phone";
+    const brandFields: BrandField[] = ["name", "logo_url", "address", "phone"];
+    const current = shop as unknown as Record<BrandField, string | null>;
+    const next = form as unknown as Record<BrandField, string | null>;
+    const changes = brandFields
+      .map((f) => ({ field: f, oldVal: (current[f] ?? "") || null, newVal: (next[f] ?? "") || null }))
+      .filter((c) => (c.oldVal ?? "") !== (c.newVal ?? ""));
+
     const { error } = await supabase
       .from("coffee_shops")
       .update({
@@ -208,7 +218,32 @@ function SettingsPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Pengaturan tersimpan");
+
+    // Audit log: record each branding field change. Best-effort, never blocks save.
+    if (changes.length > 0) {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (uid) {
+        const rows = changes.map((c) => ({
+          shop_id: shop.id,
+          changed_by: uid,
+          field: c.field,
+          old_value: c.oldVal,
+          new_value: c.newVal,
+        }));
+        const { error: logErr } = await supabase.from("branding_audit").insert(rows);
+        if (logErr) {
+          // eslint-disable-next-line no-console
+          console.warn("[branding-audit] insert failed:", logErr.message);
+        }
+      }
+    }
+
+    toast.success(
+      changes.length > 0
+        ? `Pengaturan tersimpan (${changes.length} perubahan branding tercatat)`
+        : "Pengaturan tersimpan",
+    );
   };
 
   return (
