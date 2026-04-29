@@ -241,7 +241,37 @@ function PODetailPage() {
     const next = presets.filter((p) => p.id !== prefs.activePresetId);
     setPresets(next); savePresets(next);
     setPrefs((p) => ({ ...p, activePresetId: null }));
+    if (defaultPresetId === target.id) {
+      setDefaultPresetId(null);
+      saveDefaultPresetId(null);
+    }
   }
+  function toggleDefaultPreset(makeDefault: boolean) {
+    if (makeDefault) {
+      if (!prefs.activePresetId) { toast.error("Pilih preset dulu"); return; }
+      setDefaultPresetId(prefs.activePresetId);
+      saveDefaultPresetId(prefs.activePresetId);
+      const name = presets.find((p) => p.id === prefs.activePresetId)?.name ?? "Preset";
+      toast.success(`"${name}" dipakai otomatis tiap buka Print Preview`);
+    } else {
+      setDefaultPresetId(null);
+      saveDefaultPresetId(null);
+      toast.success("Default preset dihapus");
+    }
+  }
+
+  /** Open the Print Preview, applying the saved default preset (if any)
+   *  whenever it differs from the currently-loaded prefs. */
+  function openPreview() {
+    if (defaultPresetId) {
+      const def = presets.find((p) => p.id === defaultPresetId);
+      if (def && prefs.activePresetId !== def.id) {
+        setPrefs({ ...def.prefs, activePresetId: def.id });
+      }
+    }
+    setPreviewOpen(true);
+  }
+
 
   async function load() {
     setLoading(true);
