@@ -231,7 +231,25 @@
 .po-preview .sign { padding-top: 56px; border-top: 1px solid #000; text-align: center; font-size: 9.5pt; }
 .po-preview .note { margin-top: 14px; font-size: 10pt; white-space: pre-wrap; }
 
+/* Auto-pagination helpers (apply both in preview and print) */
+.po-preview thead, .po-print thead { display: table-header-group; }
+.po-preview tfoot, .po-print tfoot { display: table-footer-group; }
+.po-preview tr, .po-print tr { page-break-inside: avoid; break-inside: avoid; }
+.po-preview .totals, .po-print .totals,
+.po-preview .footer, .po-print .footer { page-break-inside: avoid; break-inside: avoid; }
+
+/* Runtime paper-size + margin overrides (driven by body[data-po-*]) */
+body[data-po-paper="letter"] .po-preview { --po-paper-w: 216mm; --po-paper-h: 279mm; }
+body[data-po-margin="narrow"] .po-preview { --po-pad-y: 8mm;  --po-pad-x: 8mm; }
+body[data-po-margin="normal"] .po-preview { --po-pad-y: 14mm; --po-pad-x: 12mm; }
+body[data-po-margin="wide"]   .po-preview { --po-pad-y: 22mm; --po-pad-x: 20mm; }
+
 @media print {
+  /* Paper size + margins for the actual printout */
+  @page { size: A4; margin: 0; }
+  body[data-po-paper="letter"] { }
+  body[data-po-paper="letter"] .po-print { }
+
   .po-print {
     display: block;
     width: 100%;
@@ -242,6 +260,10 @@
     color: #000;
     background: #fff;
   }
+  body[data-po-margin="narrow"] .po-print { padding: 8mm 8mm; }
+  body[data-po-margin="normal"] .po-print { padding: 14mm 12mm; }
+  body[data-po-margin="wide"]   .po-print { padding: 22mm 20mm; }
+
   .po-print h1 { font-size: 18pt; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
   .po-print .muted { color: #555; }
   .po-print .label { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #666; }
@@ -273,5 +295,12 @@
   .po-print .footer { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
   .po-print .sign { padding-top: 56px; border-top: 1px solid #000; text-align: center; font-size: 9.5pt; }
   .po-print .note { margin-top: 14px; font-size: 10pt; white-space: pre-wrap; }
-  @page { size: A4; margin: 0; }
 }
+
+/* Per-paper @page rules — must be at top level, not nested */
+@media print {
+  body[data-po-paper="letter"] { }
+}
+@page po-a4     { size: A4 portrait;     margin: 0; }
+@page po-letter { size: Letter portrait; margin: 0; }
+
