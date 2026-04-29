@@ -150,22 +150,42 @@
   }
 }
 
-/* Receipt — 58mm thermal */
+/* Receipt — thermal (default 58mm). Width controlled by CSS var so the
+   same component can render at 58mm or 80mm via body[data-receipt-paper]. */
 .receipt-58 {
-  width: 58mm;
-  padding: 4mm 3mm;
+  --r-w: 58mm;
+  --r-pad-x: 3mm;
+  --r-pad-y: 4mm;
+  --r-fs: 11px;
+  --r-fs-sm: 10px;
+  width: var(--r-w);
+  padding: var(--r-pad-y) var(--r-pad-x);
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 11px;
+  font-size: var(--r-fs);
   line-height: 1.4;
   color: #000;
   background: #fff;
 }
 .receipt-58 .r-center { text-align: center; }
 .receipt-58 .r-bold { font-weight: 700; }
-.receipt-58 .r-small { font-size: 10px; }
+.receipt-58 .r-small { font-size: var(--r-fs-sm); }
 .receipt-58 .r-row { display: flex; justify-content: space-between; gap: 8px; }
 .receipt-58 .r-divider { border-top: 1px dashed #000; margin: 4px 0; }
 .receipt-58 .r-item { margin: 2px 0; }
+.receipt-58 .r-item > div:first-child {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* 80mm thermal preset — applied via body[data-receipt-paper="80"] so we don't
+   need a second component variant. */
+body[data-receipt-paper="80"] .receipt-58 {
+  --r-w: 80mm;
+  --r-pad-x: 4mm;
+  --r-pad-y: 5mm;
+  --r-fs: 12px;
+  --r-fs-sm: 11px;
+}
 
 @media print {
   body * { visibility: hidden !important; }
@@ -173,6 +193,15 @@
   .print-area { position: absolute; left: 0; top: 0; width: 100%; }
   @page { size: 58mm auto; margin: 0; }
 }
+@media print {
+  body[data-receipt-paper="80"] @page { size: 80mm auto; margin: 0; }
+}
+/* Per-paper @page must be a top-level rule, not nested */
+@media print {
+  body[data-receipt-paper="80"] { }
+}
+@page :where(body[data-receipt-paper="80"]) { size: 80mm auto; margin: 0; }
+
 
 /* PO print sheet — A4/Letter friendly. Shared styles applied to both the
    hidden print layer (.po-print) and the on-screen preview (.po-preview).
