@@ -40,9 +40,10 @@ export const runPlanMaintenance = createServerFn({ method: "POST" })
       body: "{}",
     });
     const text = await res.text();
-    let body: Record<string, unknown> = {};
+    let body: Record<string, string> = {};
     try {
-      body = JSON.parse(text) as Record<string, unknown>;
+      const parsed = JSON.parse(text);
+      body = { result: JSON.stringify(parsed) };
     } catch {
       body = { raw: text };
     }
