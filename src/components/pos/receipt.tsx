@@ -70,17 +70,30 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
   ref,
 ) {
   const hasSplit = paymentSplit && paymentSplit.length > 0;
+  const safeShopName = (shopName ?? "").trim() || "Toko";
+  const safeOutletName = (outletName ?? "").trim();
+  const safeAddress = (shopAddress ?? "").trim();
+  const safePhone = (shopPhone ?? "").trim();
+  const safeLogo = (shopLogoUrl ?? "").trim();
   return (
     <div ref={ref} className="receipt-58">
-      {shopLogoUrl && (
+      {safeLogo && (
         <div className="r-center" style={{ marginBottom: 4 }}>
-          <img src={shopLogoUrl} alt="" style={{ maxHeight: 48, maxWidth: "60%", objectFit: "contain", display: "inline-block" }} />
+          <img
+            src={safeLogo}
+            alt=""
+            style={{ maxHeight: 48, maxWidth: "60%", objectFit: "contain", display: "inline-block" }}
+            onError={(e) => {
+              // Fallback gracefully when logo fails to load — hide image so layout stays intact
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
         </div>
       )}
-      <div className="r-center r-bold">{shopName}</div>
-      <div className="r-center">{outletName}</div>
-      {shopAddress && <div className="r-center r-small">{shopAddress}</div>}
-      {shopPhone && <div className="r-center r-small">Telp. {shopPhone}</div>}
+      <div className="r-center r-bold">{safeShopName}</div>
+      {safeOutletName && <div className="r-center">{safeOutletName}</div>}
+      {safeAddress && <div className="r-center r-small">{safeAddress}</div>}
+      {safePhone && <div className="r-center r-small">Telp. {safePhone}</div>}
       <div className="r-divider" />
       <div className="r-row">
         <span>No</span>
