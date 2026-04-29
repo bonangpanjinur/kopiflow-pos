@@ -1,8 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Loader2, ArrowLeft, CheckCircle2, X, Trash2, Send, Printer, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
@@ -36,7 +42,54 @@ type POItem = {
 };
 type Ingredient = { id: string; name: string; unit: string };
 type Supplier = { id: string; name: string; phone: string | null; contact_name: string | null; address?: string | null; email?: string | null };
-type Shop = { id: string; name: string };
+type Shop = { id: string; name: string; address?: string | null; phone?: string | null; email?: string | null };
+
+type PaperSize = "a4" | "letter";
+type MarginMode = "narrow" | "normal" | "wide";
+type PrintPrefs = {
+  paper: PaperSize;
+  margin: MarginMode;
+  zoom: number;       // 0.5 – 1.4
+  fitToPage: boolean;
+  showTax: boolean;
+  showNotes: boolean;
+  showShipping: boolean;
+};
+
+const PREFS_KEY = "po-print-prefs/v1";
+const DEFAULT_PREFS: PrintPrefs = {
+  paper: "a4",
+  margin: "normal",
+  zoom: 1,
+  fitToPage: false,
+  showTax: true,
+  showNotes: true,
+  showShipping: true,
+};
+
+function loadPrefs(): PrintPrefs {
+  if (typeof window === "undefined") return DEFAULT_PREFS;
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+  } catch { return DEFAULT_PREFS; }
+}
+
+/** Format a YYYY-MM-DD or ISO date to id-ID long form: "29 April 2026". */
+function formatDateID(d: string | null | undefined): string {
+  if (!d) return "—";
+  const dt = new Date(d.length <= 10 ? `${d}T00:00:00` : d);
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+/** Normalize PO no for display — uppercase, trim, ensure "PO-" prefix. */
+function formatPONo(raw: string): string {
+  const s = (raw ?? "").trim().toUpperCase();
+  if (!s) return "—";
+  return /^PO[-_]/i.test(s) ? s : `PO-${s}`;
+}
 
 function statusBadge(status: PO["status"]) {
   const map: Record<PO["status"], string> = {
@@ -60,6 +113,37 @@ function PODetailPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [prefs, setPrefs] = useState<PrintPrefs>(() => loadPrefs());
+
+  // Persist prefs whenever they change
+  useEffect(() => {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* noop */ }
+  }, [prefs]);
+
+  // Apply prefs to <body> as data attributes so CSS can react
+  useEffect(() => {
+    const b = document.body;
+    b.dataset.poPaper = prefs.paper;
+    b.dataset.poMargin = prefs.margin;
+    return () => {
+      delete b.dataset.poPaper;
+      delete b.dataset.poMargin;
+    };
+  }, [prefs.paper, prefs.margin]);
+
+  // Inject a per-paper @page rule for the actual printout
+  useEffect(() => {
+    const id = "po-page-rule";
+    let style = document.getElementById(id) as HTMLStyleElement | null;
+    if (!style) {
+      style = document.createElement("style");
+      style.id = id;
+      document.head.appendChild(style);
+    }
+    const size = prefs.paper === "letter" ? "Letter portrait" : "A4 portrait";
+    style.textContent = `@media print { @page { size: ${size}; margin: 0; } }`;
+    return () => { if (style) style.textContent = ""; };
+  }, [prefs.paper]);
 
   async function load() {
     setLoading(true);
@@ -72,7 +156,7 @@ function PODetailPage() {
       poData.supplier_id
         ? supabase.from("suppliers").select("id, name, phone, contact_name, address, email").eq("id", poData.supplier_id).single()
         : Promise.resolve({ data: null }),
-      supabase.from("coffee_shops").select("id, name").eq("id", poData.shop_id).single(),
+      supabase.from("coffee_shops").select("id, name, address, phone, email").eq("id", poData.shop_id).single(),
     ]);
     setItems((itRes.data ?? []) as POItem[]);
     const map: Record<string, Ingredient> = {};
@@ -95,7 +179,7 @@ function PODetailPage() {
 
   async function receivePO() {
     if (!po) return;
-    if (!confirm(`Terima PO ${po.po_no}? Stok akan otomatis bertambah dan HPP akan di-update.`)) return;
+    if (!confirm(`Terima PO ${formatPONo(po.po_no)}? Stok akan otomatis bertambah dan HPP akan di-update.`)) return;
     setBusy(true);
     const { error } = await supabase.rpc("receive_purchase_order", { _po_id: po.id });
     if (error) toast.error(error.message); else { toast.success("PO diterima — stok diperbarui"); load(); }
@@ -104,13 +188,22 @@ function PODetailPage() {
 
   async function deletePO() {
     if (!po) return;
-    if (!confirm(`Hapus PO ${po.po_no}? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!confirm(`Hapus PO ${formatPONo(po.po_no)}? Tindakan ini tidak bisa dibatalkan.`)) return;
     setBusy(true);
     await supabase.from("purchase_order_items").delete().eq("po_id", po.id);
     const { error } = await supabase.from("purchase_orders").delete().eq("id", po.id);
     if (error) { toast.error(error.message); setBusy(false); }
     else { toast.success("PO dihapus"); nav({ to: "/app/purchase-orders" }); }
   }
+
+  // Compute fit-to-page zoom: scale paper width to fit available preview area.
+  const previewMaxPx = 760; // approximate inner dialog width budget
+  const paperPx = prefs.paper === "letter" ? 816 : 794; // 216mm/210mm @ ~96dpi
+  const fitZoom = useMemo(
+    () => Math.min(1, previewMaxPx / paperPx),
+    [paperPx],
+  );
+  const effectiveZoom = prefs.fitToPage ? fitZoom : prefs.zoom;
 
   if (loading) {
     return <div className="flex h-full items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -140,13 +233,13 @@ function PODetailPage() {
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{po.po_no}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{formatPONo(po.po_no)}</h1>
             <div className="mt-2">{statusBadge(po.status)}</div>
           </div>
           <div className="text-right text-sm">
-            <div className="text-muted-foreground">Order: <span className="text-foreground tabular-nums">{po.order_date}</span></div>
-            {po.expected_date && <div className="text-muted-foreground">Kedatangan: <span className="text-foreground tabular-nums">{po.expected_date}</span></div>}
-            {po.received_date && <div className="text-muted-foreground">Diterima: <span className="text-foreground tabular-nums">{po.received_date}</span></div>}
+            <div className="text-muted-foreground">Tanggal terbit: <span className="text-foreground">{formatDateID(po.order_date)}</span></div>
+            {po.expected_date && <div className="text-muted-foreground">Kedatangan: <span className="text-foreground">{formatDateID(po.expected_date)}</span></div>}
+            {po.received_date && <div className="text-muted-foreground">Diterima: <span className="text-foreground">{formatDateID(po.received_date)}</span></div>}
           </div>
         </div>
 
@@ -244,22 +337,89 @@ function PODetailPage() {
       </div>
     </div>
 
-    {/* Print-only sheet (A4) */}
+    {/* Print-only sheet */}
     <div className="po-print">
-      <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} />
+      <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} prefs={prefs} />
     </div>
 
     {/* Print preview dialog */}
     <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-      <DialogContent className="max-w-[min(95vw,240mm)] max-h-[92vh] overflow-y-auto p-0 gap-0 bg-muted/40">
+      <DialogContent className="max-w-[min(96vw,1100px)] max-h-[94vh] overflow-hidden p-0 gap-0 bg-muted/40 flex flex-col">
         <DialogHeader className="px-5 pt-5 pb-3 print:hidden">
-          <DialogTitle>Preview cetak — {po.po_no}</DialogTitle>
+          <DialogTitle>Preview cetak — {formatPONo(po.po_no)}</DialogTitle>
         </DialogHeader>
-        <div className="px-4 pb-4">
-          <div className="po-preview">
-            <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} />
+
+        {/* Toolbar */}
+        <div className="grid gap-3 border-y bg-background px-5 py-3 text-sm md:grid-cols-2 lg:grid-cols-3 print:hidden">
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Kertas</Label>
+            <Select value={prefs.paper} onValueChange={(v) => setPrefs((p) => ({ ...p, paper: v as PaperSize }))}>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a4">A4 (210 × 297 mm)</SelectItem>
+                <SelectItem value="letter">Letter (216 × 279 mm)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Margin</Label>
+            <Select value={prefs.margin} onValueChange={(v) => setPrefs((p) => ({ ...p, margin: v as MarginMode }))}>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="narrow">Sempit (8 mm)</SelectItem>
+                <SelectItem value="normal">Normal (12–14 mm)</SelectItem>
+                <SelectItem value="wide">Lebar (20–22 mm)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-3">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Zoom</Label>
+            <Slider
+              value={[Math.round(prefs.zoom * 100)]}
+              min={50} max={140} step={5}
+              disabled={prefs.fitToPage}
+              onValueChange={([v]) => setPrefs((p) => ({ ...p, zoom: v / 100 }))}
+              className="flex-1"
+            />
+            <span className="w-10 text-right tabular-nums text-xs text-muted-foreground">
+              {Math.round(effectiveZoom * 100)}%
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="fit" checked={prefs.fitToPage} onCheckedChange={(v) => setPrefs((p) => ({ ...p, fitToPage: v }))} />
+            <Label htmlFor="fit" className="text-xs">Fit to page</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="tax" checked={prefs.showTax} onCheckedChange={(v) => setPrefs((p) => ({ ...p, showTax: v }))} />
+            <Label htmlFor="tax" className="text-xs">Tampilkan pajak</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="notes" checked={prefs.showNotes} onCheckedChange={(v) => setPrefs((p) => ({ ...p, showNotes: v }))} />
+            <Label htmlFor="notes" className="text-xs">Tampilkan catatan</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="ship" checked={prefs.showShipping} onCheckedChange={(v) => setPrefs((p) => ({ ...p, showShipping: v }))} />
+            <Label htmlFor="ship" className="text-xs">Alamat pengiriman</Label>
+          </div>
+          <div className="flex items-center justify-end gap-2 lg:col-span-3">
+            <Button variant="ghost" size="sm" onClick={() => setPrefs(DEFAULT_PREFS)}>Reset</Button>
           </div>
         </div>
+
+        {/* Scaled preview area */}
+        <div className="flex-1 overflow-auto px-4 py-6">
+          <div
+            style={{
+              width: paperPx * effectiveZoom,
+              margin: "0 auto",
+            }}
+          >
+            <div className="po-preview" style={{ ["--po-zoom" as string]: String(effectiveZoom) }}>
+              <POSheetBody po={po} items={items} ingMap={ingMap} supplier={supplier} shop={shop} statusLabel={statusLabel} prefs={prefs} />
+            </div>
+          </div>
+        </div>
+
         <DialogFooter className="px-5 py-3 border-t bg-background print:hidden">
           <Button variant="outline" onClick={() => setPreviewOpen(false)}>Tutup</Button>
           <Button onClick={() => { setPreviewOpen(false); setTimeout(() => window.print(), 150); }}>
@@ -273,7 +433,7 @@ function PODetailPage() {
 }
 
 function POSheetBody({
-  po, items, ingMap, supplier, shop, statusLabel,
+  po, items, ingMap, supplier, shop, statusLabel, prefs,
 }: {
   po: PO;
   items: POItem[];
@@ -281,6 +441,7 @@ function POSheetBody({
   supplier: Supplier | null;
   shop: Shop | null;
   statusLabel: string;
+  prefs: PrintPrefs;
 }) {
   return (
     <>
@@ -288,13 +449,21 @@ function POSheetBody({
         <div>
           <h1>Purchase Order</h1>
           <div className="muted" style={{ marginTop: 4, fontSize: "10pt" }}>{shop?.name ?? ""}</div>
+          {shop?.address && <div className="muted" style={{ fontSize: "9.5pt" }}>{shop.address}</div>}
+          {(shop?.phone || shop?.email) && (
+            <div className="muted" style={{ fontSize: "9.5pt" }}>
+              {[shop.phone, shop.email].filter(Boolean).join(" · ")}
+            </div>
+          )}
         </div>
         <div style={{ textAlign: "right" }}>
           <div className={`stamp ${po.status}`}>{statusLabel}</div>
-          <div style={{ marginTop: 8, fontWeight: 600 }}>{po.po_no}</div>
-          <div className="muted" style={{ fontSize: "9.5pt" }}>Tgl Order: {po.order_date}</div>
-          {po.expected_date && <div className="muted" style={{ fontSize: "9.5pt" }}>Kedatangan: {po.expected_date}</div>}
-          {po.received_date && <div className="muted" style={{ fontSize: "9.5pt" }}>Diterima: {po.received_date}</div>}
+          <div style={{ marginTop: 8, fontWeight: 700, fontSize: "12pt", letterSpacing: "0.02em" }}>
+            {formatPONo(po.po_no)}
+          </div>
+          <div className="muted" style={{ fontSize: "9.5pt" }}>Tanggal terbit: {formatDateID(po.order_date)}</div>
+          {po.expected_date && <div className="muted" style={{ fontSize: "9.5pt" }}>Kedatangan: {formatDateID(po.expected_date)}</div>}
+          {po.received_date && <div className="muted" style={{ fontSize: "9.5pt" }}>Diterima: {formatDateID(po.received_date)}</div>}
         </div>
       </div>
 
@@ -311,13 +480,16 @@ function POSheetBody({
             </div>
           ) : <div className="muted" style={{ marginTop: 4 }}>— tidak ditentukan —</div>}
         </div>
-        <div className="box">
-          <div className="label">Dipesan oleh</div>
-          <div style={{ marginTop: 4, fontWeight: 600 }}>{shop?.name ?? "—"}</div>
-          <div className="muted" style={{ fontSize: "9.5pt", marginTop: 2 }}>
-            Dicetak: {new Date().toLocaleString("id-ID")}
+        {prefs.showShipping && (
+          <div className="box">
+            <div className="label">Alamat pengiriman</div>
+            <div style={{ marginTop: 4, fontWeight: 600 }}>{shop?.name ?? "—"}</div>
+            {shop?.address && <div className="muted" style={{ fontSize: "9.5pt", marginTop: 2 }}>{shop.address}</div>}
+            <div className="muted" style={{ fontSize: "9.5pt", marginTop: 6 }}>
+              Dicetak: {new Date().toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <table>
@@ -351,13 +523,13 @@ function POSheetBody({
 
       <div className="totals">
         <div className="line"><span className="muted">Subtotal</span><span className="num">{formatIDR(po.subtotal)}</span></div>
-        {Number(po.tax) > 0 && (
+        {prefs.showTax && Number(po.tax) > 0 && (
           <div className="line"><span className="muted">Pajak</span><span className="num">{formatIDR(po.tax)}</span></div>
         )}
         <div className="line grand"><span>Total</span><span className="num">{formatIDR(po.total)}</span></div>
       </div>
 
-      {po.note && (
+      {prefs.showNotes && po.note && (
         <div className="note">
           <div className="label">Catatan</div>
           <div style={{ marginTop: 4 }}>{po.note}</div>
