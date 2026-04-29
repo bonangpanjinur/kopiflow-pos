@@ -45,27 +45,43 @@ type Ingredient = { id: string; name: string; unit: string };
 type Supplier = { id: string; name: string; phone: string | null; contact_name: string | null; address?: string | null; email?: string | null };
 type Shop = { id: string; name: string; address?: string | null; phone?: string | null; email?: string | null };
 
-type PaperSize = "a4" | "letter";
+type PaperSize = "a4" | "letter" | "thermal80" | "thermal58";
 type MarginMode = "narrow" | "normal" | "wide";
+type Orientation = "portrait" | "landscape";
 type PrintPrefs = {
   paper: PaperSize;
   margin: MarginMode;
+  orientation: Orientation;
+  tray: string;        // free-text printer tray hint, e.g. "Tray 1"
+  printerName: string; // free-text printer name, just a reminder
   zoom: number;       // 0.5 – 1.4
   fitToPage: boolean;
   showTax: boolean;
   showNotes: boolean;
   showShipping: boolean;
+  activePresetId: string | null;
+};
+
+type PrinterPreset = {
+  id: string;
+  name: string;
+  prefs: Omit<PrintPrefs, "activePresetId">;
 };
 
 const PREFS_KEY = "po-print-prefs/v1";
+const PRESETS_KEY = "po-printer-presets/v1";
 const DEFAULT_PREFS: PrintPrefs = {
   paper: "a4",
   margin: "normal",
+  orientation: "portrait",
+  tray: "",
+  printerName: "",
   zoom: 1,
   fitToPage: false,
   showTax: true,
   showNotes: true,
   showShipping: true,
+  activePresetId: null,
 };
 
 function loadPrefs(): PrintPrefs {
@@ -76,6 +92,27 @@ function loadPrefs(): PrintPrefs {
     return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
   } catch { return DEFAULT_PREFS; }
 }
+
+function loadPresets(): PrinterPreset[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function savePresets(list: PrinterPreset[]) {
+  try { localStorage.setItem(PRESETS_KEY, JSON.stringify(list)); } catch { /* noop */ }
+}
+
+const PAPER_LABEL: Record<PaperSize, string> = {
+  a4: "A4 (210 × 297 mm)",
+  letter: "Letter (216 × 279 mm)",
+  thermal80: "Thermal 80 mm",
+  thermal58: "Thermal 58 mm",
+};
 
 /** Format a YYYY-MM-DD or ISO date to id-ID long form: "29 April 2026". */
 function formatDateID(d: string | null | undefined): string {
