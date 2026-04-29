@@ -220,6 +220,7 @@ function StatusBadge({ status }: { status: string }) {
     awaiting_review: { label: "Menunggu review", cls: "bg-amber-500/15 text-amber-700", icon: Clock },
     paid: { label: "Lunas", cls: "bg-green-500/15 text-green-700", icon: CheckCircle2 },
     rejected: { label: "Ditolak", cls: "bg-red-500/15 text-red-700", icon: XCircle },
+    cancelled: { label: "Dibatalkan", cls: "bg-muted text-muted-foreground", icon: XCircle },
     expired: { label: "Kadaluarsa", cls: "bg-muted text-muted-foreground", icon: XCircle },
   };
   const it = map[status] ?? map.pending;
