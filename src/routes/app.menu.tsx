@@ -76,6 +76,10 @@ function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
 
+  const [hpp, setHpp] = useState<Record<string, HPPRow>>({});
+  const [recipes, setRecipes] = useState<RecipeRow[]>([]);
+  const [ingredients, setIngredients] = useState<Record<string, IngredientRow>>({});
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [name, setName] = useState("");
@@ -83,6 +87,8 @@ function MenuPage() {
   const [price, setPrice] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>(NO_CATEGORY);
   const [available, setAvailable] = useState(true);
+  const [trackStock, setTrackStock] = useState(false);
+  const [recipeYield, setRecipeYield] = useState<string>("1");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -91,7 +97,7 @@ function MenuPage() {
   async function load() {
     if (!shop) return;
     setLoading(true);
-    const [cats, mi] = await Promise.all([
+    const [cats, mi, hp, rc, ing] = await Promise.all([
       supabase
         .from("categories")
         .select("id, name")
@@ -99,14 +105,33 @@ function MenuPage() {
         .order("sort_order", { ascending: true }),
       supabase
         .from("menu_items")
-        .select("id, name, description, price, image_url, is_available, category_id")
+        .select("id, name, description, price, image_url, is_available, category_id, track_stock, recipe_yield")
         .eq("shop_id", shop.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("menu_hpp_view")
+        .select("menu_item_id, hpp, margin, margin_percent, recipe_count")
+        .eq("shop_id", shop.id),
+      supabase
+        .from("recipes")
+        .select("id, menu_item_id, ingredient_id, quantity"),
+      supabase
+        .from("ingredients")
+        .select("id, name, unit, current_stock, min_stock, cost_per_unit")
+        .eq("shop_id", shop.id)
+        .eq("is_active", true),
     ]);
     if (cats.error) toast.error(cats.error.message);
     if (mi.error) toast.error(mi.error.message);
     setCategories(cats.data ?? []);
     setItems((mi.data ?? []) as MenuItem[]);
+    const hMap: Record<string, HPPRow> = {};
+    ((hp.data ?? []) as HPPRow[]).forEach((row) => { if (row.menu_item_id) hMap[row.menu_item_id] = row; });
+    setHpp(hMap);
+    setRecipes((rc.data ?? []) as RecipeRow[]);
+    const iMap: Record<string, IngredientRow> = {};
+    ((ing.data ?? []) as IngredientRow[]).forEach((i) => { iMap[i.id] = i; });
+    setIngredients(iMap);
     setLoading(false);
   }
 
