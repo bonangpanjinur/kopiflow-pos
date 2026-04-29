@@ -975,6 +975,11 @@ function CheckoutDialog({
   } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Apply saved receipt-paper preset when payment dialog mounts/opens
+  useEffect(() => {
+    if (open) applyReceiptPaper();
+  }, [open]);
+
   // Load shop tax/service config when dialog opens
   useEffect(() => {
     if (!open) return;
