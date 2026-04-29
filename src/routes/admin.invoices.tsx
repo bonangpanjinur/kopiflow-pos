@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
-import { Loader2 } from "lucide-react";
-import { approveInvoice, rejectInvoice } from "@/server/billing.functions";
+import { Loader2, Eye } from "lucide-react";
+import { approveInvoice, rejectInvoice, getProofSignedUrl } from "@/server/billing.functions";
 
 export const Route = createFileRoute("/admin/invoices")({
   component: AdminInvoices,
@@ -46,13 +46,28 @@ function AdminInvoices() {
     catch (e) { toast.error((e as Error).message); }
     finally { setBusy(null); }
   };
+  const onViewProof = async (id: string) => {
+    try {
+      const { url } = await getProofSignedUrl({ data: { invoiceId: id } });
+      if (url) window.open(url, "_blank"); else toast.error("Bukti tidak tersedia");
+    } catch (e) { toast.error((e as Error).message); }
+  };
+
+  const tabs: { key: string; label: string }[] = [
+    { key: "awaiting_review", label: "Perlu Review" },
+    { key: "pending", label: "Menunggu Bayar" },
+    { key: "paid", label: "Lunas" },
+    { key: "rejected", label: "Ditolak" },
+    { key: "cancelled", label: "Dibatalkan" },
+    { key: "all", label: "Semua" },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-      <h1 className="text-2xl font-bold mb-4">Tagihan</h1>
+      <h1 className="text-2xl font-bold mb-4">Tagihan Berlangganan</h1>
       <div className="mb-4 flex gap-2 flex-wrap">
-        {["awaiting_review", "pending", "paid", "rejected", "all"].map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={`rounded-full px-3 py-1 text-xs font-medium ${filter === s ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{s}</button>
+        {tabs.map((t) => (
+          <button key={t.key} onClick={() => setFilter(t.key)} className={`rounded-full px-3 py-1 text-xs font-medium ${filter === t.key ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-accent"}`}>{t.label}</button>
         ))}
       </div>
       <div className="space-y-3">
@@ -64,13 +79,17 @@ function AdminInvoices() {
                 <div className="font-mono text-sm font-semibold">{inv.invoice_no}</div>
                 <div className="text-xs text-muted-foreground">{inv.coffee_shops?.name} · {inv.plans?.name} · {new Date(inv.created_at).toLocaleString("id-ID")}</div>
                 {inv.notes && <div className="mt-1 text-xs text-amber-700">{inv.notes}</div>}
-                {inv.payment_proof_url && <a href={inv.payment_proof_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-primary hover:underline">Lihat bukti pembayaran</a>}
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold tabular-nums">{formatIDR(inv.amount_idr)}</div>
                 <Badge variant="secondary">{inv.status}</Badge>
               </div>
             </div>
+            {inv.payment_proof_url && (
+              <button onClick={() => onViewProof(inv.id)} className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                <Eye className="h-3.5 w-3.5" /> Lihat bukti pembayaran
+              </button>
+            )}
             {inv.status === "awaiting_review" && (
               <div className="mt-3 flex gap-2">
                 <Button size="sm" onClick={() => onApprove(inv.id)} disabled={busy === inv.id}>
