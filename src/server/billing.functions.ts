@@ -94,6 +94,57 @@ export const rejectInvoice = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const cancelPlanInvoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ invoiceId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("plan_invoices")
+      .update({ status: "cancelled" })
+      .eq("id", data.invoiceId)
+      .eq("status", "pending");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const getProofSignedUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ invoiceId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // Authorization: super admin OR owner of the shop on the invoice
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "super_admin")
+      .maybeSingle();
+    const isAdmin = !!roleRow;
+
+    const { data: inv, error } = await supabase
+      .from("plan_invoices")
+      .select("payment_proof_url, shop_id, coffee_shops!inner(owner_id)")
+      .eq("id", data.invoiceId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!inv) throw new Error("invoice_not_found");
+    const ownerId = (inv as unknown as { coffee_shops: { owner_id: string } }).coffee_shops?.owner_id;
+    if (!isAdmin && ownerId !== userId) throw new Error("not_authorized");
+    if (!inv.payment_proof_url) throw new Error("no_proof");
+
+    // Extract storage path from stored URL (we store the path-like signed URL; fall back to parsing)
+    let path = inv.payment_proof_url;
+    const m = path.match(/payment-proofs\/(.+?)(\?|$)/);
+    if (m) path = m[1];
+
+    const { data: signed, error: sErr } = await supabaseAdmin.storage
+      .from("payment-proofs")
+      .createSignedUrl(path, 60 * 10);
+    if (sErr) throw new Error(sErr.message);
+    return { url: signed?.signedUrl ?? null };
+  });
+
 export const expireOverduePlans = createServerFn({ method: "POST" }).handler(async () => {
   const { error } = await supabaseAdmin
     .from("coffee_shops")

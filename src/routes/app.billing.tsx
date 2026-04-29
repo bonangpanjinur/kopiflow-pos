@@ -8,8 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
-import { Loader2, Upload, CheckCircle2, Clock, XCircle, Copy } from "lucide-react";
-import { createPlanInvoice, submitPaymentProof } from "@/server/billing.functions";
+import { Loader2, Upload, CheckCircle2, Clock, XCircle, Copy, Eye } from "lucide-react";
+import { createPlanInvoice, submitPaymentProof, cancelPlanInvoice, getProofSignedUrl } from "@/server/billing.functions";
 
 export const Route = createFileRoute("/app/billing")({
   component: BillingPage,
@@ -65,15 +65,15 @@ function BillingPage() {
 
   const onUploadProof = async (inv: Invoice, file: File) => {
     if (!shop) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File maks 5MB"); return; }
     setBusy(inv.id);
     try {
-      const path = `${shop.id}/${inv.invoice_no}-${Date.now()}-${file.name}`;
-      const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, file, { upsert: false });
+      const ext = (file.name.split(".").pop() ?? "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const path = `${shop.id}/${inv.invoice_no}-${Date.now()}.${ext || "bin"}`;
+      const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, file, { upsert: false, contentType: file.type });
       if (upErr) throw upErr;
-      const { data: signed } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 60 * 60 * 24 * 365);
-      const proofUrl = signed?.signedUrl;
-      if (!proofUrl) throw new Error("Gagal membuat URL bukti");
-      await submitPaymentProof({ data: { invoiceId: inv.id, proofUrl } });
+      // Store the storage path (not a signed URL) so admin & owner can re-sign on demand.
+      await submitPaymentProof({ data: { invoiceId: inv.id, proofUrl: path } });
       toast.success("Bukti terkirim. Menunggu review super admin.");
       await reload();
     } catch (e) {
@@ -81,6 +81,24 @@ function BillingPage() {
     } finally {
       setBusy(null);
     }
+  };
+
+  const onCancel = async (inv: Invoice) => {
+    if (!confirm(`Batalkan tagihan ${inv.invoice_no}?`)) return;
+    setBusy(inv.id);
+    try {
+      await cancelPlanInvoice({ data: { invoiceId: inv.id } });
+      toast.success("Tagihan dibatalkan");
+      await reload();
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(null); }
+  };
+
+  const onViewProof = async (inv: Invoice) => {
+    try {
+      const { url } = await getProofSignedUrl({ data: { invoiceId: inv.id } });
+      if (url) window.open(url, "_blank"); else toast.error("Bukti tidak tersedia");
+    } catch (e) { toast.error((e as Error).message); }
   };
 
   const copy = (t: string) => { navigator.clipboard.writeText(t); toast.success("Disalin"); };
@@ -130,17 +148,27 @@ function BillingPage() {
         ))}
       </div>
 
-      {settings && (settings.bank_name || settings.account_no) && (
+      {settings && (settings.bank_name || settings.account_no || settings.qris_image_url) && (
         <Card className="mt-6 p-5">
-          <div className="text-sm font-semibold mb-2">Rekening Pembayaran</div>
-          <div className="space-y-1 text-sm">
-            <div>Bank: <b>{settings.bank_name}</b></div>
-            <div className="flex items-center gap-2">No. Rekening: <code className="rounded bg-muted px-2 py-0.5">{settings.account_no}</code>
-              <button onClick={() => copy(settings.account_no ?? "")} className="text-muted-foreground hover:text-foreground"><Copy className="h-3.5 w-3.5" /></button>
+          <div className="text-sm font-semibold mb-2">Cara Pembayaran</div>
+          {(settings.bank_name || settings.account_no) && (
+            <div className="space-y-1 text-sm">
+              {settings.bank_name && <div>Bank: <b>{settings.bank_name}</b></div>}
+              {settings.account_no && (
+                <div className="flex items-center gap-2">No. Rekening: <code className="rounded bg-muted px-2 py-0.5">{settings.account_no}</code>
+                  <button onClick={() => copy(settings.account_no ?? "")} className="text-muted-foreground hover:text-foreground"><Copy className="h-3.5 w-3.5" /></button>
+                </div>
+              )}
+              {settings.account_name && <div>Atas Nama: <b>{settings.account_name}</b></div>}
             </div>
-            <div>Atas Nama: <b>{settings.account_name}</b></div>
-            {settings.instructions && <div className="mt-2 text-muted-foreground whitespace-pre-line">{settings.instructions}</div>}
-          </div>
+          )}
+          {settings.qris_image_url && (
+            <div className="mt-3">
+              <div className="text-xs text-muted-foreground mb-1">Atau scan QRIS:</div>
+              <img src={settings.qris_image_url} alt="QRIS" className="h-48 w-48 rounded border border-border object-contain bg-white" />
+            </div>
+          )}
+          {settings.instructions && <div className="mt-3 text-sm text-muted-foreground whitespace-pre-line">{settings.instructions}</div>}
         </Card>
       )}
 
@@ -161,7 +189,7 @@ function BillingPage() {
               </div>
             </div>
             {(inv.status === "pending" || inv.status === "awaiting_review") && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
                   <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && onUploadProof(inv, e.target.files[0])} />
                   <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent">
@@ -169,7 +197,14 @@ function BillingPage() {
                     {inv.payment_proof_url ? "Ganti bukti" : "Upload bukti"}
                   </span>
                 </label>
-                {inv.payment_proof_url && <a href={inv.payment_proof_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Lihat bukti</a>}
+                {inv.payment_proof_url && (
+                  <button onClick={() => onViewProof(inv)} className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent">
+                    <Eye className="h-3.5 w-3.5" /> Lihat bukti
+                  </button>
+                )}
+                {inv.status === "pending" && !inv.payment_proof_url && (
+                  <button onClick={() => onCancel(inv)} className="text-xs text-red-600 hover:underline ml-auto">Batalkan</button>
+                )}
               </div>
             )}
           </Card>
@@ -185,6 +220,7 @@ function StatusBadge({ status }: { status: string }) {
     awaiting_review: { label: "Menunggu review", cls: "bg-amber-500/15 text-amber-700", icon: Clock },
     paid: { label: "Lunas", cls: "bg-green-500/15 text-green-700", icon: CheckCircle2 },
     rejected: { label: "Ditolak", cls: "bg-red-500/15 text-red-700", icon: XCircle },
+    cancelled: { label: "Dibatalkan", cls: "bg-muted text-muted-foreground", icon: XCircle },
     expired: { label: "Kadaluarsa", cls: "bg-muted text-muted-foreground", icon: XCircle },
   };
   const it = map[status] ?? map.pending;
