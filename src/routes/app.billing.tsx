@@ -110,6 +110,19 @@ function BillingPage() {
         <p className="mt-1 text-sm text-muted-foreground">Pilih paket berlangganan dan kelola pembayaran.</p>
       </div>
 
+      {(() => {
+        if (!expiresAt || !isPro) return null;
+        const days = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (days > 7) return null;
+        const expired = days <= 0;
+        return (
+          <div className={`mb-4 rounded-lg border p-3 text-sm ${expired ? "border-red-500/30 bg-red-500/10 text-red-700" : "border-amber-500/30 bg-amber-500/10 text-amber-700"}`}>
+            <b>{expired ? "Paket Pro telah kadaluarsa" : `Paket Pro berakhir dalam ${days} hari`}</b>
+            <span className="ml-1">{expired ? "— fitur Pro otomatis dinonaktifkan. Perbarui sekarang." : "— perpanjang sebelum kadaluarsa agar tidak terputus."}</span>
+          </div>
+        );
+      })()}
+
       <Card className="mb-6 p-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
