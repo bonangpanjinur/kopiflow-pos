@@ -360,7 +360,7 @@ function PODetailPage() {
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke daftar PO
         </Link>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+          <Button variant="outline" size="sm" onClick={openPreview}>
             <Eye className="mr-1.5 h-4 w-4" />Preview
           </Button>
           <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
