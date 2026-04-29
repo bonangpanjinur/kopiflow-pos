@@ -2,7 +2,29 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import dns from "node:dns/promises";
+
+// DNS-over-HTTPS via Cloudflare 1.1.1.1 — works in serverless/edge runtimes
+// where node:dns is unavailable.
+async function dohResolve(name: string, type: "TXT" | "CNAME"): Promise<string[]> {
+  try {
+    const url = `https://1.1.1.1/dns-query?name=${encodeURIComponent(name)}&type=${type}`;
+    const res = await fetch(url, { headers: { Accept: "application/dns-json" } });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { Answer?: Array<{ type: number; data: string }> };
+    if (!json.Answer) return [];
+    return json.Answer.map((a) => {
+      // TXT records come quoted; strip surrounding quotes and join chunks
+      const raw = a.data.trim();
+      if (raw.startsWith('"') && raw.endsWith('"')) {
+        return raw.slice(1, -1).replace(/"\s+"/g, "");
+      }
+      // CNAME often has trailing dot
+      return raw.replace(/\.$/, "");
+    });
+  } catch {
+    return [];
+  }
+}
 
 const DOMAIN_RE = /^(?!-)([a-z0-9-]{1,63}\.)+[a-z]{2,}$/i;
 
