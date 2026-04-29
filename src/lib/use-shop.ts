@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Shop = { id: string; name: string; slug: string };
+export type Shop = { id: string; name: string; slug: string; logo_url: string | null; address: string | null; phone: string | null };
 export type Outlet = { id: string; name: string };
 
 export function useCurrentShop() {
@@ -17,7 +17,7 @@ export function useCurrentShop() {
       setLoading(true);
       const { data: s } = await supabase
         .from("coffee_shops")
-        .select("id, name, slug")
+        .select("id, name, slug, logo_url, address, phone")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: true })
         .limit(1)

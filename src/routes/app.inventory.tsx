@@ -37,6 +37,8 @@ type Ingredient = {
   min_stock: number;
   cost_per_unit: number;
   is_active: boolean;
+  category: string | null;
+  default_supplier_id: string | null;
 };
 
 type Movement = {
@@ -47,6 +49,12 @@ type Movement = {
   created_at: string;
   ingredient_id: string;
 };
+
+type SupplierOpt = { id: string; name: string };
+
+const NO_SUPPLIER = "__none__";
+const NO_CATEGORY = "__none_cat__";
+const ING_CATEGORIES = ["Coffee", "Dairy", "Syrup", "Tea", "Food", "Packaging", "Other"];
 
 const UNITS = ["pcs", "g", "kg", "ml", "L", "shot", "scoop"];
 
@@ -62,6 +70,9 @@ function InventoryPage() {
   const [unit, setUnit] = useState("pcs");
   const [minStock, setMinStock] = useState("0");
   const [cost, setCost] = useState("0");
+  const [category, setCategory] = useState<string>(NO_CATEGORY);
+  const [defaultSupplier, setDefaultSupplier] = useState<string>(NO_SUPPLIER);
+  const [suppliers, setSuppliers] = useState<SupplierOpt[]>([]);
   const [saving, setSaving] = useState(false);
 
   // movement modal
@@ -93,7 +104,7 @@ function InventoryPage() {
   async function load() {
     if (!shop) return;
     setLoading(true);
-    const [ing, mv] = await Promise.all([
+    const [ing, mv, sup] = await Promise.all([
       supabase
         .from("ingredients")
         .select("*")
@@ -106,10 +117,17 @@ function InventoryPage() {
         .eq("shop_id", shop.id)
         .order("created_at", { ascending: false })
         .limit(30),
+      supabase
+        .from("suppliers")
+        .select("id, name")
+        .eq("shop_id", shop.id)
+        .eq("is_active", true)
+        .order("name"),
     ]);
     if (ing.error) toast.error(ing.error.message);
     setItems((ing.data ?? []) as Ingredient[]);
     setMovements((mv.data ?? []) as Movement[]);
+    setSuppliers((sup.data ?? []) as SupplierOpt[]);
     setLoading(false);
   }
 
@@ -124,6 +142,8 @@ function InventoryPage() {
     setUnit("pcs");
     setMinStock("0");
     setCost("0");
+    setCategory(NO_CATEGORY);
+    setDefaultSupplier(NO_SUPPLIER);
     setOpen(true);
   }
 
@@ -133,6 +153,8 @@ function InventoryPage() {
     setUnit(i.unit);
     setMinStock(String(i.min_stock));
     setCost(String(i.cost_per_unit));
+    setCategory(i.category ?? NO_CATEGORY);
+    setDefaultSupplier(i.default_supplier_id ?? NO_SUPPLIER);
     setOpen(true);
   }
 
@@ -145,6 +167,8 @@ function InventoryPage() {
       unit,
       min_stock: Number(minStock) || 0,
       cost_per_unit: Number(cost) || 0,
+      category: category === NO_CATEGORY ? null : category,
+      default_supplier_id: defaultSupplier === NO_SUPPLIER ? null : defaultSupplier,
     };
     if (editing) {
       const { error } = await supabase.from("ingredients").update(payload).eq("id", editing.id);
@@ -355,6 +379,34 @@ function InventoryPage() {
                     value={cost}
                     onChange={(e) => setCost(e.target.value)}
                   />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Kategori</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CATEGORY}>— tanpa kategori —</SelectItem>
+                      {ING_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Supplier default</Label>
+                  <Select value={defaultSupplier} onValueChange={setDefaultSupplier}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={suppliers.length === 0 ? "Belum ada supplier" : "Pilih supplier"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_SUPPLIER}>— tidak ada —</SelectItem>
+                      {suppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

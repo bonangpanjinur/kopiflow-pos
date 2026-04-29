@@ -467,9 +467,11 @@ export type Database = {
       }
       ingredients: {
         Row: {
+          category: string | null
           cost_per_unit: number
           created_at: string
           current_stock: number
+          default_supplier_id: string | null
           id: string
           is_active: boolean
           min_stock: number
@@ -479,9 +481,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string | null
           cost_per_unit?: number
           created_at?: string
           current_stock?: number
+          default_supplier_id?: string | null
           id?: string
           is_active?: boolean
           min_stock?: number
@@ -491,9 +495,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string | null
           cost_per_unit?: number
           created_at?: string
           current_stock?: number
+          default_supplier_id?: string | null
           id?: string
           is_active?: boolean
           min_stock?: number
@@ -502,7 +508,15 @@ export type Database = {
           unit?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ingredients_default_supplier_id_fkey"
+            columns: ["default_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loyalty_ledger: {
         Row: {
@@ -607,6 +621,7 @@ export type Database = {
           is_available: boolean
           name: string
           price: number
+          recipe_yield: number
           shop_id: string
           sort_order: number
           track_stock: boolean
@@ -621,6 +636,7 @@ export type Database = {
           is_available?: boolean
           name: string
           price?: number
+          recipe_yield?: number
           shop_id: string
           sort_order?: number
           track_stock?: boolean
@@ -635,6 +651,7 @@ export type Database = {
           is_available?: boolean
           name?: string
           price?: number
+          recipe_yield?: number
           shop_id?: string
           sort_order?: number
           track_stock?: boolean
@@ -1359,8 +1376,10 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean
+          lead_time_days: number
           name: string
           note: string | null
+          payment_terms: string | null
           phone: string | null
           shop_id: string
           updated_at: string
@@ -1372,8 +1391,10 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          lead_time_days?: number
           name: string
           note?: string | null
+          payment_terms?: string | null
           phone?: string | null
           shop_id: string
           updated_at?: string
@@ -1385,8 +1406,10 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          lead_time_days?: number
           name?: string
           note?: string | null
+          payment_terms?: string | null
           phone?: string | null
           shop_id?: string
           updated_at?: string

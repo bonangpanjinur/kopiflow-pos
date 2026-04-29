@@ -22,7 +22,7 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, Upload, ImageIcon } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, Upload, ImageIcon, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -39,6 +39,32 @@ type MenuItem = {
   image_url: string | null;
   is_available: boolean;
   category_id: string | null;
+  track_stock: boolean;
+  recipe_yield: number;
+};
+
+type HPPRow = {
+  menu_item_id: string;
+  hpp: number;
+  margin: number;
+  margin_percent: number;
+  recipe_count: number;
+};
+
+type RecipeRow = {
+  id: string;
+  menu_item_id: string;
+  ingredient_id: string;
+  quantity: number;
+};
+
+type IngredientRow = {
+  id: string;
+  name: string;
+  unit: string;
+  current_stock: number;
+  min_stock: number;
+  cost_per_unit: number;
 };
 
 const NO_CATEGORY = "__none__";
@@ -50,6 +76,10 @@ function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
 
+  const [hpp, setHpp] = useState<Record<string, HPPRow>>({});
+  const [recipes, setRecipes] = useState<RecipeRow[]>([]);
+  const [ingredients, setIngredients] = useState<Record<string, IngredientRow>>({});
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [name, setName] = useState("");
@@ -57,6 +87,8 @@ function MenuPage() {
   const [price, setPrice] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>(NO_CATEGORY);
   const [available, setAvailable] = useState(true);
+  const [trackStock, setTrackStock] = useState(false);
+  const [recipeYield, setRecipeYield] = useState<string>("1");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,7 +97,7 @@ function MenuPage() {
   async function load() {
     if (!shop) return;
     setLoading(true);
-    const [cats, mi] = await Promise.all([
+    const [cats, mi, hp, rc, ing] = await Promise.all([
       supabase
         .from("categories")
         .select("id, name")
@@ -73,14 +105,33 @@ function MenuPage() {
         .order("sort_order", { ascending: true }),
       supabase
         .from("menu_items")
-        .select("id, name, description, price, image_url, is_available, category_id")
+        .select("id, name, description, price, image_url, is_available, category_id, track_stock, recipe_yield")
         .eq("shop_id", shop.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("menu_hpp_view")
+        .select("menu_item_id, hpp, margin, margin_percent, recipe_count")
+        .eq("shop_id", shop.id),
+      supabase
+        .from("recipes")
+        .select("id, menu_item_id, ingredient_id, quantity"),
+      supabase
+        .from("ingredients")
+        .select("id, name, unit, current_stock, min_stock, cost_per_unit")
+        .eq("shop_id", shop.id)
+        .eq("is_active", true),
     ]);
     if (cats.error) toast.error(cats.error.message);
     if (mi.error) toast.error(mi.error.message);
     setCategories(cats.data ?? []);
     setItems((mi.data ?? []) as MenuItem[]);
+    const hMap: Record<string, HPPRow> = {};
+    ((hp.data ?? []) as HPPRow[]).forEach((row) => { if (row.menu_item_id) hMap[row.menu_item_id] = row; });
+    setHpp(hMap);
+    setRecipes((rc.data ?? []) as RecipeRow[]);
+    const iMap: Record<string, IngredientRow> = {};
+    ((ing.data ?? []) as IngredientRow[]).forEach((i) => { iMap[i.id] = i; });
+    setIngredients(iMap);
     setLoading(false);
   }
 
@@ -96,6 +147,8 @@ function MenuPage() {
     setPrice("");
     setCategoryId(NO_CATEGORY);
     setAvailable(true);
+    setTrackStock(false);
+    setRecipeYield("1");
     setImageUrl(null);
     setOpen(true);
   }
@@ -107,6 +160,8 @@ function MenuPage() {
     setPrice(String(it.price));
     setCategoryId(it.category_id ?? NO_CATEGORY);
     setAvailable(it.is_available);
+    setTrackStock(Boolean(it.track_stock));
+    setRecipeYield(String(it.recipe_yield ?? 1));
     setImageUrl(it.image_url);
     setOpen(true);
   }
@@ -143,6 +198,7 @@ function MenuPage() {
       return;
     }
     setSaving(true);
+    const yieldNum = Math.max(1, Number(recipeYield) || 1);
     const payload = {
       shop_id: shop.id,
       name: name.trim(),
@@ -151,6 +207,8 @@ function MenuPage() {
       image_url: imageUrl,
       is_available: available,
       category_id: categoryId === NO_CATEGORY ? null : categoryId,
+      track_stock: trackStock,
+      recipe_yield: yieldNum,
     };
     if (editing) {
       const { error } = await supabase.from("menu_items").update(payload).eq("id", editing.id);
@@ -316,6 +374,63 @@ function MenuPage() {
                   </div>
                   <Switch checked={available} onCheckedChange={setAvailable} />
                 </div>
+
+                <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+                  <div>
+                    <div className="text-sm font-medium">Lacak stok bahan</div>
+                    <div className="text-xs text-muted-foreground">
+                      Stok bahan dikurangi otomatis saat menu ini terjual.
+                    </div>
+                  </div>
+                  <Switch checked={trackStock} onCheckedChange={setTrackStock} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Yield resep (porsi per resep)</Label>
+                  <Input type="number" min={1} step="1" value={recipeYield}
+                    onChange={(e) => setRecipeYield(e.target.value)} />
+                  <p className="text-[11px] text-muted-foreground">
+                    Mis. 1 batch sirup → 20 porsi. HPP per porsi = total bahan ÷ yield.
+                  </p>
+                </div>
+
+                {editing && (() => {
+                  const h = hpp[editing.id];
+                  const rs = recipes.filter((r) => r.menu_item_id === editing.id);
+                  if (!h && rs.length === 0) {
+                    return (
+                      <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                        Belum ada resep untuk menu ini. Tambahkan di halaman <strong>Resep</strong> agar HPP & margin terhitung.
+                      </div>
+                    );
+                  }
+                  const pct = Number(h?.margin_percent ?? 0);
+                  const tone = pct >= 30 ? "text-emerald-600" : pct >= 10 ? "text-amber-600" : "text-destructive";
+                  return (
+                    <div className="rounded-md border border-border bg-muted/20 p-3 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold uppercase tracking-wide text-muted-foreground">Breakdown HPP</span>
+                        <span className={`font-bold ${tone}`}>Margin {pct}%</span>
+                      </div>
+                      <div className="flex justify-between"><span>HPP</span><span className="tabular-nums font-medium">{formatIDR(Number(h?.hpp ?? 0))}</span></div>
+                      <div className="flex justify-between"><span>Harga</span><span className="tabular-nums font-medium">{formatIDR(Number(price) || 0)}</span></div>
+                      <div className="flex justify-between"><span>Margin</span><span className="tabular-nums font-medium">{formatIDR(Number(h?.margin ?? 0))}</span></div>
+                      {rs.length > 0 && (
+                        <div className="border-t border-border pt-1.5 mt-1.5 space-y-0.5">
+                          {rs.map((r) => {
+                            const ig = ingredients[r.ingredient_id];
+                            return (
+                              <div key={r.id} className="flex justify-between text-muted-foreground">
+                                <span>{ig?.name ?? "—"} × {r.quantity}{ig?.unit ? ` ${ig.unit}` : ""}</span>
+                                <span className="tabular-nums">{formatIDR((ig?.cost_per_unit ?? 0) * r.quantity)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>
@@ -349,6 +464,20 @@ function MenuPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((it) => {
             const cat = categories.find((c) => c.id === it.category_id)?.name;
+            const h = hpp[it.id];
+            const pct = Number(h?.margin_percent ?? 0);
+            const hasHpp = !!h && Number(h.hpp) > 0;
+            const marginTone = pct >= 30 ? "text-emerald-700 bg-emerald-500/15"
+              : pct >= 10 ? "text-amber-700 bg-amber-500/15"
+              : "text-destructive bg-destructive/15";
+            // Low-stock check: any recipe ingredient at/under min stock
+            const itemRecipes = recipes.filter((r) => r.menu_item_id === it.id);
+            const lowIngs = itemRecipes
+              .map((r) => ingredients[r.ingredient_id])
+              .filter((ig): ig is IngredientRow => !!ig && ig.min_stock > 0 && Number(ig.current_stock) <= Number(ig.min_stock));
+            const outIngs = itemRecipes
+              .map((r) => ({ r, ig: ingredients[r.ingredient_id] }))
+              .filter(({ r, ig }) => ig && Number(ig.current_stock) < Number(r.quantity));
             return (
               <div
                 key={it.id}
@@ -377,7 +506,28 @@ function MenuPage() {
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-sm font-medium">{formatIDR(it.price)}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium">{formatIDR(it.price)}</span>
+                    {hasHpp && (
+                      <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${marginTone}`}
+                        title={`HPP ${formatIDR(Number(h.hpp))} · Margin ${formatIDR(Number(h.margin))}`}>
+                        {pct >= 10 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+                        {pct}%
+                      </span>
+                    )}
+                    {it.track_stock && outIngs.length > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive"
+                        title={`Bahan kurang: ${outIngs.map(({ ig }) => ig?.name).join(", ")}`}>
+                        <AlertTriangle className="h-2.5 w-2.5" /> Habis
+                      </span>
+                    )}
+                    {it.track_stock && outIngs.length === 0 && lowIngs.length > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+                        title={`Bahan menipis: ${lowIngs.map((ig) => ig.name).join(", ")}`}>
+                        <AlertTriangle className="h-2.5 w-2.5" /> Low {lowIngs.length}
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-auto flex items-center gap-1 pt-2">
                     <Button variant="ghost" size="sm" onClick={() => openEdit(it)}>
                       <Pencil className="h-3.5 w-3.5" />
