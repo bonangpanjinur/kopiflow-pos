@@ -198,6 +198,7 @@ function MenuPage() {
       return;
     }
     setSaving(true);
+    const yieldNum = Math.max(1, Number(recipeYield) || 1);
     const payload = {
       shop_id: shop.id,
       name: name.trim(),
@@ -206,6 +207,8 @@ function MenuPage() {
       image_url: imageUrl,
       is_available: available,
       category_id: categoryId === NO_CATEGORY ? null : categoryId,
+      track_stock: trackStock,
+      recipe_yield: yieldNum,
     };
     if (editing) {
       const { error } = await supabase.from("menu_items").update(payload).eq("id", editing.id);
