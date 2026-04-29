@@ -55,6 +55,7 @@ import { Route as SSlugCartRouteImport } from './routes/s.$slug.cart'
 import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/app.purchase-orders.$poId'
 import { Route as SSlugPayOrderIdRouteImport } from './routes/s.$slug.pay.$orderId'
 import { Route as SSlugMenuMenuIdRouteImport } from './routes/s.$slug.menu.$menuId'
+import { Route as ApiPublicCronPlanMaintenanceRouteImport } from './routes/api/public/cron/plan-maintenance'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -286,6 +287,12 @@ const SSlugMenuMenuIdRoute = SSlugMenuMenuIdRouteImport.update({
   path: '/menu/$menuId',
   getParentRoute: () => SSlugRoute,
 } as any)
+const ApiPublicCronPlanMaintenanceRoute =
+  ApiPublicCronPlanMaintenanceRouteImport.update({
+    id: '/api/public/cron/plan-maintenance',
+    path: '/api/public/cron/plan-maintenance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/s/$slug/login': typeof SSlugLoginRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
+  '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
   '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
@@ -377,6 +385,7 @@ export interface FileRoutesByTo {
   '/s/$slug/login': typeof SSlugLoginRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug': typeof SSlugIndexRoute
+  '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
   '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
@@ -426,6 +435,7 @@ export interface FileRoutesById {
   '/s/$slug/login': typeof SSlugLoginRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
+  '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
   '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/s/$slug/login'
     | '/s/$slug/orders'
     | '/s/$slug/'
+    | '/api/public/cron/plan-maintenance'
     | '/s/$slug/menu/$menuId'
     | '/s/$slug/pay/$orderId'
   fileRoutesByTo: FileRoutesByTo
@@ -521,6 +532,7 @@ export interface FileRouteTypes {
     | '/s/$slug/login'
     | '/s/$slug/orders'
     | '/s/$slug'
+    | '/api/public/cron/plan-maintenance'
     | '/s/$slug/menu/$menuId'
     | '/s/$slug/pay/$orderId'
   id:
@@ -569,6 +581,7 @@ export interface FileRouteTypes {
     | '/s/$slug/login'
     | '/s/$slug/orders'
     | '/s/$slug/'
+    | '/api/public/cron/plan-maintenance'
     | '/s/$slug/menu/$menuId'
     | '/s/$slug/pay/$orderId'
   fileRoutesById: FileRoutesById
@@ -583,6 +596,7 @@ export interface RootRouteChildren {
   InviteTokenRoute: typeof InviteTokenRoute
   SSlugRoute: typeof SSlugRouteWithChildren
   TrackOrderIdRoute: typeof TrackOrderIdRoute
+  ApiPublicCronPlanMaintenanceRoute: typeof ApiPublicCronPlanMaintenanceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -909,6 +923,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugMenuMenuIdRouteImport
       parentRoute: typeof SSlugRoute
     }
+    '/api/public/cron/plan-maintenance': {
+      id: '/api/public/cron/plan-maintenance'
+      path: '/api/public/cron/plan-maintenance'
+      fullPath: '/api/public/cron/plan-maintenance'
+      preLoaderRoute: typeof ApiPublicCronPlanMaintenanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1029,6 +1050,7 @@ const rootRouteChildren: RootRouteChildren = {
   InviteTokenRoute: InviteTokenRoute,
   SSlugRoute: SSlugRouteWithChildren,
   TrackOrderIdRoute: TrackOrderIdRoute,
+  ApiPublicCronPlanMaintenanceRoute: ApiPublicCronPlanMaintenanceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

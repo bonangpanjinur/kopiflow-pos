@@ -121,6 +121,17 @@ function DomainPage() {
         </Card>
       ) : (
         <>
+          {(() => {
+            const lastAuto = audit.find((a) => a.action === "auto_unverify");
+            if (!verified && lastAuto) {
+              return (
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700">
+                  <b>Domain otomatis dinonaktifkan</b> — pemeriksaan DNS terakhir gagal pada {new Date(lastAuto.created_at).toLocaleString("id-ID")}. Pastikan record DNS Anda masih aktif lalu klik <i>Cek Verifikasi</i>.
+                </div>
+              );
+            }
+            return null;
+          })()}
           <Card className="p-5">
             <div className="flex items-start justify-between flex-wrap gap-3">
               <div>

@@ -61,6 +61,7 @@ export type Database = {
           account_name: string | null
           account_no: string | null
           bank_name: string | null
+          cron_secret: string | null
           id: number
           instructions: string | null
           qris_image_url: string | null
@@ -70,6 +71,7 @@ export type Database = {
           account_name?: string | null
           account_no?: string | null
           bank_name?: string | null
+          cron_secret?: string | null
           id?: number
           instructions?: string | null
           qris_image_url?: string | null
@@ -79,6 +81,7 @@ export type Database = {
           account_name?: string | null
           account_no?: string | null
           bank_name?: string | null
+          cron_secret?: string | null
           id?: number
           instructions?: string | null
           qris_image_url?: string | null
@@ -262,6 +265,7 @@ export type Database = {
           id: string
           instagram: string | null
           is_active: boolean
+          last_dns_check_at: string | null
           logo_url: string | null
           name: string
           open_hours: Json
@@ -293,6 +297,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           is_active?: boolean
+          last_dns_check_at?: string | null
           logo_url?: string | null
           name: string
           open_hours?: Json
@@ -324,6 +329,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           is_active?: boolean
+          last_dns_check_at?: string | null
           logo_url?: string | null
           name?: string
           open_hours?: Json
@@ -580,6 +586,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      domain_blacklist: {
+        Row: {
+          created_at: string
+          domain: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      domain_verify_attempts: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          domain: string | null
+          id: string
+          result: string | null
+          shop_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          result?: string | null
+          shop_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          result?: string | null
+          shop_id?: string
+        }
+        Relationships: []
       }
       ingredients: {
         Row: {
@@ -1731,10 +1782,21 @@ export type Database = {
         Returns: undefined
       }
       approve_plan_invoice: { Args: { _invoice_id: string }; Returns: Json }
+      auto_unverify_domain: {
+        Args: { _reason: string; _shop_id: string }
+        Returns: undefined
+      }
       close_shift: {
         Args: { _closing_cash: number; _note?: string; _shift_id: string }
         Returns: Json
       }
+      expire_overdue_plans: {
+        Args: never
+        Returns: {
+          shop_id: string
+        }[]
+      }
+      expire_stale_pending_invoices: { Args: never; Returns: number }
       get_order_tracking: {
         Args: { _order_id: string }
         Returns: {
