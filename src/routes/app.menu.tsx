@@ -147,6 +147,8 @@ function MenuPage() {
     setPrice("");
     setCategoryId(NO_CATEGORY);
     setAvailable(true);
+    setTrackStock(false);
+    setRecipeYield("1");
     setImageUrl(null);
     setOpen(true);
   }
@@ -158,6 +160,8 @@ function MenuPage() {
     setPrice(String(it.price));
     setCategoryId(it.category_id ?? NO_CATEGORY);
     setAvailable(it.is_available);
+    setTrackStock(Boolean(it.track_stock));
+    setRecipeYield(String(it.recipe_yield ?? 1));
     setImageUrl(it.image_url);
     setOpen(true);
   }
