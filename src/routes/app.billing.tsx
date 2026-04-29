@@ -148,17 +148,27 @@ function BillingPage() {
         ))}
       </div>
 
-      {settings && (settings.bank_name || settings.account_no) && (
+      {settings && (settings.bank_name || settings.account_no || settings.qris_image_url) && (
         <Card className="mt-6 p-5">
-          <div className="text-sm font-semibold mb-2">Rekening Pembayaran</div>
-          <div className="space-y-1 text-sm">
-            <div>Bank: <b>{settings.bank_name}</b></div>
-            <div className="flex items-center gap-2">No. Rekening: <code className="rounded bg-muted px-2 py-0.5">{settings.account_no}</code>
-              <button onClick={() => copy(settings.account_no ?? "")} className="text-muted-foreground hover:text-foreground"><Copy className="h-3.5 w-3.5" /></button>
+          <div className="text-sm font-semibold mb-2">Cara Pembayaran</div>
+          {(settings.bank_name || settings.account_no) && (
+            <div className="space-y-1 text-sm">
+              {settings.bank_name && <div>Bank: <b>{settings.bank_name}</b></div>}
+              {settings.account_no && (
+                <div className="flex items-center gap-2">No. Rekening: <code className="rounded bg-muted px-2 py-0.5">{settings.account_no}</code>
+                  <button onClick={() => copy(settings.account_no ?? "")} className="text-muted-foreground hover:text-foreground"><Copy className="h-3.5 w-3.5" /></button>
+                </div>
+              )}
+              {settings.account_name && <div>Atas Nama: <b>{settings.account_name}</b></div>}
             </div>
-            <div>Atas Nama: <b>{settings.account_name}</b></div>
-            {settings.instructions && <div className="mt-2 text-muted-foreground whitespace-pre-line">{settings.instructions}</div>}
-          </div>
+          )}
+          {settings.qris_image_url && (
+            <div className="mt-3">
+              <div className="text-xs text-muted-foreground mb-1">Atau scan QRIS:</div>
+              <img src={settings.qris_image_url} alt="QRIS" className="h-48 w-48 rounded border border-border object-contain bg-white" />
+            </div>
+          )}
+          {settings.instructions && <div className="mt-3 text-sm text-muted-foreground whitespace-pre-line">{settings.instructions}</div>}
         </Card>
       )}
 
@@ -179,7 +189,7 @@ function BillingPage() {
               </div>
             </div>
             {(inv.status === "pending" || inv.status === "awaiting_review") && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
                   <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && onUploadProof(inv, e.target.files[0])} />
                   <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent">
@@ -187,7 +197,14 @@ function BillingPage() {
                     {inv.payment_proof_url ? "Ganti bukti" : "Upload bukti"}
                   </span>
                 </label>
-                {inv.payment_proof_url && <a href={inv.payment_proof_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Lihat bukti</a>}
+                {inv.payment_proof_url && (
+                  <button onClick={() => onViewProof(inv)} className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent">
+                    <Eye className="h-3.5 w-3.5" /> Lihat bukti
+                  </button>
+                )}
+                {inv.status === "pending" && !inv.payment_proof_url && (
+                  <button onClick={() => onCancel(inv)} className="text-xs text-red-600 hover:underline ml-auto">Batalkan</button>
+                )}
               </div>
             )}
           </Card>
