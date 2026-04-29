@@ -1,6 +1,7 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, redirect } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { resolveHost } from "@/server/domain.functions";
 
 import appCss from "../styles.css?url";
 
@@ -26,7 +27,25 @@ function NotFoundComponent() {
   );
 }
 
+// Paths that should remain on the platform even when accessed via a custom domain.
+const PLATFORM_PREFIXES = ["/app", "/admin", "/login", "/signup", "/onboarding", "/invite", "/track", "/s/"];
+
 export const Route = createRootRoute({
+  beforeLoad: async ({ location }) => {
+    // Only run host resolution on the server during SSR.
+    if (typeof window !== "undefined") return;
+    try {
+      const { tenantSlug } = await resolveHost();
+      if (!tenantSlug) return;
+      const path = location.pathname;
+      if (path === `/s/${tenantSlug}` || path.startsWith(`/s/${tenantSlug}/`)) return;
+      if (PLATFORM_PREFIXES.some((p) => path === p.replace(/\/$/, "") || path.startsWith(p))) return;
+      const target = path === "/" ? `/s/${tenantSlug}` : `/s/${tenantSlug}${path}`;
+      throw redirect({ to: target });
+    } catch (e) {
+      if ((e as { isRedirect?: boolean })?.isRedirect) throw e;
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
