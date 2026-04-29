@@ -258,11 +258,7 @@ function DetailDialog({
   }));
 
   function handlePrint() {
-    if (printRef.current) {
-      printRef.current.classList.add("print-area");
-      window.print();
-      printRef.current.classList.remove("print-area");
-    }
+    printReceiptNode(printRef.current);
   }
 
   async function handleRefund() {
