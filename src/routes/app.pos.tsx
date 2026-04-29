@@ -938,7 +938,7 @@ function CheckoutDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
   cart: LocalCart;
-  shop: { id: string; name: string };
+  shop: { id: string; name: string; logo_url?: string | null; address?: string | null; phone?: string | null };
   outlet: { id: string; name: string };
   cashierId: string;
   cashierName: string;
@@ -1400,6 +1400,9 @@ function CheckoutDialog({
                   <Receipt
                     shopName={shop.name}
                     outletName={outlet.name}
+                    shopLogoUrl={shop.logo_url}
+                    shopAddress={shop.address}
+                    shopPhone={shop.phone}
                     orderNo={done.orderNo}
                     cashierName={cashierName}
                     date={done.date}
