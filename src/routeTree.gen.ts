@@ -13,8 +13,10 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -33,11 +35,18 @@ import { Route as AppMenuRouteImport } from './routes/app.menu'
 import { Route as AppLoyaltyRouteImport } from './routes/app.loyalty'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppEmployeesRouteImport } from './routes/app.employees'
+import { Route as AppDomainRouteImport } from './routes/app.domain'
 import { Route as AppDeliveryRouteImport } from './routes/app.delivery'
 import { Route as AppCouriersRouteImport } from './routes/app.couriers'
 import { Route as AppCourierRouteImport } from './routes/app.courier'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
+import { Route as AppBillingRouteImport } from './routes/app.billing'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
+import { Route as AdminShopsRouteImport } from './routes/admin.shops'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminPlansRouteImport } from './routes/admin.plans'
+import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
+import { Route as AdminDomainsRouteImport } from './routes/admin.domains'
 import { Route as SSlugIndexRouteImport } from './routes/s.$slug.index'
 import { Route as SSlugOrdersRouteImport } from './routes/s.$slug.orders'
 import { Route as SSlugLoginRouteImport } from './routes/s.$slug.login'
@@ -67,6 +76,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -76,6 +90,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const TrackOrderIdRoute = TrackOrderIdRouteImport.update({
   id: '/track/$orderId',
@@ -167,6 +186,11 @@ const AppEmployeesRoute = AppEmployeesRouteImport.update({
   path: '/employees',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDomainRoute = AppDomainRouteImport.update({
+  id: '/domain',
+  path: '/domain',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDeliveryRoute = AppDeliveryRouteImport.update({
   id: '/delivery',
   path: '/delivery',
@@ -187,10 +211,40 @@ const AppCategoriesRoute = AppCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBillingRoute = AppBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminShopsRoute = AdminShopsRouteImport.update({
+  id: '/shops',
+  path: '/shops',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlansRoute = AdminPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminInvoicesRoute = AdminInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDomainsRoute = AdminDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
+  getParentRoute: () => AdminRoute,
 } as any)
 const SSlugIndexRoute = SSlugIndexRouteImport.update({
   id: '/',
@@ -235,15 +289,23 @@ const SSlugMenuMenuIdRoute = SSlugMenuMenuIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/admin/domains': typeof AdminDomainsRoute
+  '/admin/invoices': typeof AdminInvoicesRoute
+  '/admin/plans': typeof AdminPlansRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shops': typeof AdminShopsRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
   '/app/delivery': typeof AppDeliveryRoute
+  '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/loyalty': typeof AppLoyaltyRoute
@@ -262,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
@@ -277,11 +340,18 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/admin/domains': typeof AdminDomainsRoute
+  '/admin/invoices': typeof AdminInvoicesRoute
+  '/admin/plans': typeof AdminPlansRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shops': typeof AdminShopsRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
   '/app/delivery': typeof AppDeliveryRoute
+  '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/loyalty': typeof AppLoyaltyRoute
@@ -299,6 +369,7 @@ export interface FileRoutesByTo {
   '/app/suppliers': typeof AppSuppliersRoute
   '/invite/$token': typeof InviteTokenRoute
   '/track/$orderId': typeof TrackOrderIdRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
@@ -312,15 +383,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/admin/domains': typeof AdminDomainsRoute
+  '/admin/invoices': typeof AdminInvoicesRoute
+  '/admin/plans': typeof AdminPlansRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shops': typeof AdminShopsRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
   '/app/delivery': typeof AppDeliveryRoute
+  '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/loyalty': typeof AppLoyaltyRoute
@@ -339,6 +418,7 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/track/$orderId': typeof TrackOrderIdRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
@@ -353,15 +433,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/admin/domains'
+    | '/admin/invoices'
+    | '/admin/plans'
+    | '/admin/settings'
+    | '/admin/shops'
     | '/app/attendance'
+    | '/app/billing'
     | '/app/categories'
     | '/app/courier'
     | '/app/couriers'
     | '/app/delivery'
+    | '/app/domain'
     | '/app/employees'
     | '/app/inventory'
     | '/app/loyalty'
@@ -380,6 +468,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/s/$slug'
     | '/track/$orderId'
+    | '/admin/'
     | '/app/'
     | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
@@ -395,11 +484,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/admin/domains'
+    | '/admin/invoices'
+    | '/admin/plans'
+    | '/admin/settings'
+    | '/admin/shops'
     | '/app/attendance'
+    | '/app/billing'
     | '/app/categories'
     | '/app/courier'
     | '/app/couriers'
     | '/app/delivery'
+    | '/app/domain'
     | '/app/employees'
     | '/app/inventory'
     | '/app/loyalty'
@@ -417,6 +513,7 @@ export interface FileRouteTypes {
     | '/app/suppliers'
     | '/invite/$token'
     | '/track/$orderId'
+    | '/admin'
     | '/app'
     | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
@@ -429,15 +526,23 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/app'
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/admin/domains'
+    | '/admin/invoices'
+    | '/admin/plans'
+    | '/admin/settings'
+    | '/admin/shops'
     | '/app/attendance'
+    | '/app/billing'
     | '/app/categories'
     | '/app/courier'
     | '/app/couriers'
     | '/app/delivery'
+    | '/app/domain'
     | '/app/employees'
     | '/app/inventory'
     | '/app/loyalty'
@@ -456,6 +561,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/s/$slug'
     | '/track/$orderId'
+    | '/admin/'
     | '/app/'
     | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
@@ -469,6 +575,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -508,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -521,6 +635,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/track/$orderId': {
       id: '/track/$orderId'
@@ -648,6 +769,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEmployeesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/domain': {
+      id: '/app/domain'
+      path: '/domain'
+      fullPath: '/app/domain'
+      preLoaderRoute: typeof AppDomainRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/delivery': {
       id: '/app/delivery'
       path: '/delivery'
@@ -676,12 +804,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCategoriesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/billing': {
+      id: '/app/billing'
+      path: '/billing'
+      fullPath: '/app/billing'
+      preLoaderRoute: typeof AppBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/attendance': {
       id: '/app/attendance'
       path: '/attendance'
       fullPath: '/app/attendance'
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/shops': {
+      id: '/admin/shops'
+      path: '/shops'
+      fullPath: '/admin/shops'
+      preLoaderRoute: typeof AdminShopsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/plans': {
+      id: '/admin/plans'
+      path: '/plans'
+      fullPath: '/admin/plans'
+      preLoaderRoute: typeof AdminPlansRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/invoices': {
+      id: '/admin/invoices'
+      path: '/invoices'
+      fullPath: '/admin/invoices'
+      preLoaderRoute: typeof AdminInvoicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/domains': {
+      id: '/admin/domains'
+      path: '/domains'
+      fullPath: '/admin/domains'
+      preLoaderRoute: typeof AdminDomainsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/s/$slug/': {
       id: '/s/$slug/'
@@ -742,6 +912,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminDomainsRoute: typeof AdminDomainsRoute
+  AdminInvoicesRoute: typeof AdminInvoicesRoute
+  AdminPlansRoute: typeof AdminPlansRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminShopsRoute: typeof AdminShopsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminDomainsRoute: AdminDomainsRoute,
+  AdminInvoicesRoute: AdminInvoicesRoute,
+  AdminPlansRoute: AdminPlansRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminShopsRoute: AdminShopsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface AppPurchaseOrdersRouteChildren {
   AppPurchaseOrdersPoIdRoute: typeof AppPurchaseOrdersPoIdRoute
 }
@@ -755,10 +945,12 @@ const AppPurchaseOrdersRouteWithChildren =
 
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppBillingRoute: typeof AppBillingRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCourierRoute: typeof AppCourierRoute
   AppCouriersRoute: typeof AppCouriersRoute
   AppDeliveryRoute: typeof AppDeliveryRoute
+  AppDomainRoute: typeof AppDomainRoute
   AppEmployeesRoute: typeof AppEmployeesRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppLoyaltyRoute: typeof AppLoyaltyRoute
@@ -779,10 +971,12 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
+  AppBillingRoute: AppBillingRoute,
   AppCategoriesRoute: AppCategoriesRoute,
   AppCourierRoute: AppCourierRoute,
   AppCouriersRoute: AppCouriersRoute,
   AppDeliveryRoute: AppDeliveryRoute,
+  AppDomainRoute: AppDomainRoute,
   AppEmployeesRoute: AppEmployeesRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppLoyaltyRoute: AppLoyaltyRoute,
@@ -827,6 +1021,7 @@ const SSlugRouteWithChildren = SSlugRoute._addFileChildren(SSlugRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
