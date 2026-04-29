@@ -374,6 +374,63 @@ function MenuPage() {
                   </div>
                   <Switch checked={available} onCheckedChange={setAvailable} />
                 </div>
+
+                <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+                  <div>
+                    <div className="text-sm font-medium">Lacak stok bahan</div>
+                    <div className="text-xs text-muted-foreground">
+                      Stok bahan dikurangi otomatis saat menu ini terjual.
+                    </div>
+                  </div>
+                  <Switch checked={trackStock} onCheckedChange={setTrackStock} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Yield resep (porsi per resep)</Label>
+                  <Input type="number" min={1} step="1" value={recipeYield}
+                    onChange={(e) => setRecipeYield(e.target.value)} />
+                  <p className="text-[11px] text-muted-foreground">
+                    Mis. 1 batch sirup → 20 porsi. HPP per porsi = total bahan ÷ yield.
+                  </p>
+                </div>
+
+                {editing && (() => {
+                  const h = hpp[editing.id];
+                  const rs = recipes.filter((r) => r.menu_item_id === editing.id);
+                  if (!h && rs.length === 0) {
+                    return (
+                      <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                        Belum ada resep untuk menu ini. Tambahkan di halaman <strong>Resep</strong> agar HPP & margin terhitung.
+                      </div>
+                    );
+                  }
+                  const pct = Number(h?.margin_percent ?? 0);
+                  const tone = pct >= 30 ? "text-emerald-600" : pct >= 10 ? "text-amber-600" : "text-destructive";
+                  return (
+                    <div className="rounded-md border border-border bg-muted/20 p-3 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold uppercase tracking-wide text-muted-foreground">Breakdown HPP</span>
+                        <span className={`font-bold ${tone}`}>Margin {pct}%</span>
+                      </div>
+                      <div className="flex justify-between"><span>HPP</span><span className="tabular-nums font-medium">{formatIDR(Number(h?.hpp ?? 0))}</span></div>
+                      <div className="flex justify-between"><span>Harga</span><span className="tabular-nums font-medium">{formatIDR(Number(price) || 0)}</span></div>
+                      <div className="flex justify-between"><span>Margin</span><span className="tabular-nums font-medium">{formatIDR(Number(h?.margin ?? 0))}</span></div>
+                      {rs.length > 0 && (
+                        <div className="border-t border-border pt-1.5 mt-1.5 space-y-0.5">
+                          {rs.map((r) => {
+                            const ig = ingredients[r.ingredient_id];
+                            return (
+                              <div key={r.id} className="flex justify-between text-muted-foreground">
+                                <span>{ig?.name ?? "—"} × {r.quantity}{ig?.unit ? ` ${ig.unit}` : ""}</span>
+                                <span className="tabular-nums">{formatIDR((ig?.cost_per_unit ?? 0) * r.quantity)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>
