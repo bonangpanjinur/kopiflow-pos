@@ -165,6 +165,7 @@ function PODetailPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [prefs, setPrefs] = useState<PrintPrefs>(() => loadPrefs());
   const [presets, setPresets] = useState<PrinterPreset[]>(() => loadPresets());
+  const [defaultPresetId, setDefaultPresetId] = useState<string | null>(() => loadDefaultPresetId());
   const [presetName, setPresetName] = useState("");
 
   // Persist prefs whenever they change
