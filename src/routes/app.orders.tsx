@@ -17,7 +17,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Receipt } from "@/components/pos/receipt";
-import { printReceiptNode, getReceiptPaper, setReceiptPaper, applyReceiptPaper, type ReceiptPaper } from "@/lib/receipt-printer";
+import { ReceiptPaperPicker } from "@/components/pos/receipt-paper-picker";
+import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
 import type { CartItem } from "@/lib/cart";
 import { useRef } from "react";
 import { refundOrder } from "@/lib/shift";
@@ -361,6 +362,7 @@ function DetailDialog({
               </Button>
             </>
           )}
+          <ReceiptPaperPicker className="mr-auto" />
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Cetak ulang
           </Button>
