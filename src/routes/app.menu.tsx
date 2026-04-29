@@ -464,6 +464,20 @@ function MenuPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((it) => {
             const cat = categories.find((c) => c.id === it.category_id)?.name;
+            const h = hpp[it.id];
+            const pct = Number(h?.margin_percent ?? 0);
+            const hasHpp = !!h && Number(h.hpp) > 0;
+            const marginTone = pct >= 30 ? "text-emerald-700 bg-emerald-500/15"
+              : pct >= 10 ? "text-amber-700 bg-amber-500/15"
+              : "text-destructive bg-destructive/15";
+            // Low-stock check: any recipe ingredient at/under min stock
+            const itemRecipes = recipes.filter((r) => r.menu_item_id === it.id);
+            const lowIngs = itemRecipes
+              .map((r) => ingredients[r.ingredient_id])
+              .filter((ig): ig is IngredientRow => !!ig && ig.min_stock > 0 && Number(ig.current_stock) <= Number(ig.min_stock));
+            const outIngs = itemRecipes
+              .map((r) => ({ r, ig: ingredients[r.ingredient_id] }))
+              .filter(({ r, ig }) => ig && Number(ig.current_stock) < Number(r.quantity));
             return (
               <div
                 key={it.id}
@@ -492,7 +506,28 @@ function MenuPage() {
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-sm font-medium">{formatIDR(it.price)}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium">{formatIDR(it.price)}</span>
+                    {hasHpp && (
+                      <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${marginTone}`}
+                        title={`HPP ${formatIDR(Number(h.hpp))} · Margin ${formatIDR(Number(h.margin))}`}>
+                        {pct >= 10 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+                        {pct}%
+                      </span>
+                    )}
+                    {it.track_stock && outIngs.length > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive"
+                        title={`Bahan kurang: ${outIngs.map(({ ig }) => ig?.name).join(", ")}`}>
+                        <AlertTriangle className="h-2.5 w-2.5" /> Habis
+                      </span>
+                    )}
+                    {it.track_stock && outIngs.length === 0 && lowIngs.length > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+                        title={`Bahan menipis: ${lowIngs.map((ig) => ig.name).join(", ")}`}>
+                        <AlertTriangle className="h-2.5 w-2.5" /> Low {lowIngs.length}
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-auto flex items-center gap-1 pt-2">
                     <Button variant="ghost" size="sm" onClick={() => openEdit(it)}>
                       <Pencil className="h-3.5 w-3.5" />
