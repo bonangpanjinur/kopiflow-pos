@@ -56,6 +56,36 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_settings: {
+        Row: {
+          account_name: string | null
+          account_no: string | null
+          bank_name: string | null
+          id: number
+          instructions: string | null
+          qris_image_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_no?: string | null
+          bank_name?: string | null
+          id?: number
+          instructions?: string | null
+          qris_image_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string | null
+          account_no?: string | null
+          bank_name?: string | null
+          id?: number
+          instructions?: string | null
+          qris_image_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       branding_audit: {
         Row: {
           changed_by: string
@@ -224,6 +254,9 @@ export type Database = {
           address: string | null
           created_at: string
           currency: string
+          custom_domain: string | null
+          custom_domain_verified_at: string | null
+          custom_domain_verify_token: string | null
           description: string | null
           email: string | null
           id: string
@@ -235,6 +268,8 @@ export type Database = {
           owner_id: string
           payment_methods_enabled: string[]
           phone: string | null
+          plan: string
+          plan_expires_at: string | null
           prep_minutes: number
           qris_image_url: string | null
           qris_merchant_name: string | null
@@ -250,6 +285,9 @@ export type Database = {
           address?: string | null
           created_at?: string
           currency?: string
+          custom_domain?: string | null
+          custom_domain_verified_at?: string | null
+          custom_domain_verify_token?: string | null
           description?: string | null
           email?: string | null
           id?: string
@@ -261,6 +299,8 @@ export type Database = {
           owner_id: string
           payment_methods_enabled?: string[]
           phone?: string | null
+          plan?: string
+          plan_expires_at?: string | null
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
@@ -276,6 +316,9 @@ export type Database = {
           address?: string | null
           created_at?: string
           currency?: string
+          custom_domain?: string | null
+          custom_domain_verified_at?: string | null
+          custom_domain_verify_token?: string | null
           description?: string | null
           email?: string | null
           id?: string
@@ -287,6 +330,8 @@ export type Database = {
           owner_id?: string
           payment_methods_enabled?: string[]
           phone?: string | null
+          plan?: string
+          plan_expires_at?: string | null
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
@@ -494,6 +539,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      domain_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          new_domain: string | null
+          notes: string | null
+          old_domain: string | null
+          shop_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_domain?: string | null
+          notes?: string | null
+          old_domain?: string | null
+          shop_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_domain?: string | null
+          notes?: string | null
+          old_domain?: string | null
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domain_audit_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "coffee_shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ingredients: {
         Row: {
@@ -997,6 +1083,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_invoices: {
+        Row: {
+          amount_idr: number
+          created_at: string
+          id: string
+          invoice_no: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_proof_url: string | null
+          plan_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          shop_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_idr: number
+          created_at?: string
+          id?: string
+          invoice_no: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          plan_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shop_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_idr?: number
+          created_at?: string
+          id?: string
+          invoice_no?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          plan_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shop_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_invoices_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_invoices_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "coffee_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          code: string
+          created_at: string
+          duration_days: number
+          features: Json
+          id: string
+          is_active: boolean
+          name: string
+          price_idr: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          duration_days: number
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          price_idr: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          duration_days?: number
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_idr?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1539,6 +1730,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      approve_plan_invoice: { Args: { _invoice_id: string }; Returns: Json }
       close_shift: {
         Args: { _closing_cash: number; _note?: string; _shift_id: string }
         Returns: Json
@@ -1598,6 +1790,14 @@ export type Database = {
           _reason?: string
         }
         Returns: string
+      }
+      reject_plan_invoice: {
+        Args: { _invoice_id: string; _reason?: string }
+        Returns: undefined
+      }
+      set_custom_domain_verified: {
+        Args: { _shop_id: string; _verified: boolean }
+        Returns: undefined
       }
       validate_promo: {
         Args: {
