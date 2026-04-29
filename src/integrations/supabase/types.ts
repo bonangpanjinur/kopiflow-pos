@@ -56,6 +56,36 @@ export type Database = {
         }
         Relationships: []
       }
+      branding_audit: {
+        Row: {
+          changed_by: string
+          created_at: string
+          field: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          shop_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          field: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          shop_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          field?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          shop_id?: string
+        }
+        Relationships: []
+      }
       cash_movements: {
         Row: {
           amount: number
