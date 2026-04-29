@@ -1400,6 +1400,9 @@ function CheckoutDialog({
                   <Receipt
                     shopName={shop.name}
                     outletName={outlet.name}
+                    shopLogoUrl={shop.logo_url}
+                    shopAddress={shop.address}
+                    shopPhone={shop.phone}
                     orderNo={done.orderNo}
                     cashierName={cashierName}
                     date={done.date}

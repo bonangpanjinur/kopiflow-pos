@@ -206,6 +206,9 @@ function OrdersPage() {
           order={selected}
           shopName={shop.name}
           outletName={outlet.name}
+          shopLogoUrl={shop.logo_url}
+          shopAddress={shop.address}
+          shopPhone={shop.phone}
           onClose={() => setSelected(null)}
           onVoided={() => {
             setSelected(null);
@@ -221,12 +224,18 @@ function DetailDialog({
   order,
   shopName,
   outletName,
+  shopLogoUrl,
+  shopAddress,
+  shopPhone,
   onClose,
   onVoided,
 }: {
   order: OrderDetail;
   shopName: string;
   outletName: string;
+  shopLogoUrl?: string | null;
+  shopAddress?: string | null;
+  shopPhone?: string | null;
   onClose: () => void;
   onVoided: () => void;
 }) {
@@ -314,6 +323,9 @@ function DetailDialog({
               <Receipt
                 shopName={shopName}
                 outletName={outletName}
+                shopLogoUrl={shopLogoUrl}
+                shopAddress={shopAddress}
+                shopPhone={shopPhone}
                 orderNo={order.order_no}
                 cashierName="Kasir"
                 date={new Date(order.created_at)}
