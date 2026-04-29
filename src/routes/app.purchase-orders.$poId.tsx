@@ -444,15 +444,75 @@ function PODetailPage() {
           <DialogTitle>Preview cetak — {formatPONo(po.po_no)}</DialogTitle>
         </DialogHeader>
 
+        {/* Printer presets — saved per device (localStorage) */}
+        <div className="border-y bg-accent/30 px-5 py-3 print:hidden">
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <Settings2 className="h-3.5 w-3.5" /> Preset printer (tersimpan di perangkat ini)
+          </div>
+          <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={prefs.activePresetId ?? "__none"}
+                onValueChange={(v) => v === "__none"
+                  ? setPrefs((p) => ({ ...p, activePresetId: null }))
+                  : applyPreset(v)}
+              >
+                <SelectTrigger className="h-8 w-[220px]"><SelectValue placeholder="Pilih preset…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— Tanpa preset —</SelectItem>
+                  {presets.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {prefs.activePresetId && (
+                <>
+                  <Button variant="outline" size="sm" onClick={updateActivePreset}>Simpan perubahan</Button>
+                  <Button variant="ghost" size="sm" onClick={deleteActivePreset} className="text-destructive hover:text-destructive">
+                    <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="mis. Epson Kasir A4"
+                className="h-8 w-[220px]"
+              />
+              <Button size="sm" onClick={saveCurrentAsPreset}>
+                <Save className="mr-1 h-3.5 w-3.5" /> Simpan sebagai baru
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Toolbar */}
-        <div className="grid gap-3 border-y bg-background px-5 py-3 text-sm md:grid-cols-2 lg:grid-cols-3 print:hidden">
+        <div className="grid gap-3 border-b bg-background px-5 py-3 text-sm md:grid-cols-2 lg:grid-cols-3 print:hidden">
           <div className="flex items-center gap-2">
             <Label className="w-20 shrink-0 text-xs text-muted-foreground">Kertas</Label>
             <Select value={prefs.paper} onValueChange={(v) => setPrefs((p) => ({ ...p, paper: v as PaperSize }))}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="a4">A4 (210 × 297 mm)</SelectItem>
-                <SelectItem value="letter">Letter (216 × 279 mm)</SelectItem>
+                <SelectItem value="a4">{PAPER_LABEL.a4}</SelectItem>
+                <SelectItem value="letter">{PAPER_LABEL.letter}</SelectItem>
+                <SelectItem value="thermal80">{PAPER_LABEL.thermal80}</SelectItem>
+                <SelectItem value="thermal58">{PAPER_LABEL.thermal58}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Orientasi</Label>
+            <Select
+              value={prefs.orientation}
+              onValueChange={(v) => setPrefs((p) => ({ ...p, orientation: v as Orientation }))}
+              disabled={isThermal}
+            >
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="portrait">Portrait</SelectItem>
+                <SelectItem value="landscape">Landscape</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -466,6 +526,24 @@ function PODetailPage() {
                 <SelectItem value="wide">Lebar (20–22 mm)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Printer</Label>
+            <Input
+              value={prefs.printerName}
+              onChange={(e) => setPrefs((p) => ({ ...p, printerName: e.target.value }))}
+              placeholder="mis. Epson L3210"
+              className="h-8"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="w-20 shrink-0 text-xs text-muted-foreground">Tray</Label>
+            <Input
+              value={prefs.tray}
+              onChange={(e) => setPrefs((p) => ({ ...p, tray: e.target.value }))}
+              placeholder="mis. Tray 1 / Manual"
+              className="h-8"
+            />
           </div>
           <div className="flex items-center gap-3">
             <Label className="w-20 shrink-0 text-xs text-muted-foreground">Zoom</Label>
@@ -497,6 +575,11 @@ function PODetailPage() {
             <Label htmlFor="ship" className="text-xs">Alamat pengiriman</Label>
           </div>
           <div className="flex items-center justify-end gap-2 lg:col-span-3">
+            {(prefs.tray || prefs.printerName) && (
+              <span className="mr-auto text-xs text-muted-foreground">
+                Tip: pilih “{prefs.printerName || "printer Anda"}”{prefs.tray ? ` · ${prefs.tray}` : ""} di dialog cetak browser.
+              </span>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setPrefs(DEFAULT_PREFS)}>Reset</Button>
           </div>
         </div>
