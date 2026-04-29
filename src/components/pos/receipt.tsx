@@ -27,6 +27,9 @@ type Props = {
   serviceCharge?: number;
   tax?: number;
   paymentSplit?: PaymentSplit[];
+  shopLogoUrl?: string | null;
+  shopAddress?: string | null;
+  shopPhone?: string | null;
 };
 
 function methodLabel(m: string) {
@@ -60,14 +63,24 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     serviceCharge = 0,
     tax = 0,
     paymentSplit = [],
+    shopLogoUrl = null,
+    shopAddress = null,
+    shopPhone = null,
   },
   ref,
 ) {
   const hasSplit = paymentSplit && paymentSplit.length > 0;
   return (
     <div ref={ref} className="receipt-58">
+      {shopLogoUrl && (
+        <div className="r-center" style={{ marginBottom: 4 }}>
+          <img src={shopLogoUrl} alt="" style={{ maxHeight: 48, maxWidth: "60%", objectFit: "contain", display: "inline-block" }} />
+        </div>
+      )}
       <div className="r-center r-bold">{shopName}</div>
       <div className="r-center">{outletName}</div>
+      {shopAddress && <div className="r-center r-small">{shopAddress}</div>}
+      {shopPhone && <div className="r-center r-small">Telp. {shopPhone}</div>}
       <div className="r-divider" />
       <div className="r-row">
         <span>No</span>
