@@ -381,6 +381,34 @@ function InventoryPage() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Kategori</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CATEGORY}>— tanpa kategori —</SelectItem>
+                      {ING_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Supplier default</Label>
+                  <Select value={defaultSupplier} onValueChange={setDefaultSupplier}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={suppliers.length === 0 ? "Belum ada supplier" : "Pilih supplier"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_SUPPLIER}>— tidak ada —</SelectItem>
+                      {suppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setOpen(false)}>
