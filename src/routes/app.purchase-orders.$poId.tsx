@@ -70,6 +70,18 @@ type PrinterPreset = {
 
 const PREFS_KEY = "po-print-prefs/v1";
 const PRESETS_KEY = "po-printer-presets/v1";
+const DEFAULT_PRESET_KEY = "po-printer-default/v1";
+
+function loadDefaultPresetId(): string | null {
+  if (typeof window === "undefined") return null;
+  try { return localStorage.getItem(DEFAULT_PRESET_KEY); } catch { return null; }
+}
+function saveDefaultPresetId(id: string | null) {
+  try {
+    if (id) localStorage.setItem(DEFAULT_PRESET_KEY, id);
+    else localStorage.removeItem(DEFAULT_PRESET_KEY);
+  } catch { /* noop */ }
+}
 const DEFAULT_PREFS: PrintPrefs = {
   paper: "a4",
   margin: "normal",
