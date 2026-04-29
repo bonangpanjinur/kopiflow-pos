@@ -283,7 +283,17 @@ function PODetailPage() {
 
   // Compute fit-to-page zoom: scale paper width to fit available preview area.
   const previewMaxPx = 760; // approximate inner dialog width budget
-  const paperPx = prefs.paper === "letter" ? 816 : 794; // 216mm/210mm @ ~96dpi
+  const basePaperPx: Record<PaperSize, number> = {
+    a4: 794,         // 210mm @ ~96dpi
+    letter: 816,     // 216mm
+    thermal80: 302,  // 80mm
+    thermal58: 219,  // 58mm
+  };
+  const isThermal = prefs.paper === "thermal80" || prefs.paper === "thermal58";
+  const isLandscape = prefs.orientation === "landscape" && !isThermal;
+  const paperPx = isLandscape
+    ? (prefs.paper === "letter" ? 1054 : 1123) // 279mm/297mm @ ~96dpi
+    : basePaperPx[prefs.paper];
   const fitZoom = useMemo(
     () => Math.min(1, previewMaxPx / paperPx),
     [paperPx],
