@@ -98,34 +98,13 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     const recordName = `_kopihub-verify.${shop.custom_domain}`;
     const expectedValue = shop.custom_domain_verify_token;
 
-    let txtFound = false;
-    let txtValues: string[] = [];
-    try {
-      const records = await dns.resolveTxt(recordName);
-      txtValues = records.map((r) => r.join("")).map((s) => s.trim());
-      txtFound = txtValues.some((v) => v === expectedValue);
-    } catch {
-      txtFound = false;
-    }
+    const txtValues = await dohResolve(recordName, "TXT");
+    const txtFound = txtValues.some((v) => v === expectedValue);
 
-    // Also check CNAME points to our proxy target (advisory; not blocker for verification)
-    let cnameOk = false;
-    let cnameTarget = "";
-    try {
-      const { data: settings } = await supabaseAdmin
-        .from("billing_settings")
-        .select("instructions")
-        .eq("id", 1)
-        .maybeSingle();
-      // Read configured target from billing_settings.instructions metadata isn't ideal;
-      // we use a fixed env-overridable default below.
-      cnameTarget = process.env.TENANT_PROXY_TARGET ?? "tenants.kopihub.app";
-      const cnames = await dns.resolveCname(shop.custom_domain).catch(() => [] as string[]);
-      cnameOk = cnames.some((c) => c.toLowerCase().replace(/\.$/, "") === cnameTarget.toLowerCase());
-      void settings;
-    } catch {
-      cnameOk = false;
-    }
+    // Advisory CNAME check (not a blocker for verification)
+    const cnameTarget = process.env.TENANT_PROXY_TARGET ?? "tenants.kopihub.app";
+    const cnames = await dohResolve(shop.custom_domain, "CNAME");
+    const cnameOk = cnames.some((c) => c.toLowerCase() === cnameTarget.toLowerCase());
 
     if (txtFound) {
       const { error } = await supabase
