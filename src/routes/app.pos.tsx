@@ -938,7 +938,7 @@ function CheckoutDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
   cart: LocalCart;
-  shop: { id: string; name: string };
+  shop: { id: string; name: string; logo_url?: string | null; address?: string | null; phone?: string | null };
   outlet: { id: string; name: string };
   cashierId: string;
   cashierName: string;
