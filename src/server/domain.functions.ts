@@ -13,12 +13,10 @@ async function dohResolve(name: string, type: "TXT" | "CNAME"): Promise<string[]
     const json = (await res.json()) as { Answer?: Array<{ type: number; data: string }> };
     if (!json.Answer) return [];
     return json.Answer.map((a) => {
-      // TXT records come quoted; strip surrounding quotes and join chunks
       const raw = a.data.trim();
       if (raw.startsWith('"') && raw.endsWith('"')) {
         return raw.slice(1, -1).replace(/"\s+"/g, "");
       }
-      // CNAME often has trailing dot
       return raw.replace(/\.$/, "");
     });
   } catch {
@@ -46,6 +44,21 @@ async function getOwnedShop(supabase: any, userId: string) {
   return shop;
 }
 
+async function isBlacklisted(domain: string): Promise<boolean> {
+  // Match either the full host or any label segment
+  const labels = domain.split(".");
+  const candidates = new Set<string>([domain, ...labels]);
+  // Also check parent suffix (e.g. `lovable.app` blocks `foo.lovable.app`)
+  for (let i = 1; i < labels.length - 1; i++) {
+    candidates.add(labels.slice(i).join("."));
+  }
+  const { data } = await supabaseAdmin
+    .from("domain_blacklist")
+    .select("domain")
+    .in("domain", Array.from(candidates));
+  return (data?.length ?? 0) > 0;
+}
+
 export const requestCustomDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -55,6 +68,10 @@ export const requestCustomDomain = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const shop = await getOwnedShop(supabase, userId);
     const domain = data.domain.toLowerCase();
+
+    if (await isBlacklisted(domain)) {
+      throw new Error("domain_reserved");
+    }
 
     // Conflict check: domain must be unique across shops
     const { data: existing } = await supabaseAdmin
@@ -72,6 +89,7 @@ export const requestCustomDomain = createServerFn({ method: "POST" })
         custom_domain: domain,
         custom_domain_verify_token: token,
         custom_domain_verified_at: null,
+        last_dns_check_at: null,
       })
       .eq("id", shop.id);
     if (error) throw new Error(error.message);
@@ -95,21 +113,43 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     if (!shop.custom_domain || !shop.custom_domain_verify_token) {
       throw new Error("no_domain_pending");
     }
+
+    // Rate-limit: max 5 attempts per hour per shop
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("domain_verify_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("shop_id", shop.id)
+      .gte("created_at", oneHourAgo);
+    if ((count ?? 0) >= 5) {
+      throw new Error("rate_limited_try_later");
+    }
+
     const recordName = `_kopihub-verify.${shop.custom_domain}`;
     const expectedValue = shop.custom_domain_verify_token;
 
     const txtValues = await dohResolve(recordName, "TXT");
     const txtFound = txtValues.some((v) => v === expectedValue);
 
-    // Advisory CNAME check (not a blocker for verification)
     const cnameTarget = process.env.TENANT_PROXY_TARGET ?? "tenants.kopihub.app";
     const cnames = await dohResolve(shop.custom_domain, "CNAME");
     const cnameOk = cnames.some((c) => c.toLowerCase() === cnameTarget.toLowerCase());
 
+    // Log attempt (best effort, ignore errors)
+    await supabase.from("domain_verify_attempts").insert({
+      shop_id: shop.id,
+      actor_id: userId,
+      domain: shop.custom_domain,
+      result: txtFound ? "verified" : "txt_missing",
+    });
+
     if (txtFound) {
       const { error } = await supabase
         .from("coffee_shops")
-        .update({ custom_domain_verified_at: new Date().toISOString() })
+        .update({
+          custom_domain_verified_at: new Date().toISOString(),
+          last_dns_check_at: new Date().toISOString(),
+        })
         .eq("id", shop.id);
       if (error) throw new Error(error.message);
       await supabase.from("domain_audit").insert({
@@ -142,7 +182,7 @@ export const removeCustomDomain = createServerFn({ method: "POST" })
     if (!shop) throw new Error("shop_not_found");
     const { error } = await supabase
       .from("coffee_shops")
-      .update({ custom_domain: null, custom_domain_verified_at: null, custom_domain_verify_token: null })
+      .update({ custom_domain: null, custom_domain_verified_at: null, custom_domain_verify_token: null, last_dns_check_at: null })
       .eq("id", shop.id);
     if (error) throw new Error(error.message);
     await supabase.from("domain_audit").insert({
@@ -156,10 +196,6 @@ export const removeCustomDomain = createServerFn({ method: "POST" })
 
 /**
  * Resolve current request Host header to a tenant shop slug.
- * Returns { tenantSlug } when the host is a verified custom domain,
- * or { tenantSlug: null } for the platform host.
- *
- * Used by the root route loader to drive multi-tenant routing.
  */
 export const resolveHost = createServerFn({ method: "GET" }).handler(async () => {
   const { getRequestHeader } = await import("@tanstack/react-start/server");
@@ -167,7 +203,6 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
   if (!rawHost) return { tenantSlug: null as string | null, host: "" };
   const host = rawHost.split(":")[0];
 
-  // Skip platform hosts: lovable.app, localhost, *.lovable.app
   if (
     host === "localhost" ||
     host.endsWith(".lovable.app") ||
