@@ -70,6 +70,18 @@ type PrinterPreset = {
 
 const PREFS_KEY = "po-print-prefs/v1";
 const PRESETS_KEY = "po-printer-presets/v1";
+const DEFAULT_PRESET_KEY = "po-printer-default/v1";
+
+function loadDefaultPresetId(): string | null {
+  if (typeof window === "undefined") return null;
+  try { return localStorage.getItem(DEFAULT_PRESET_KEY); } catch { return null; }
+}
+function saveDefaultPresetId(id: string | null) {
+  try {
+    if (id) localStorage.setItem(DEFAULT_PRESET_KEY, id);
+    else localStorage.removeItem(DEFAULT_PRESET_KEY);
+  } catch { /* noop */ }
+}
 const DEFAULT_PREFS: PrintPrefs = {
   paper: "a4",
   margin: "normal",
@@ -153,6 +165,7 @@ function PODetailPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [prefs, setPrefs] = useState<PrintPrefs>(() => loadPrefs());
   const [presets, setPresets] = useState<PrinterPreset[]>(() => loadPresets());
+  const [defaultPresetId, setDefaultPresetId] = useState<string | null>(() => loadDefaultPresetId());
   const [presetName, setPresetName] = useState("");
 
   // Persist prefs whenever they change
@@ -228,7 +241,37 @@ function PODetailPage() {
     const next = presets.filter((p) => p.id !== prefs.activePresetId);
     setPresets(next); savePresets(next);
     setPrefs((p) => ({ ...p, activePresetId: null }));
+    if (defaultPresetId === target.id) {
+      setDefaultPresetId(null);
+      saveDefaultPresetId(null);
+    }
   }
+  function toggleDefaultPreset(makeDefault: boolean) {
+    if (makeDefault) {
+      if (!prefs.activePresetId) { toast.error("Pilih preset dulu"); return; }
+      setDefaultPresetId(prefs.activePresetId);
+      saveDefaultPresetId(prefs.activePresetId);
+      const name = presets.find((p) => p.id === prefs.activePresetId)?.name ?? "Preset";
+      toast.success(`"${name}" dipakai otomatis tiap buka Print Preview`);
+    } else {
+      setDefaultPresetId(null);
+      saveDefaultPresetId(null);
+      toast.success("Default preset dihapus");
+    }
+  }
+
+  /** Open the Print Preview, applying the saved default preset (if any)
+   *  whenever it differs from the currently-loaded prefs. */
+  function openPreview() {
+    if (defaultPresetId) {
+      const def = presets.find((p) => p.id === defaultPresetId);
+      if (def && prefs.activePresetId !== def.id) {
+        setPrefs({ ...def.prefs, activePresetId: def.id });
+      }
+    }
+    setPreviewOpen(true);
+  }
+
 
   async function load() {
     setLoading(true);
@@ -317,7 +360,7 @@ function PODetailPage() {
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke daftar PO
         </Link>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+          <Button variant="outline" size="sm" onClick={openPreview}>
             <Eye className="mr-1.5 h-4 w-4" />Preview
           </Button>
           <Button variant="ghost" size="sm" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Cetak</Button>
@@ -461,12 +504,22 @@ function PODetailPage() {
                 <SelectContent>
                   <SelectItem value="__none">— Tanpa preset —</SelectItem>
                   {presets.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}{defaultPresetId === p.id ? "  · default" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {prefs.activePresetId && (
                 <>
+                  <div className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1">
+                    <Switch
+                      id="default-preset"
+                      checked={defaultPresetId === prefs.activePresetId}
+                      onCheckedChange={toggleDefaultPreset}
+                    />
+                    <Label htmlFor="default-preset" className="text-xs">Pakai sebagai default</Label>
+                  </div>
                   <Button variant="outline" size="sm" onClick={updateActivePreset}>Simpan perubahan</Button>
                   <Button variant="ghost" size="sm" onClick={deleteActivePreset} className="text-destructive hover:text-destructive">
                     <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus
