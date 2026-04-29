@@ -150,7 +150,7 @@ function SuppliersPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr><th className="px-4 py-2.5 text-left">Nama</th><th className="px-4 py-2.5 text-left">Kontak</th><th className="px-4 py-2.5 text-left">Telepon</th><th className="px-4 py-2.5 text-left">Email</th><th className="px-4 py-2.5"></th></tr>
+              <tr><th className="px-4 py-2.5 text-left">Nama</th><th className="px-4 py-2.5 text-left">Kontak</th><th className="px-4 py-2.5 text-left">Telepon</th><th className="px-4 py-2.5 text-left">Lead time</th><th className="px-4 py-2.5 text-left">Termin</th><th className="px-4 py-2.5"></th></tr>
             </thead>
             <tbody className="divide-y divide-border">
               {items.map((s) => (
@@ -158,7 +158,8 @@ function SuppliersPage() {
                   <td className="px-4 py-3 font-medium">{s.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{s.contact_name ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{s.phone ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.email ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{(s.lead_time_days ?? 0) > 0 ? `${s.lead_time_days} hari` : "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{s.payment_terms ?? "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button>
