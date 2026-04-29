@@ -28,6 +28,8 @@ function DomainPage() {
   const [domainInput, setDomainInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [audit, setAudit] = useState<Array<{ id: string; action: string; new_domain: string | null; created_at: string }>>([]);
+  const [cnameTarget, setCnameTarget] = useState<string>("tenants.kopihub.app");
+  const [lastCheck, setLastCheck] = useState<{ verified: boolean; cnameOk: boolean; txtValues: string[] } | null>(null);
 
   const reload = async () => {
     if (!shop) return;
@@ -75,7 +77,9 @@ function DomainPage() {
     setBusy(true);
     try {
       const r = await verifyCustomDomain();
-      if (r.verified) toast.success("Domain terverifikasi!");
+      setLastCheck({ verified: r.verified, cnameOk: r.cnameOk, txtValues: r.txtValues });
+      if (r.cnameTarget) setCnameTarget(r.cnameTarget);
+      if (r.verified) toast.success(r.cnameOk ? "Domain & CNAME terverifikasi!" : "TXT terverifikasi. CNAME belum aktif — trafik belum diarahkan.");
       else toast.error("TXT record belum ditemukan. Tunggu propagasi DNS lalu coba lagi.");
       await reload();
     } catch (e) {
@@ -161,11 +165,18 @@ function DomainPage() {
                   <div className="grid grid-cols-[80px_1fr_auto] items-center gap-2">
                     <span className="text-muted-foreground">Type</span><code>CNAME</code><span />
                     <span className="text-muted-foreground">Name</span><code>@ atau www</code><span />
-                    <span className="text-muted-foreground">Value</span><code>tenants.kopihub.app</code><button onClick={() => copy("tenants.kopihub.app")}><Copy className="h-3 w-3" /></button>
+                    <span className="text-muted-foreground">Value</span><code className="break-all">{cnameTarget}</code><button onClick={() => copy(cnameTarget)}><Copy className="h-3 w-3" /></button>
                   </div>
-                  <p className="mt-2 text-muted-foreground">Catatan: target CNAME akan dikonfirmasi tim setelah verifikasi TXT berhasil.</p>
+                  <p className="mt-2 text-muted-foreground">Beberapa registrar tidak mendukung CNAME di root (@). Gunakan ALIAS/ANAME bila tersedia, atau pakai subdomain seperti <code>www</code> / <code>toko</code>.</p>
                 </div>
               </div>
+              {lastCheck && (
+                <div className="mt-3 rounded border border-border p-3 text-xs space-y-1">
+                  <div>TXT terverifikasi: <b className={lastCheck.verified ? "text-green-700" : "text-red-700"}>{lastCheck.verified ? "Ya" : "Belum"}</b></div>
+                  <div>CNAME mengarah ke proxy: <b className={lastCheck.cnameOk ? "text-green-700" : "text-amber-700"}>{lastCheck.cnameOk ? "Ya" : "Belum"}</b></div>
+                  {lastCheck.txtValues.length > 0 && <div className="text-muted-foreground">Nilai TXT terdeteksi: {lastCheck.txtValues.join(", ")}</div>}
+                </div>
+              )}
             </Card>
           )}
         </>
