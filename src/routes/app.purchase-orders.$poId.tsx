@@ -43,7 +43,7 @@ type POItem = {
 };
 type Ingredient = { id: string; name: string; unit: string };
 type Supplier = { id: string; name: string; phone: string | null; contact_name: string | null; address?: string | null; email?: string | null };
-type Shop = { id: string; name: string; address?: string | null; phone?: string | null; email?: string | null };
+type Shop = { id: string; name: string; address?: string | null; phone?: string | null; email?: string | null; logo_url?: string | null };
 
 type PaperSize = "a4" | "letter" | "thermal80" | "thermal58";
 type MarginMode = "narrow" | "normal" | "wide";
@@ -284,7 +284,7 @@ function PODetailPage() {
       poData.supplier_id
         ? supabase.from("suppliers").select("id, name, phone, contact_name, address, email").eq("id", poData.supplier_id).single()
         : Promise.resolve({ data: null }),
-      supabase.from("coffee_shops").select("id, name, address, phone, email").eq("id", poData.shop_id).single(),
+      supabase.from("coffee_shops").select("id, name, address, phone, email, logo_url").eq("id", poData.shop_id).single(),
     ]);
     setItems((itRes.data ?? []) as POItem[]);
     const map: Record<string, Ingredient> = {};
@@ -677,15 +677,20 @@ function POSheetBody({
   return (
     <>
       <div className="row">
-        <div>
-          <h1>Purchase Order</h1>
-          <div className="muted" style={{ marginTop: 4, fontSize: "10pt" }}>{shop?.name ?? ""}</div>
-          {shop?.address && <div className="muted" style={{ fontSize: "9.5pt" }}>{shop.address}</div>}
-          {(shop?.phone || shop?.email) && (
-            <div className="muted" style={{ fontSize: "9.5pt" }}>
-              {[shop.phone, shop.email].filter(Boolean).join(" · ")}
-            </div>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+          {shop?.logo_url && (
+            <img src={shop.logo_url} alt="" style={{ height: 48, width: 48, objectFit: "contain", borderRadius: 6 }} />
           )}
+          <div>
+            <h1>Purchase Order</h1>
+            <div className="muted" style={{ marginTop: 4, fontSize: "10pt", fontWeight: 600 }}>{shop?.name ?? ""}</div>
+            {shop?.address && <div className="muted" style={{ fontSize: "9.5pt" }}>{shop.address}</div>}
+            {(shop?.phone || shop?.email) && (
+              <div className="muted" style={{ fontSize: "9.5pt" }}>
+                {[shop.phone, shop.email].filter(Boolean).join(" · ")}
+              </div>
+            )}
+          </div>
         </div>
         <div style={{ textAlign: "right" }}>
           <div className={`stamp ${po.status}`}>{statusLabel}</div>
