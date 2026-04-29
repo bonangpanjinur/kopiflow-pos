@@ -17,6 +17,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Receipt } from "@/components/pos/receipt";
+import { ReceiptPaperPicker } from "@/components/pos/receipt-paper-picker";
+import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
 import type { CartItem } from "@/lib/cart";
 import { useRef } from "react";
 import { refundOrder } from "@/lib/shift";
@@ -240,6 +242,9 @@ function DetailDialog({
   onVoided: () => void;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    applyReceiptPaper();
+  }, []);
   const [voiding, setVoiding] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundAmount, setRefundAmount] = useState<string>(String(order.total));
@@ -258,11 +263,7 @@ function DetailDialog({
   }));
 
   function handlePrint() {
-    if (printRef.current) {
-      printRef.current.classList.add("print-area");
-      window.print();
-      printRef.current.classList.remove("print-area");
-    }
+    printReceiptNode(printRef.current);
   }
 
   async function handleRefund() {
@@ -364,6 +365,7 @@ function DetailDialog({
               </Button>
             </>
           )}
+          <ReceiptPaperPicker className="mr-auto" />
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Cetak ulang
           </Button>

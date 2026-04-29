@@ -36,6 +36,8 @@ import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
 import { Receipt, type PaymentSplit } from "@/components/pos/receipt";
+import { ReceiptPaperPicker } from "@/components/pos/receipt-paper-picker";
+import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
 import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
 import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
 import { Link } from "@tanstack/react-router";
@@ -973,6 +975,11 @@ function CheckoutDialog({
   } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Apply saved receipt-paper preset when payment dialog mounts/opens
+  useEffect(() => {
+    if (open) applyReceiptPaper();
+  }, [open]);
+
   // Load shop tax/service config when dialog opens
   useEffect(() => {
     if (!open) return;
@@ -1141,11 +1148,7 @@ function CheckoutDialog({
   }
 
   function handlePrint() {
-    if (printRef.current) {
-      printRef.current.classList.add("print-area");
-      window.print();
-      printRef.current.classList.remove("print-area");
-    }
+    printReceiptNode(printRef.current);
   }
 
   function close() {
@@ -1423,7 +1426,8 @@ function CheckoutDialog({
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-wrap gap-2 sm:gap-2">
+              <ReceiptPaperPicker className="mr-auto" />
               <Button variant="outline" onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" /> Cetak struk
               </Button>
