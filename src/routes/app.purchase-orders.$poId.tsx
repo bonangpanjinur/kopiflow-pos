@@ -510,6 +510,14 @@ function PODetailPage() {
               </Select>
               {prefs.activePresetId && (
                 <>
+                  <div className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1">
+                    <Switch
+                      id="default-preset"
+                      checked={defaultPresetId === prefs.activePresetId}
+                      onCheckedChange={toggleDefaultPreset}
+                    />
+                    <Label htmlFor="default-preset" className="text-xs">Pakai sebagai default</Label>
+                  </div>
                   <Button variant="outline" size="sm" onClick={updateActivePreset}>Simpan perubahan</Button>
                   <Button variant="ghost" size="sm" onClick={deleteActivePreset} className="text-destructive hover:text-destructive">
                     <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus
