@@ -29,7 +29,12 @@ import {
   Menu as MenuIcon,
   Building2,
   FileText,
+  CreditCard,
+  Globe,
+  ShieldCheck,
+  Lock,
 } from "lucide-react";
+import { usePlan, useIsSuperAdmin } from "@/lib/use-plan";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -59,13 +64,17 @@ const NAV = [
   { to: "/app/reports", label: "Laporan", icon: BarChart3 },
   { to: "/app/promos", label: "Promo", icon: TicketPercent },
   { to: "/app/loyalty", label: "Loyalty", icon: Award },
+  { to: "/app/billing", label: "Plan & Tagihan", icon: CreditCard },
+  { to: "/app/domain", label: "Domain Kustom", icon: Globe, proOnly: true },
   { to: "/app/settings", label: "Pengaturan", icon: Settings },
-];
+] as const;
 
 function AppLayout() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isPro } = usePlan();
+  const { isAdmin } = useIsSuperAdmin();
   const [shop, setShop] = useState<{ name: string; logo_url: string | null } | null>(null);
   const [checking, setChecking] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -139,10 +148,11 @@ function AppLayout() {
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
         {NAV.map((item) => {
-          const active = item.exact
+          const active = (item as { exact?: boolean }).exact
             ? location.pathname === item.to
             : location.pathname.startsWith(item.to);
           const Icon = item.icon;
+          const locked = (item as { proOnly?: boolean }).proOnly && !isPro;
           return (
             <Link
               key={item.to}
@@ -154,10 +164,23 @@ function AppLayout() {
               }`}
             >
               <Icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {(item as { proOnly?: boolean }).proOnly && (
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${isPro ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  {locked ? <Lock className="h-3 w-3 inline" /> : "PRO"}
+                </span>
+              )}
             </Link>
           );
         })}
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className="mt-2 flex items-center gap-2.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-sm font-medium text-amber-700 hover:bg-amber-500/20"
+          >
+            <ShieldCheck className="h-4 w-4" /> Super Admin
+          </Link>
+        )}
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
