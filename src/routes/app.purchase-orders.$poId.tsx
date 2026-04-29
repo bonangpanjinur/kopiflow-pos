@@ -152,6 +152,8 @@ function PODetailPage() {
   const [busy, setBusy] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [prefs, setPrefs] = useState<PrintPrefs>(() => loadPrefs());
+  const [presets, setPresets] = useState<PrinterPreset[]>(() => loadPresets());
+  const [presetName, setPresetName] = useState("");
 
   // Persist prefs whenever they change
   useEffect(() => {
@@ -163,11 +165,13 @@ function PODetailPage() {
     const b = document.body;
     b.dataset.poPaper = prefs.paper;
     b.dataset.poMargin = prefs.margin;
+    b.dataset.poOrient = prefs.orientation;
     return () => {
       delete b.dataset.poPaper;
       delete b.dataset.poMargin;
+      delete b.dataset.poOrient;
     };
-  }, [prefs.paper, prefs.margin]);
+  }, [prefs.paper, prefs.margin, prefs.orientation]);
 
   // Inject a per-paper @page rule for the actual printout
   useEffect(() => {
@@ -178,10 +182,53 @@ function PODetailPage() {
       style.id = id;
       document.head.appendChild(style);
     }
-    const size = prefs.paper === "letter" ? "Letter portrait" : "A4 portrait";
+    const orient = prefs.orientation;
+    let size: string;
+    switch (prefs.paper) {
+      case "letter":    size = `Letter ${orient}`; break;
+      case "thermal80": size = "80mm auto"; break;
+      case "thermal58": size = "58mm auto"; break;
+      default:          size = `A4 ${orient}`; break;
+    }
     style.textContent = `@media print { @page { size: ${size}; margin: 0; } }`;
     return () => { if (style) style.textContent = ""; };
-  }, [prefs.paper]);
+  }, [prefs.paper, prefs.orientation]);
+
+  function applyPreset(id: string) {
+    const found = presets.find((p) => p.id === id);
+    if (!found) return;
+    setPrefs({ ...found.prefs, activePresetId: found.id });
+    toast.success(`Preset "${found.name}" diterapkan`);
+  }
+  function saveCurrentAsPreset() {
+    const name = presetName.trim();
+    if (!name) { toast.error("Beri nama preset dulu"); return; }
+    const id = crypto.randomUUID();
+    const { activePresetId: _omit, ...rest } = prefs;
+    void _omit;
+    const next = [...presets, { id, name, prefs: rest }];
+    setPresets(next); savePresets(next);
+    setPrefs((p) => ({ ...p, activePresetId: id }));
+    setPresetName("");
+    toast.success(`Preset "${name}" disimpan di perangkat ini`);
+  }
+  function updateActivePreset() {
+    if (!prefs.activePresetId) return;
+    const { activePresetId: _omit, ...rest } = prefs;
+    void _omit;
+    const next = presets.map((p) => p.id === prefs.activePresetId ? { ...p, prefs: rest } : p);
+    setPresets(next); savePresets(next);
+    toast.success("Preset diperbarui");
+  }
+  function deleteActivePreset() {
+    if (!prefs.activePresetId) return;
+    const target = presets.find((p) => p.id === prefs.activePresetId);
+    if (!target) return;
+    if (!confirm(`Hapus preset "${target.name}"?`)) return;
+    const next = presets.filter((p) => p.id !== prefs.activePresetId);
+    setPresets(next); savePresets(next);
+    setPrefs((p) => ({ ...p, activePresetId: null }));
+  }
 
   async function load() {
     setLoading(true);
