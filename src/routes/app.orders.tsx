@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Receipt } from "@/components/pos/receipt";
+import { printReceiptNode, getReceiptPaper, setReceiptPaper, applyReceiptPaper, type ReceiptPaper } from "@/lib/receipt-printer";
 import type { CartItem } from "@/lib/cart";
 import { useRef } from "react";
 import { refundOrder } from "@/lib/shift";

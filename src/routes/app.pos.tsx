@@ -36,6 +36,7 @@ import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
 import { Receipt, type PaymentSplit } from "@/components/pos/receipt";
+import { printReceiptNode, getReceiptPaper, setReceiptPaper, applyReceiptPaper, type ReceiptPaper } from "@/lib/receipt-printer";
 import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
 import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
 import { Link } from "@tanstack/react-router";
