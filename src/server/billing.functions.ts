@@ -76,7 +76,7 @@ export const approveInvoice = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: result, error } = await supabase.rpc("approve_plan_invoice", { _invoice_id: data.invoiceId });
     if (error) throw new Error(error.message);
-    return result as unknown;
+    return { result };
   });
 
 export const rejectInvoice = createServerFn({ method: "POST" })
@@ -88,7 +88,7 @@ export const rejectInvoice = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { error } = await supabase.rpc("reject_plan_invoice", {
       _invoice_id: data.invoiceId,
-      _reason: data.reason ?? null,
+      _reason: data.reason ?? undefined,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
