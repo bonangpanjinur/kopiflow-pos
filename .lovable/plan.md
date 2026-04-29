@@ -1,127 +1,165 @@
-## Ringkasan
 
-Empat peningkatan untuk Inventory Pro:
-1. **Halaman detail PO** sebagai route tersendiri (bukan dialog) dengan aksi Receive
-2. **Stock Opname** versi multi-item (bulk) dengan validasi & log
-3. **HPP & margin real-time** di halaman Recipes dan Menu
-4. **Dialog Low-Stock** dengan rekomendasi supplier + tombol "Buat PO dari template"
+# Custom Domain Pro + Billing Super Admin
 
----
+URL Free tetap `domain.com/s/{slug}`. Plan Pro membuka fitur custom domain (mis. `kopikukamu.com`) yang disambungkan via reverse proxy / Cloudflare for SaaS di depan project. Pembayaran fase pertama: transfer manual + upload bukti, super admin yang verifikasi & meng-aktifkan plan. Role super admin di-assign manual via SQL nanti.
 
-## 1. Halaman Detail Purchase Order
+## 1. Skema Database (migration)
 
-**File baru**: `src/routes/app.purchase-orders.$poId.tsx`
-
-Konten:
-- Header: No PO, status badge, tanggal order/expected/received, supplier (link ke `/app/suppliers`)
-- Tabel item: bahan, qty, satuan, harga/unit, subtotal, **received_qty** (tampilkan saat status `received`)
-- Ringkasan: subtotal, tax, total
-- Catatan PO
-- Tombol aksi (kondisional status):
-  - `draft` → **Order ke supplier** (status → `ordered`), **Batal**, **Hapus**
-  - `ordered` → **Terima & update stok** (panggil RPC `receive_purchase_order`), **Batal**
-  - `received` → tampilkan ringkasan stok update (read-only) + tombol **Cetak**
-  - `cancelled` → read-only
-
-Aksi Receive memanggil RPC yang sudah ada (`receive_purchase_order`) yang otomatis: insert stock_movements (purchase) → trigger naikkan stok → update HPP weighted average.
-
-**Update di** `src/routes/app.purchase-orders.tsx`:
-- Hapus dialog detail; ubah `onClick` row tabel jadi `<Link to="/app/purchase-orders/$poId">`
-- Tambah kolom "Item" (jumlah baris) di list
-
----
-
-## 2. Stock Opname (versi lengkap)
-
-**Update** `src/routes/app.inventory.tsx`:
-
-Tambah tombol header **"Opname Massal"** yang membuka dialog full-width:
-- Tabel semua bahan aktif: nama, satuan, **stok sistem** (read-only), input **stok aktual** (number, min 0), kolom **selisih** (auto, badge merah/hijau), input **catatan/baris**
-- Filter: search nama, opsi "tampilkan hanya yang berubah"
-- Validasi: aktual harus angka ≥ 0; tolak NaN; abaikan baris tanpa perubahan
-- Tombol **Simpan Opname** → loop insert `stock_movements`:
-  - Selisih positif → type=`adjustment` (qty=delta)
-  - Selisih negatif → type=`waste` (qty=|delta|)
-  - Note format: `Opname [tanggal]: sistem X → aktual Y` + catatan user
-- Tampilkan ringkasan hasil: jumlah item disesuaikan, total nilai selisih (qty × cost_per_unit) dalam IDR
-- Toast sukses + reload
-
-Opname per-item yang sudah ada (tombol per row) tetap dipertahankan untuk koreksi cepat.
-
----
-
-## 3. HPP & Margin Real-time
-
-View `menu_hpp_view` sudah ada (kolom: hpp, margin, margin_percent, price). Tambahkan kolom **last_updated** dengan migration baru:
+Tambah kolom & tabel:
 
 ```sql
-DROP VIEW IF EXISTS public.menu_hpp_view;
-CREATE VIEW public.menu_hpp_view WITH (security_invoker=true) AS
-SELECT 
-  m.id AS menu_item_id, m.shop_id, m.name, m.price,
-  COALESCE(SUM(r.quantity * i.cost_per_unit), 0) AS hpp,
-  m.price - COALESCE(SUM(r.quantity * i.cost_per_unit), 0) AS margin,
-  CASE WHEN m.price > 0 
-    THEN ROUND(((m.price - COALESCE(SUM(r.quantity * i.cost_per_unit),0)) / m.price * 100)::numeric, 2)
-    ELSE 0 END AS margin_percent,
-  GREATEST(m.updated_at, COALESCE(MAX(i.updated_at), m.updated_at)) AS last_updated,
-  COUNT(r.id) AS recipe_count
-FROM menu_items m
-LEFT JOIN recipes r ON r.menu_item_id = m.id
-LEFT JOIN ingredients i ON i.id = r.ingredient_id
-GROUP BY m.id;
+-- Plan & domain di shop
+alter table coffee_shops
+  add column plan text not null default 'free',
+  add column plan_expires_at timestamptz,
+  add column custom_domain text unique,
+  add column custom_domain_verified_at timestamptz,
+  add column custom_domain_verify_token text;
+
+-- Role super admin (extend enum app_role)
+alter type app_role add value if not exists 'super_admin';
+
+-- Paket yang dijual
+create table plans (
+  id uuid primary key default gen_random_uuid(),
+  code text unique not null,
+  name text not null,
+  price_idr int not null,
+  duration_days int not null,
+  features jsonb not null default '{}'::jsonb,
+  is_active boolean not null default true,
+  sort_order int not null default 0,
+  created_at timestamptz default now()
+);
+
+-- Pengaturan rekening tujuan super admin
+create table billing_settings (
+  id int primary key default 1 check (id = 1),
+  bank_name text, account_no text, account_name text,
+  qris_image_url text, instructions text,
+  updated_at timestamptz default now()
+);
+
+-- Tagihan / invoice
+create table plan_invoices (
+  id uuid primary key default gen_random_uuid(),
+  shop_id uuid not null references coffee_shops(id) on delete cascade,
+  plan_id uuid not null references plans(id),
+  invoice_no text unique not null,
+  amount_idr int not null,
+  status text not null default 'pending',  -- pending|awaiting_review|paid|rejected|expired
+  payment_method text,
+  payment_proof_url text,
+  paid_at timestamptz,
+  reviewed_by uuid,
+  reviewed_at timestamptz,
+  notes text,
+  created_at timestamptz default now()
+);
+
+-- Audit perubahan domain
+create table domain_audit (
+  id uuid primary key default gen_random_uuid(),
+  shop_id uuid not null,
+  old_domain text, new_domain text,
+  action text,  -- request|verify|remove|reject
+  actor_id uuid,
+  created_at timestamptz default now()
+);
 ```
 
-**Update** `src/routes/app.recipes.tsx`:
-- Ambil `menu_hpp_view` paralel dengan menus
-- Di sidebar menu list: tampilkan margin% kecil (warna hijau >30%, kuning 10-30%, merah <10%)
-- Di panel detail menu: card "HPP & Margin" dengan:
-  - HPP (IDR), Harga jual (IDR), Margin (IDR), Margin% (badge berwarna)
-  - "Sumber: N bahan dari resep" + tombol "Lihat breakdown" yang expand list bahan dengan `qty × cost_per_unit = subtotal` per baris
-  - "Terakhir diperbarui: [relative time]"
+RLS:
+- `plans`, `billing_settings`: SELECT untuk authenticated; tulis hanya `has_role(uid,'super_admin')`.
+- `plan_invoices`: owner toko bisa SELECT/INSERT untuk shop miliknya, UPDATE hanya field `payment_proof_url` saat status `pending|awaiting_review`; super_admin full access.
+- `coffee_shops`: kolom `custom_domain` boleh diubah owner; `plan`, `plan_expires_at`, `custom_domain_verified_at` hanya super_admin (lewat RPC).
+- `domain_audit`: owner SELECT shop sendiri; super_admin semua.
 
-**Update** `src/routes/app.menu.tsx`:
-- Tambah kolom **HPP** dan **Margin%** di tabel menu
-- Indicator visual: dot warna sesuai margin level
-- Empty state HPP jika belum ada resep ("Atur resep →")
+Storage bucket `payment-proofs` sudah ada — tambah RLS owner-shop & super_admin.
 
----
+## 2. Server Functions Kunci
 
-## 4. Dialog Low-Stock dari Widget Dashboard
+`src/server/billing.functions.ts`
+- `createPlanInvoice({ planCode })` → buat invoice `pending` untuk shop user.
+- `submitPaymentProof({ invoiceId, proofUrl })` → status `awaiting_review`.
+- `approveInvoice({ invoiceId })` (super_admin) → set `paid`, update shop `plan='pro'`, `plan_expires_at = now + duration_days`.
+- `rejectInvoice({ invoiceId, reason })`.
 
-**File baru**: `src/components/inventory/low-stock-dialog.tsx`
+`src/server/domain.functions.ts`
+- `requestCustomDomain({ domain })` → validasi format, simpan + token `_kopihub-verify=...`, status unverified, audit `request`.
+- `verifyCustomDomain()` → DNS lookup TXT (`dns/promises`); jika cocok set `custom_domain_verified_at`, audit `verify`.
+- `removeCustomDomain()`.
+- `resolveShopByHost({ host })` (server) → cari shop by `custom_domain` verified.
 
-Komponen dialog reusable yang menerima `shopId` dan menampilkan:
-- Tabel ingredient low-stock: nama, stok sekarang, min, **kekurangan** (min - current), satuan, supplier rekomendasi
-- Logika rekomendasi supplier: ambil supplier terakhir yang pernah supply ingredient itu via `purchase_order_items` join `purchase_orders` (urut `created_at` desc, ambil yang `status='received'`); fallback "Belum ada riwayat"
-- Group by supplier: kelompokkan ingredient per supplier yang sama
-- Tombol **"Buat PO untuk supplier ini"** per group:
-  - Insert `purchase_orders` (status=`draft`, po_no auto-generate, supplier_id, shop_id)
-  - Insert `purchase_order_items` untuk tiap ingredient dengan `quantity = max(min_stock × 2 − current_stock, min_stock)`, `unit_cost = ingredient.cost_per_unit`
-  - Hitung subtotal/total
-  - Redirect ke `/app/purchase-orders/$poId` (halaman detail baru) untuk review/edit sebelum order
-- Tombol "Buka Inventori" untuk manual handling
+Semua dilindungi `requireSupabaseAuth` + cek role/ownership.
 
-**Update** `src/routes/app.index.tsx`:
-- Ubah widget low-stock di dashboard: tambah tombol **"Lihat & Pesan"** di samping "Kelola →" yang membuka `LowStockDialog`
+## 3. Multi-tenant Host Routing
 
-**Update** `src/routes/app.inventory.tsx`:
-- Tombol kecil di banner low-stock untuk juga membuka dialog yang sama
+Di `__root.tsx` tambah loader server fn `resolveHost()`:
+1. Baca `host` header (server-only).
+2. Jika host = domain platform → app normal.
+3. Jika cocok dengan shop verified → render `s.$slug` untuk shop tsb tanpa redirect (URL tetap bersih). Implementasi: simpan `tenantSlug` di route context, di `s.$slug.index.tsx` fallback baca dari context bila slug param kosong, atau buat route `__root` yang me-mount layout `s/$slug` saat host adalah custom domain.
+4. Jika host tidak dikenal → 404 ramah.
 
----
+Cloudflare for SaaS: kamu (admin platform) yang menambahkan hostname pelanggan ke Cloudflare via API setelah verifikasi DNS — itu langkah operasional, tidak masuk kode aplikasi.
 
-## File Changes
+## 4. UI Owner Toko
 
-**Baru:**
-- `src/routes/app.purchase-orders.$poId.tsx` (route detail PO)
-- `src/components/inventory/low-stock-dialog.tsx`
-- `supabase/migrations/<ts>_menu_hpp_view_v2.sql` (recreate view dengan last_updated & recipe_count)
+- `src/lib/use-plan.ts` — hook `{plan, isPro, expiresAt}`.
+- `src/routes/app.billing.tsx` — daftar paket, tombol "Upgrade", daftar invoice, upload bukti, status, info rekening tujuan.
+- `src/routes/app.domain.tsx` — gated Pro:
+  - Form input domain.
+  - Instruksi DNS (A record + TXT verify).
+  - Tombol "Cek Verifikasi" (panggil `verifyCustomDomain`).
+  - Status: pending / verified / failed.
+  - Tombol hapus + audit log singkat.
+- `src/routes/app.tsx` (sidebar) — tambah menu "Plan & Tagihan", "Domain Kustom" (badge Pro/gembok bila Free).
+- `src/routes/app.index.tsx` — banner: kalau punya domain verified, tampilkan link `https://{domain}` selain `/s/{slug}`.
 
-**Diedit:**
-- `src/routes/app.purchase-orders.tsx` (hapus dialog detail, link ke route baru, kolom item count)
-- `src/routes/app.inventory.tsx` (opname massal dialog, low-stock dialog trigger)
-- `src/routes/app.recipes.tsx` (HPP card, margin badge, breakdown)
-- `src/routes/app.menu.tsx` (kolom HPP & margin)
-- `src/routes/app.index.tsx` (trigger low-stock dialog)
+## 5. UI Super Admin (`/admin/*`)
 
-Migrasi hanya recreate view (aman, view tidak menyimpan data).
+Guard layout `admin.tsx` → `has_role(uid,'super_admin')` else redirect.
+- `admin.index.tsx` — KPI: total toko, Pro aktif, Pro expired 7 hari ke depan, invoice menunggu review, MRR (jumlah invoice paid bulan ini).
+- `admin.shops.tsx` — daftar semua toko + filter plan, ubah plan manual, perpanjang/expire, lihat owner & domain.
+- `admin.invoices.tsx` — antrian `awaiting_review` paling atas, preview bukti, tombol Approve/Reject + alasan.
+- `admin.plans.tsx` — CRUD paket (harga, durasi, fitur JSON).
+- `admin.domains.tsx` — semua custom domain, status verifikasi, force-verify, remove, audit log.
+- `admin.settings.tsx` — atur rekening tujuan & instruksi pembayaran.
+
+## 6. Alur Pembayaran (Manual)
+
+```text
+Owner -> Billing -> pilih paket -> invoice 'pending'
+     -> halaman invoice tampilkan rekening + nomor invoice
+     -> upload bukti -> status 'awaiting_review'
+Super Admin -> Invoices -> review bukti
+     -> Approve: invoice 'paid', shop.plan='pro', plan_expires_at=+duration
+     -> Reject: invoice 'rejected' + catatan
+Cron ringan saat owner login -> if plan_expires_at<now: shop.plan='free'
+     (custom domain dipertahankan tapi tidak disajikan sampai upgrade lagi)
+```
+
+## 7. Fase Implementasi (3 batch)
+
+**Batch A — Fondasi**
+- Migration plan/role/invoices/domain_audit + seed paket default.
+- `usePlan()` hook + sidebar gating.
+- Layout `/admin` + role guard + halaman shops & plans.
+
+**Batch B — Billing manual**
+- `app/billing` (buat invoice, upload bukti).
+- `admin/invoices` (review & approve/reject + auto aktifkan plan).
+- `admin/settings` (rekening tujuan).
+
+**Batch C — Custom Domain**
+- `app/domain` (form, instruksi DNS, verifikasi).
+- Server fn DNS check + audit.
+- Multi-tenant host routing di `__root.tsx`.
+- `admin/domains`.
+
+## Catatan Teknis Penting
+
+- Super admin pertama: di-assign manual via SQL (`insert into user_roles(user_id, role) values ('<uid>', 'super_admin');`).
+- Tidak pakai gateway pembayaran di fase ini; struktur invoice sudah cukup untuk menambahkan Midtrans/Xendit nanti tanpa migrasi besar.
+- Custom domain butuh aksi operasional di Cloudflare for SaaS (di luar app) untuk hostname pelanggan & SSL — UI hanya menangani verifikasi DNS & registrasi di DB.
+- Semua perubahan domain & approval invoice tercatat di tabel audit untuk transparansi.
+
