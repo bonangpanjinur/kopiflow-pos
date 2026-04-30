@@ -29,7 +29,7 @@ function DomainPage() {
   const [busy, setBusy] = useState(false);
   const [audit, setAudit] = useState<Array<{ id: string; action: string; new_domain: string | null; created_at: string }>>([]);
   const [cnameTarget, setCnameTarget] = useState<string>("tenants.kopihub.app");
-  const [lastCheck, setLastCheck] = useState<{ verified: boolean; cnameOk: boolean; txtValues: string[] } | null>(null);
+  const [lastCheck, setLastCheck] = useState<{ verified: boolean; cnameOk: boolean; sslOk?: boolean; sslError?: string | null; txtValues: string[] } | null>(null);
 
   const reload = async () => {
     if (!shop) return;
@@ -77,9 +77,13 @@ function DomainPage() {
     setBusy(true);
     try {
       const r = await verifyCustomDomain();
-      setLastCheck({ verified: r.verified, cnameOk: r.cnameOk, txtValues: r.txtValues });
+      setLastCheck({ verified: r.verified, cnameOk: r.cnameOk, sslOk: r.sslOk, sslError: r.sslError, txtValues: r.txtValues });
       if (r.cnameTarget) setCnameTarget(r.cnameTarget);
-      if (r.verified) toast.success(r.cnameOk ? "Domain & CNAME terverifikasi!" : "TXT terverifikasi. CNAME belum aktif — trafik belum diarahkan.");
+      if (r.verified) {
+        if (r.cnameOk && r.sslOk) toast.success("Domain aktif: TXT, CNAME & SSL OK!");
+        else if (r.cnameOk) toast.success("TXT & CNAME OK. SSL sedang di-issue (1–10 menit).");
+        else toast.success("TXT terverifikasi. CNAME belum aktif — trafik belum diarahkan.");
+      }
       else toast.error("TXT record belum ditemukan. Tunggu propagasi DNS lalu coba lagi.");
       await reload();
     } catch (e) {
@@ -185,6 +189,7 @@ function DomainPage() {
                 <div className="mt-3 rounded border border-border p-3 text-xs space-y-1">
                   <div>TXT terverifikasi: <b className={lastCheck.verified ? "text-green-700" : "text-red-700"}>{lastCheck.verified ? "Ya" : "Belum"}</b></div>
                   <div>CNAME mengarah ke proxy: <b className={lastCheck.cnameOk ? "text-green-700" : "text-amber-700"}>{lastCheck.cnameOk ? "Ya" : "Belum"}</b></div>
+                  <div>SSL/HTTPS aktif: <b className={lastCheck.sslOk ? "text-green-700" : "text-amber-700"}>{lastCheck.sslOk ? "Ya" : "Belum"}</b>{lastCheck.sslError && <span className="ml-1 text-muted-foreground">({lastCheck.sslError})</span>}</div>
                   {lastCheck.txtValues.length > 0 && <div className="text-muted-foreground">Nilai TXT terdeteksi: {lastCheck.txtValues.join(", ")}</div>}
                 </div>
               )}
