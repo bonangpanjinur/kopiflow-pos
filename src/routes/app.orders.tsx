@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";
 import { Loader2, ListOrdered, Banknote, QrCode, Printer, XCircle, Undo2 } from "lucide-react";
@@ -20,7 +20,6 @@ import { Receipt } from "@/components/pos/receipt";
 import { ReceiptPaperPicker } from "@/components/pos/receipt-paper-picker";
 import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
 import type { CartItem } from "@/lib/cart";
-import { useRef } from "react";
 import { refundOrder } from "@/lib/shift";
 
 export const Route = createFileRoute("/app/orders")({

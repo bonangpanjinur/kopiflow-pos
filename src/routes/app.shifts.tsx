@@ -21,7 +21,6 @@ import {
   Wallet,
   ArrowDownCircle,
   ArrowUpCircle,
-  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
