@@ -237,6 +237,7 @@ function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-auto">
+          <OwnerReminderBanner />
           <Outlet />
         </main>
       </div>
