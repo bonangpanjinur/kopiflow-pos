@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   Loader2,
-  Plus,
   Minus,
   Trash2,
   Search,
@@ -30,7 +29,6 @@ import {
   StickyNote,
   Percent,
 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
@@ -50,7 +48,6 @@ const ReceiptPaperPicker = lazy(() =>
 );
 import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
 import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
-import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/app/pos")({
   component: POSPage,
