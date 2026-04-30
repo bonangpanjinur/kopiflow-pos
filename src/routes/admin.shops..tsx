@@ -17,7 +17,7 @@ import {
 } from "@/server/admin-shops.functions";
 import { formatIDR } from "@/lib/format";
 
-export const Route = createFileRoute("/admin/shops/$id")({
+export const Route = createFileRoute("/admin/shops/")({
   component: AdminShopDetail,
 });
 

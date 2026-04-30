@@ -56,6 +56,7 @@ import { Route as SSlugLoginRouteImport } from './routes/s.$slug.login'
 import { Route as SSlugCheckoutRouteImport } from './routes/s.$slug.checkout'
 import { Route as SSlugCartRouteImport } from './routes/s.$slug.cart'
 import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/app.purchase-orders.$poId'
+import { Route as AdminShopsRouteImport } from './routes/admin.shops.'
 import { Route as SSlugPayOrderIdRouteImport } from './routes/s.$slug.pay.$orderId'
 import { Route as SSlugMenuMenuIdRouteImport } from './routes/s.$slug.menu.$menuId'
 import { Route as ApiPublicManifestSlugRouteImport } from './routes/api/public/manifest.$slug'
@@ -296,6 +297,11 @@ const AppPurchaseOrdersPoIdRoute = AppPurchaseOrdersPoIdRouteImport.update({
   path: '/$poId',
   getParentRoute: () => AppPurchaseOrdersRoute,
 } as any)
+const AdminShopsRoute = AdminShopsRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminShopsRoute,
+} as any)
 const SSlugPayOrderIdRoute = SSlugPayOrderIdRouteImport.update({
   id: '/pay/$orderId',
   path: '/pay/$orderId',
@@ -332,7 +338,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/admin/shops': typeof AdminShopsRoute
+  '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/attendance': typeof AppAttendanceRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
@@ -360,6 +366,7 @@ export interface FileRoutesByFullPath {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/shops/': typeof AdminShopsRoute
   '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
@@ -383,7 +390,6 @@ export interface FileRoutesByTo {
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/admin/shops': typeof AdminShopsRoute
   '/app/attendance': typeof AppAttendanceRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
@@ -410,6 +416,7 @@ export interface FileRoutesByTo {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/admin/shops': typeof AdminShopsRoute
   '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
@@ -436,7 +443,7 @@ export interface FileRoutesById {
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/admin/shops': typeof AdminShopsRoute
+  '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/attendance': typeof AppAttendanceRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
@@ -464,6 +471,7 @@ export interface FileRoutesById {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/shops/': typeof AdminShopsRoute
   '/app/purchase-orders/$poId': typeof AppPurchaseOrdersPoIdRoute
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
@@ -519,6 +527,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
+    | '/admin/shops/'
     | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
@@ -542,7 +551,6 @@ export interface FileRouteTypes {
     | '/admin/invoices'
     | '/admin/plans'
     | '/admin/settings'
-    | '/admin/shops'
     | '/app/attendance'
     | '/app/billing'
     | '/app/categories'
@@ -569,6 +577,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin'
     | '/app'
+    | '/admin/shops'
     | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
@@ -622,6 +631,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
+    | '/admin/shops/'
     | '/app/purchase-orders/$poId'
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
@@ -981,6 +991,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPurchaseOrdersPoIdRouteImport
       parentRoute: typeof AppPurchaseOrdersRoute
     }
+    '/admin/shops/': {
+      id: '/admin/shops/'
+      path: '/'
+      fullPath: '/admin/shops/'
+      preLoaderRoute: typeof AdminShopsRouteImport
+      parentRoute: typeof AdminShopsRoute
+    }
     '/s/$slug/pay/$orderId': {
       id: '/s/$slug/pay/$orderId'
       path: '/pay/$orderId'
@@ -1012,13 +1029,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminShopsRouteChildren {
+  AdminShopsRoute: typeof AdminShopsRoute
+}
+
+const AdminShopsRouteChildren: AdminShopsRouteChildren = {
+  AdminShopsRoute: AdminShopsRoute,
+}
+
+const AdminShopsRouteWithChildren = AdminShopsRoute._addFileChildren(
+  AdminShopsRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminActivityRoute: typeof AdminActivityRoute
   AdminDomainsRoute: typeof AdminDomainsRoute
   AdminInvoicesRoute: typeof AdminInvoicesRoute
   AdminPlansRoute: typeof AdminPlansRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
-  AdminShopsRoute: typeof AdminShopsRoute
+  AdminShopsRoute: typeof AdminShopsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1028,7 +1057,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminInvoicesRoute: AdminInvoicesRoute,
   AdminPlansRoute: AdminPlansRoute,
   AdminSettingsRoute: AdminSettingsRoute,
-  AdminShopsRoute: AdminShopsRoute,
+  AdminShopsRoute: AdminShopsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 
