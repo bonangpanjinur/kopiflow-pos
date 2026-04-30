@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tansta
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useIsSuperAdmin } from "@/lib/use-plan";
-import { Loader2, ShieldCheck, LayoutDashboard, Store, FileText, Package, Globe, Settings, ArrowLeft } from "lucide-react";
+import { Loader2, ShieldCheck, LayoutDashboard, Store, FileText, Package, Globe, Settings, ArrowLeft, Activity } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -14,6 +14,7 @@ const NAV = [
   { to: "/admin/invoices", label: "Tagihan", icon: FileText },
   { to: "/admin/plans", label: "Paket", icon: Package },
   { to: "/admin/domains", label: "Domain", icon: Globe },
+  { to: "/admin/activity", label: "Aktivitas", icon: Activity },
   { to: "/admin/settings", label: "Pengaturan", icon: Settings },
 ] as const;
 

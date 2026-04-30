@@ -49,6 +49,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPlansRouteImport } from './routes/admin.plans'
 import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
 import { Route as AdminDomainsRouteImport } from './routes/admin.domains'
+import { Route as AdminActivityRouteImport } from './routes/admin.activity'
 import { Route as SSlugIndexRouteImport } from './routes/s.$slug.index'
 import { Route as SSlugOrdersRouteImport } from './routes/s.$slug.orders'
 import { Route as SSlugLoginRouteImport } from './routes/s.$slug.login'
@@ -260,6 +261,11 @@ const AdminDomainsRoute = AdminDomainsRouteImport.update({
   path: '/domains',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminActivityRoute = AdminActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => AdminRoute,
+} as any)
 const SSlugIndexRoute = SSlugIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -321,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/activity': typeof AdminActivityRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
@@ -371,6 +378,7 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/activity': typeof AdminActivityRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
@@ -423,6 +431,7 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/activity': typeof AdminActivityRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
@@ -477,6 +486,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/signup'
     | '/sitemap.xml'
+    | '/admin/activity'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -527,6 +537,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/signup'
     | '/sitemap.xml'
+    | '/admin/activity'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -578,6 +589,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/signup'
     | '/sitemap.xml'
+    | '/admin/activity'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -920,6 +932,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDomainsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/activity': {
+      id: '/admin/activity'
+      path: '/activity'
+      fullPath: '/admin/activity'
+      preLoaderRoute: typeof AdminActivityRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/s/$slug/': {
       id: '/s/$slug/'
       path: '/'
@@ -994,6 +1013,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminActivityRoute: typeof AdminActivityRoute
   AdminDomainsRoute: typeof AdminDomainsRoute
   AdminInvoicesRoute: typeof AdminInvoicesRoute
   AdminPlansRoute: typeof AdminPlansRoute
@@ -1003,6 +1023,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminActivityRoute: AdminActivityRoute,
   AdminDomainsRoute: AdminDomainsRoute,
   AdminInvoicesRoute: AdminInvoicesRoute,
   AdminPlansRoute: AdminPlansRoute,

@@ -38,6 +38,7 @@ import { usePlan, useIsSuperAdmin } from "@/lib/use-plan";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { OwnerReminderBanner } from "@/components/owner-reminder-banner";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
@@ -236,6 +237,7 @@ function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-auto">
+          <OwnerReminderBanner />
           <Outlet />
         </main>
       </div>
