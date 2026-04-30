@@ -279,6 +279,8 @@ export type Database = {
           qris_merchant_name: string | null
           service_charge_percent: number
           slug: string
+          suspended_at: string | null
+          suspended_reason: string | null
           tagline: string | null
           tax_inclusive: boolean
           tax_percent: number
@@ -311,6 +313,8 @@ export type Database = {
           qris_merchant_name?: string | null
           service_charge_percent?: number
           slug: string
+          suspended_at?: string | null
+          suspended_reason?: string | null
           tagline?: string | null
           tax_inclusive?: boolean
           tax_percent?: number
@@ -343,6 +347,8 @@ export type Database = {
           qris_merchant_name?: string | null
           service_charge_percent?: number
           slug?: string
+          suspended_at?: string | null
+          suspended_reason?: string | null
           tagline?: string | null
           tax_inclusive?: boolean
           tax_percent?: number
@@ -1876,6 +1882,17 @@ export type Database = {
     }
     Functions: {
       accept_staff_invitation: { Args: { _token: string }; Returns: Json }
+      admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_set_shop_plan: {
+        Args: { _expires_at: string; _plan: string; _shop_id: string }
+        Returns: undefined
+      }
+      admin_shop_detail: { Args: { _shop_id: string }; Returns: Json }
+      admin_suspend_shop: {
+        Args: { _reason: string; _shop_id: string }
+        Returns: undefined
+      }
+      admin_unsuspend_shop: { Args: { _shop_id: string }; Returns: undefined }
       apply_loyalty_post_order: {
         Args: {
           _earned: number

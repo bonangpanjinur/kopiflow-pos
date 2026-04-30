@@ -76,7 +76,7 @@ function AppLayout() {
   const location = useLocation();
   const { isPro } = usePlan();
   const { isAdmin } = useIsSuperAdmin();
-  const [shop, setShop] = useState<{ name: string; logo_url: string | null } | null>(null);
+  const [shop, setShop] = useState<{ name: string; logo_url: string | null; suspended_at?: string | null; suspended_reason?: string | null } | null>(null);
   const [checking, setChecking] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -89,7 +89,7 @@ function AppLayout() {
     (async () => {
       const { data } = await supabase
         .from("coffee_shops")
-        .select("name, logo_url")
+        .select("name, logo_url, suspended_at, suspended_reason")
         .eq("owner_id", user.id)
         .maybeSingle();
       if (!data) {
@@ -98,8 +98,12 @@ function AppLayout() {
       }
       setShop(data);
       setChecking(false);
+      if (data.suspended_at && location.pathname !== "/app/billing") {
+        toast.error("Toko Anda dinonaktifkan oleh admin. Hubungi admin.");
+        navigate({ to: "/app/billing" });
+      }
     })();
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, location.pathname]);
 
   // Close mobile menu on route change
   useEffect(() => {

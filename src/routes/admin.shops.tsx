@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/shops")({
   component: AdminShops,
@@ -18,6 +19,7 @@ type Shop = {
   custom_domain: string | null;
   custom_domain_verified_at: string | null;
   created_at: string;
+  suspended_at: string | null;
 };
 
 type StatusFilter = "all" | "pro_active" | "expiring" | "expired" | "free" | "domain_offline";
@@ -37,7 +39,7 @@ function AdminShops() {
   const [filter, setFilter] = useState<StatusFilter>("all");
 
   useEffect(() => {
-    supabase.from("coffee_shops").select("id, name, slug, plan, plan_expires_at, custom_domain, custom_domain_verified_at, created_at").order("created_at", { ascending: false })
+    supabase.from("coffee_shops").select("id, name, slug, plan, plan_expires_at, custom_domain, custom_domain_verified_at, created_at, suspended_at").order("created_at", { ascending: false })
       .then(({ data }) => setShops((data as Shop[]) ?? []));
   }, []);
 
@@ -91,10 +93,14 @@ function AdminShops() {
             : "bg-muted text-muted-foreground";
           const domainOffline = s.custom_domain && !s.custom_domain_verified_at;
           return (
-            <Card key={s.id} className="p-4">
+            <Link key={s.id} to="/admin/shops/$id" params={{ id: s.id }} className="block">
+            <Card className="p-4 hover:bg-accent/40 transition-colors">
               <div className="flex items-start justify-between flex-wrap gap-2">
                 <div>
-                  <div className="font-semibold">{s.name}</div>
+                  <div className="font-semibold flex items-center gap-2">
+                    {s.name}
+                    {s.suspended_at && <Badge variant="destructive" className="text-[10px]">Nonaktif</Badge>}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     /s/{s.slug}
                     {s.custom_domain && (
@@ -109,6 +115,7 @@ function AdminShops() {
                 </div>
               </div>
             </Card>
+            </Link>
           );
         })}
       </div>
