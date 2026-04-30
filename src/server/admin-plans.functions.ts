@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function ensureSuperAdmin(supabase: ReturnType<typeof createSupabaseClient>, userId: string): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function ensureSuperAdmin(supabase: any, userId: string): Promise<void> {
   const { data } = await supabase
     .from("user_roles")
     .select("id")
@@ -11,9 +12,6 @@ async function ensureSuperAdmin(supabase: ReturnType<typeof createSupabaseClient
     .maybeSingle();
   if (!data) throw new Error("not_authorized");
 }
-// Helper type stub — actual client comes from middleware context.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type createSupabaseClient = any;
 
 export const upsertPlanFeature = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -31,8 +29,10 @@ export const upsertPlanFeature = createServerFn({ method: "POST" })
       _plan_id: data.planId,
       _feature_key: data.featureKey,
       _requires_min_months: data.requiresMinMonths,
-      _limit_value: data.limitValue ?? null,
-      _meta: (data.meta ?? {}) as Record<string, unknown>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _limit_value: (data.limitValue ?? null) as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _meta: (data.meta ?? {}) as any,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -102,7 +102,9 @@ export const upsertFeatureCatalog = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await ensureSuperAdmin(supabase, userId);
     const { error } = await supabase.rpc("admin_upsert_feature", {
-      _key: data.key, _name: data.name, _description: data.description ?? null,
+      _key: data.key, _name: data.name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _description: (data.description ?? null) as any,
       _category: data.category, _is_active: data.isActive, _sort_order: data.sortOrder,
     });
     if (error) throw new Error(error.message);
@@ -125,9 +127,15 @@ export const upsertThemeCatalog = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await ensureSuperAdmin(supabase, userId);
     const { error } = await supabase.rpc("admin_upsert_theme", {
-      _key: data.key, _name: data.name, _description: data.description ?? null,
-      _component_id: data.componentId, _preview_image_url: data.previewImageUrl ?? null,
-      _tier_hint: data.tierHint ?? null, _is_active: data.isActive, _sort_order: data.sortOrder,
+      _key: data.key, _name: data.name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _description: (data.description ?? null) as any,
+      _component_id: data.componentId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _preview_image_url: (data.previewImageUrl ?? null) as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _tier_hint: (data.tierHint ?? null) as any,
+      _is_active: data.isActive, _sort_order: data.sortOrder,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
