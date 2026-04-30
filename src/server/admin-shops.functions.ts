@@ -67,7 +67,7 @@ export const setShopPlanManual = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.rpc("admin_set_shop_plan", {
       _shop_id: data.shopId,
       _plan: data.plan,
-      _expires_at: data.expiresAt,
+      _expires_at: data.expiresAt as string,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
