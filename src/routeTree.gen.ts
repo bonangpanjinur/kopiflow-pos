@@ -44,6 +44,7 @@ import { Route as AppCourierRouteImport } from './routes/app.courier'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 import { Route as AppBillingRouteImport } from './routes/app.billing'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
+import { Route as AppAppearanceRouteImport } from './routes/app.appearance'
 import { Route as AdminShopsRouteImport } from './routes/admin.shops'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPlansRouteImport } from './routes/admin.plans'
@@ -237,6 +238,11 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAppearanceRoute = AppAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => AppRoute,
+} as any)
 const AdminShopsRoute = AdminShopsRouteImport.update({
   id: '/shops',
   path: '/shops',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/admin/plans': typeof AdminPlansRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shops': typeof AdminShopsRouteWithChildren
+  '/app/appearance': typeof AppAppearanceRoute
   '/app/attendance': typeof AppAttendanceRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
@@ -391,6 +398,7 @@ export interface FileRoutesByTo {
   '/admin/plans': typeof AdminPlansRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shops': typeof AdminShopsRouteWithChildren
+  '/app/appearance': typeof AppAppearanceRoute
   '/app/attendance': typeof AppAttendanceRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/admin/plans': typeof AdminPlansRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shops': typeof AdminShopsRouteWithChildren
+  '/app/appearance': typeof AppAppearanceRoute
   '/app/attendance': typeof AppAttendanceRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
@@ -501,6 +510,7 @@ export interface FileRouteTypes {
     | '/admin/plans'
     | '/admin/settings'
     | '/admin/shops'
+    | '/app/appearance'
     | '/app/attendance'
     | '/app/billing'
     | '/app/categories'
@@ -553,6 +563,7 @@ export interface FileRouteTypes {
     | '/admin/plans'
     | '/admin/settings'
     | '/admin/shops'
+    | '/app/appearance'
     | '/app/attendance'
     | '/app/billing'
     | '/app/categories'
@@ -606,6 +617,7 @@ export interface FileRouteTypes {
     | '/admin/plans'
     | '/admin/settings'
     | '/admin/shops'
+    | '/app/appearance'
     | '/app/attendance'
     | '/app/billing'
     | '/app/categories'
@@ -909,6 +921,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/appearance': {
+      id: '/app/appearance'
+      path: '/appearance'
+      fullPath: '/app/appearance'
+      preLoaderRoute: typeof AppAppearanceRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/admin/shops': {
       id: '/admin/shops'
       path: '/shops'
@@ -1077,6 +1096,7 @@ const AppPurchaseOrdersRouteWithChildren =
   AppPurchaseOrdersRoute._addFileChildren(AppPurchaseOrdersRouteChildren)
 
 interface AppRouteChildren {
+  AppAppearanceRoute: typeof AppAppearanceRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
@@ -1103,6 +1123,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAppearanceRoute: AppAppearanceRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppBillingRoute: AppBillingRoute,
   AppCategoriesRoute: AppCategoriesRoute,

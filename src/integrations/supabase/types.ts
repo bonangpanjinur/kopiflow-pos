@@ -254,6 +254,7 @@ export type Database = {
       }
       coffee_shops: {
         Row: {
+          active_theme_key: string
           address: string | null
           created_at: string
           currency: string
@@ -274,6 +275,7 @@ export type Database = {
           phone: string | null
           plan: string
           plan_expires_at: string | null
+          plan_started_at: string | null
           prep_minutes: number
           qris_image_url: string | null
           qris_merchant_name: string | null
@@ -288,6 +290,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          active_theme_key?: string
           address?: string | null
           created_at?: string
           currency?: string
@@ -308,6 +311,7 @@ export type Database = {
           phone?: string | null
           plan?: string
           plan_expires_at?: string | null
+          plan_started_at?: string | null
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
@@ -322,6 +326,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          active_theme_key?: string
           address?: string | null
           created_at?: string
           currency?: string
@@ -342,6 +347,7 @@ export type Database = {
           phone?: string | null
           plan?: string
           plan_expires_at?: string | null
+          plan_started_at?: string | null
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
@@ -668,6 +674,39 @@ export type Database = {
           id?: string
           result?: string | null
           shop_id?: string
+        }
+        Relationships: []
+      }
+      features: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          key: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1216,6 +1255,48 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_features: {
+        Row: {
+          created_at: string
+          feature_key: string
+          limit_value: number | null
+          meta: Json
+          plan_id: string
+          requires_min_months: number
+        }
+        Insert: {
+          created_at?: string
+          feature_key: string
+          limit_value?: number | null
+          meta?: Json
+          plan_id: string
+          requires_min_months?: number
+        }
+        Update: {
+          created_at?: string
+          feature_key?: string
+          limit_value?: number | null
+          meta?: Json
+          plan_id?: string
+          requires_min_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_features_feature_key_fkey"
+            columns: ["feature_key"]
+            isOneToOne: false
+            referencedRelation: "features"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "plan_features_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_invoices: {
         Row: {
           amount_idr: number
@@ -1279,6 +1360,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "coffee_shops"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_themes: {
+        Row: {
+          created_at: string
+          plan_id: string
+          requires_min_months: number
+          theme_key: string
+        }
+        Insert: {
+          created_at?: string
+          plan_id: string
+          requires_min_months?: number
+          theme_key: string
+        }
+        Update: {
+          created_at?: string
+          plan_id?: string
+          requires_min_months?: number
+          theme_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_themes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_themes_theme_key_fkey"
+            columns: ["theme_key"]
+            isOneToOne: false
+            referencedRelation: "themes"
+            referencedColumns: ["key"]
           },
         ]
       }
@@ -1799,6 +1916,45 @@ export type Database = {
         }
         Relationships: []
       }
+      themes: {
+        Row: {
+          component_id: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          key: string
+          name: string
+          preview_image_url: string | null
+          sort_order: number
+          tier_hint: string | null
+          updated_at: string
+        }
+        Insert: {
+          component_id: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          name: string
+          preview_image_url?: string | null
+          sort_order?: number
+          tier_hint?: string | null
+          updated_at?: string
+        }
+        Update: {
+          component_id?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          name?: string
+          preview_image_url?: string | null
+          sort_order?: number
+          tier_hint?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           active_carts: Json
@@ -1883,6 +2039,14 @@ export type Database = {
     Functions: {
       accept_staff_invitation: { Args: { _token: string }; Returns: Json }
       admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_remove_plan_feature: {
+        Args: { _feature_key: string; _plan_id: string }
+        Returns: undefined
+      }
+      admin_remove_plan_theme: {
+        Args: { _plan_id: string; _theme_key: string }
+        Returns: undefined
+      }
       admin_set_shop_plan: {
         Args: { _expires_at: string; _plan: string; _shop_id: string }
         Returns: undefined
@@ -1893,6 +2057,48 @@ export type Database = {
         Returns: undefined
       }
       admin_unsuspend_shop: { Args: { _shop_id: string }; Returns: undefined }
+      admin_upsert_feature: {
+        Args: {
+          _category: string
+          _description: string
+          _is_active: boolean
+          _key: string
+          _name: string
+          _sort_order: number
+        }
+        Returns: undefined
+      }
+      admin_upsert_plan_feature: {
+        Args: {
+          _feature_key: string
+          _limit_value: number
+          _meta: Json
+          _plan_id: string
+          _requires_min_months: number
+        }
+        Returns: undefined
+      }
+      admin_upsert_plan_theme: {
+        Args: {
+          _plan_id: string
+          _requires_min_months: number
+          _theme_key: string
+        }
+        Returns: undefined
+      }
+      admin_upsert_theme: {
+        Args: {
+          _component_id: string
+          _description: string
+          _is_active: boolean
+          _key: string
+          _name: string
+          _preview_image_url: string
+          _sort_order: number
+          _tier_hint: string
+        }
+        Returns: undefined
+      }
       apply_loyalty_post_order: {
         Args: {
           _earned: number
@@ -1951,6 +2157,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_shop_entitlements: { Args: { _shop_id: string }; Returns: Json }
       has_outlet_access: {
         Args: { _outlet_id: string; _user_id: string }
         Returns: boolean
@@ -2001,6 +2208,10 @@ export type Database = {
       }
       set_custom_domain_verified: {
         Args: { _shop_id: string; _verified: boolean }
+        Returns: undefined
+      }
+      set_shop_theme: {
+        Args: { _shop_id: string; _theme_key: string }
         Returns: undefined
       }
       validate_promo: {
