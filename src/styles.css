@@ -191,16 +191,16 @@ body[data-receipt-paper="80"] .receipt-58 {
   body * { visibility: hidden !important; }
   .print-area, .print-area * { visibility: visible !important; }
   .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-  @page { size: 58mm auto; margin: 0; }
 }
+/* Receipt paper size — @page can't read body attributes, so we expose
+   two named pages and let JS pick which one via the `page:` property
+   on .print-area (set in receipt-printer.ts before window.print()). */
+@page receipt-58 { size: 58mm auto; margin: 0; }
+@page receipt-80 { size: 80mm auto; margin: 0; }
 @media print {
-  body[data-receipt-paper="80"] @page { size: 80mm auto; margin: 0; }
+  .print-area { page: receipt-58; }
+  body[data-receipt-paper="80"] .print-area { page: receipt-80; }
 }
-/* Per-paper @page must be a top-level rule, not nested */
-@media print {
-  body[data-receipt-paper="80"] { }
-}
-@page :where(body[data-receipt-paper="80"]) { size: 80mm auto; margin: 0; }
 
 
 /* PO print sheet — A4/Letter friendly. Shared styles applied to both the
