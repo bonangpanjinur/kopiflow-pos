@@ -1,30 +1,96 @@
-import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useParams, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Coffee, ShoppingBag, User as UserIcon } from "lucide-react";
 import { readCart, cartCount } from "@/lib/customer-cart";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { getShopForStorefront } from "@/server/tenant.functions";
 
 export const Route = createFileRoute("/s/$slug")({
+  loader: async ({ params }) => {
+    const res = await getShopForStorefront({ data: { slug: params.slug } });
+    if (!res.shop) throw notFound();
+    return res;
+  },
+  head: ({ loaderData }) => {
+    if (!loaderData?.shop) return {};
+    const shop = loaderData.shop;
+    const baseUrl = loaderData.baseUrl;
+    const title = `${shop.name} — Pesan Online`;
+    const description =
+      shop.description ?? shop.tagline ?? `Pesan kopi & menu favorit langsung dari ${shop.name}.`;
+    const image = shop.logo_url ?? undefined;
+
+    const ld = {
+      "@context": "https://schema.org",
+      "@type": "CafeOrCoffeeShop",
+      name: shop.name,
+      description,
+      image: image ? [image] : undefined,
+      telephone: shop.phone ?? undefined,
+      address: shop.address
+        ? { "@type": "PostalAddress", streetAddress: shop.address }
+        : undefined,
+      url: baseUrl,
+    };
+
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { name: "theme-color", content: "#0f172a" },
+        { property: "og:type", content: "restaurant.restaurant" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: baseUrl },
+        ...(image ? [{ property: "og:image", content: image }] : []),
+        { name: "twitter:card", content: image ? "summary_large_image" : "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        ...(image ? [{ name: "twitter:image", content: image }] : []),
+        { name: "apple-mobile-web-app-title", content: shop.name },
+      ],
+      links: [
+        { rel: "canonical", href: baseUrl },
+        { rel: "manifest", href: `/api/public/manifest/${shop.slug}` },
+        ...(image ? [{ rel: "icon", href: image }, { rel: "apple-touch-icon", href: image }] : []),
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(ld),
+        },
+      ],
+    };
+  },
   component: ShopLayout,
+  notFoundComponent: ShopNotFound,
 });
+
+function ShopNotFound() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="max-w-sm text-center">
+        <h1 className="text-3xl font-bold">Toko tidak ditemukan</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Etalase yang Anda cari tidak tersedia atau sudah dinonaktifkan oleh pemilik.
+        </p>
+        <Link
+          to="/"
+          className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Kembali ke beranda
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 function ShopLayout() {
   const { slug } = useParams({ from: "/s/$slug" });
-  const [shop, setShop] = useState<{ id: string; name: string; description: string | null; logo_url: string | null; tagline: string | null } | null>(null);
+  const { shop } = Route.useLoaderData();
   const [count, setCount] = useState(0);
   const { user, signOut } = useAuth();
-
-  useEffect(() => {
-    supabase
-      .from("coffee_shops")
-      .select("id,name,description,logo_url,tagline")
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .maybeSingle()
-      .then(({ data }) => setShop(data));
-  }, [slug]);
 
   useEffect(() => {
     const update = () => setCount(cartCount(readCart(slug)));

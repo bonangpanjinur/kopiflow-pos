@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatIDR } from "@/lib/format";
@@ -7,9 +7,60 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
+import { getMenuItemForStorefront } from "@/server/tenant.functions";
 
 export const Route = createFileRoute("/s/$slug/menu/$menuId")({
+  loader: async ({ params }) => {
+    const res = await getMenuItemForStorefront({
+      data: { slug: params.slug, menuId: params.menuId },
+    });
+    if (!res.item || !res.shop) throw notFound();
+    return res;
+  },
+  head: ({ loaderData }) => {
+    if (!loaderData?.item || !loaderData?.shop) return {};
+    const { item, shop, baseUrl } = loaderData;
+    const title = `${item.name} — ${shop.name}`;
+    const description = item.description ?? `Pesan ${item.name} dari ${shop.name}.`;
+    const url = `${baseUrl}/menu/${item.id}`;
+    const image = item.image_url ?? undefined;
+    const ld = {
+      "@context": "https://schema.org",
+      "@type": "MenuItem",
+      name: item.name,
+      description,
+      image: image ? [image] : undefined,
+      offers: {
+        "@type": "Offer",
+        price: Number(item.price),
+        priceCurrency: "IDR",
+        availability: item.is_available
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+      },
+    };
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:type", content: "product" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: url },
+        ...(image ? [{ property: "og:image", content: image }] : []),
+        { name: "twitter:card", content: image ? "summary_large_image" : "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        ...(image ? [{ name: "twitter:image", content: image }] : []),
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [{ type: "application/ld+json", children: JSON.stringify(ld) }],
+    };
+  },
   component: MenuDetail,
+  notFoundComponent: () => (
+    <div className="py-16 text-center text-sm text-muted-foreground">Menu tidak ditemukan</div>
+  ),
 });
 
 function MenuDetail() {

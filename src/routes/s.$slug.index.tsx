@@ -1,17 +1,19 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, getRouteApi } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatIDR } from "@/lib/format";
 import { addToCart } from "@/lib/customer-cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, MapPin, Phone, Clock, MessageCircle } from "lucide-react";
+import { Plus, Search, MapPin, Phone, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { shopStatus } from "@/lib/shop-hours";
 
 export const Route = createFileRoute("/s/$slug/")({
   component: ShopHome,
 });
+
+const parentRoute = getRouteApi("/s/$slug");
 
 type Cat = { id: string; name: string };
 type Item = {
@@ -24,52 +26,35 @@ type Item = {
   is_available: boolean;
 };
 
-type ShopInfo = {
-  id: string;
-  description: string | null;
-  address: string | null;
-  phone: string | null;
-  whatsapp: string | null;
-  open_hours: unknown;
-};
-
 function ShopHome() {
   const { slug } = useParams({ from: "/s/$slug/" });
-  const [shop, setShop] = useState<ShopInfo | null>(null);
+  const { shop } = parentRoute.useLoaderData();
   const [cats, setCats] = useState<Cat[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [activeCat, setActiveCat] = useState<string>("all");
   const [q, setQ] = useState("");
-  const [hideUnavailable, setHideUnavailable] = useState(true);
+  const [hideUnavailable] = useState(true);
 
   useEffect(() => {
+    if (!shop) return;
     (async () => {
-      const { data: shopData } = await supabase
-        .from("coffee_shops")
-        .select("id,description,address,phone,whatsapp,open_hours")
-        .eq("slug", slug)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (!shopData) return;
-      setShop(shopData as ShopInfo);
-
       const [{ data: c }, { data: m }] = await Promise.all([
         supabase
           .from("categories")
           .select("id,name")
-          .eq("shop_id", shopData.id)
+          .eq("shop_id", shop.id)
           .eq("is_active", true)
           .order("sort_order"),
         supabase
           .from("menu_items")
           .select("id,name,description,price,image_url,category_id,is_available")
-          .eq("shop_id", shopData.id)
+          .eq("shop_id", shop.id)
           .order("sort_order"),
       ]);
       setCats(c ?? []);
       setItems((m ?? []) as Item[]);
     })();
-  }, [slug]);
+  }, [shop]);
 
   const status = useMemo(() => (shop ? shopStatus(shop.open_hours) : null), [shop]);
 

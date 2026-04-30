@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
@@ -55,11 +57,22 @@ import { Route as SSlugCartRouteImport } from './routes/s.$slug.cart'
 import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/app.purchase-orders.$poId'
 import { Route as SSlugPayOrderIdRouteImport } from './routes/s.$slug.pay.$orderId'
 import { Route as SSlugMenuMenuIdRouteImport } from './routes/s.$slug.menu.$menuId'
+import { Route as ApiPublicManifestSlugRouteImport } from './routes/api/public/manifest.$slug'
 import { Route as ApiPublicCronPlanMaintenanceRouteImport } from './routes/api/public/cron/plan-maintenance'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -287,6 +300,11 @@ const SSlugMenuMenuIdRoute = SSlugMenuMenuIdRouteImport.update({
   path: '/menu/$menuId',
   getParentRoute: () => SSlugRoute,
 } as any)
+const ApiPublicManifestSlugRoute = ApiPublicManifestSlugRouteImport.update({
+  id: '/api/public/manifest/$slug',
+  path: '/api/public/manifest/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronPlanMaintenanceRoute =
   ApiPublicCronPlanMaintenanceRouteImport.update({
     id: '/api/public/cron/plan-maintenance',
@@ -300,7 +318,9 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
@@ -340,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
+  '/api/public/manifest/$slug': typeof ApiPublicManifestSlugRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
   '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
@@ -347,7 +368,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
@@ -386,6 +409,7 @@ export interface FileRoutesByTo {
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug': typeof SSlugIndexRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
+  '/api/public/manifest/$slug': typeof ApiPublicManifestSlugRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
   '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
@@ -396,7 +420,9 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/plans': typeof AdminPlansRoute
@@ -436,6 +462,7 @@ export interface FileRoutesById {
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
+  '/api/public/manifest/$slug': typeof ApiPublicManifestSlugRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
   '/s/$slug/pay/$orderId': typeof SSlugPayOrderIdRoute
 }
@@ -447,7 +474,9 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/onboarding'
+    | '/robots.txt'
     | '/signup'
+    | '/sitemap.xml'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -487,6 +516,7 @@ export interface FileRouteTypes {
     | '/s/$slug/orders'
     | '/s/$slug/'
     | '/api/public/cron/plan-maintenance'
+    | '/api/public/manifest/$slug'
     | '/s/$slug/menu/$menuId'
     | '/s/$slug/pay/$orderId'
   fileRoutesByTo: FileRoutesByTo
@@ -494,7 +524,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/robots.txt'
     | '/signup'
+    | '/sitemap.xml'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -533,6 +565,7 @@ export interface FileRouteTypes {
     | '/s/$slug/orders'
     | '/s/$slug'
     | '/api/public/cron/plan-maintenance'
+    | '/api/public/manifest/$slug'
     | '/s/$slug/menu/$menuId'
     | '/s/$slug/pay/$orderId'
   id:
@@ -542,7 +575,9 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/onboarding'
+    | '/robots.txt'
     | '/signup'
+    | '/sitemap.xml'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -582,6 +617,7 @@ export interface FileRouteTypes {
     | '/s/$slug/orders'
     | '/s/$slug/'
     | '/api/public/cron/plan-maintenance'
+    | '/api/public/manifest/$slug'
     | '/s/$slug/menu/$menuId'
     | '/s/$slug/pay/$orderId'
   fileRoutesById: FileRoutesById
@@ -592,20 +628,37 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignupRoute: typeof SignupRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   InviteTokenRoute: typeof InviteTokenRoute
   SSlugRoute: typeof SSlugRouteWithChildren
   TrackOrderIdRoute: typeof TrackOrderIdRoute
   ApiPublicCronPlanMaintenanceRoute: typeof ApiPublicCronPlanMaintenanceRoute
+  ApiPublicManifestSlugRoute: typeof ApiPublicManifestSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -923,6 +976,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugMenuMenuIdRouteImport
       parentRoute: typeof SSlugRoute
     }
+    '/api/public/manifest/$slug': {
+      id: '/api/public/manifest/$slug'
+      path: '/api/public/manifest/$slug'
+      fullPath: '/api/public/manifest/$slug'
+      preLoaderRoute: typeof ApiPublicManifestSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/plan-maintenance': {
       id: '/api/public/cron/plan-maintenance'
       path: '/api/public/cron/plan-maintenance'
@@ -1046,11 +1106,14 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SignupRoute: SignupRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   InviteTokenRoute: InviteTokenRoute,
   SSlugRoute: SSlugRouteWithChildren,
   TrackOrderIdRoute: TrackOrderIdRoute,
   ApiPublicCronPlanMaintenanceRoute: ApiPublicCronPlanMaintenanceRoute,
+  ApiPublicManifestSlugRoute: ApiPublicManifestSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
