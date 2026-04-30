@@ -283,9 +283,8 @@ body[data-po-orient="landscape"][data-po-paper="letter"] .po-preview { --po-pape
 
 @media print {
   /* Paper size + margins for the actual printout */
-  @page { size: A4; margin: 0; }
-  body[data-po-paper="letter"] { }
-  body[data-po-paper="letter"] .po-print { }
+  .po-print { page: po-a4; }
+  body[data-po-paper="letter"] .po-print { page: po-letter; }
 
   .po-print {
     display: block;
@@ -334,10 +333,6 @@ body[data-po-orient="landscape"][data-po-paper="letter"] .po-preview { --po-pape
   .po-print .note { margin-top: 14px; font-size: 10pt; white-space: pre-wrap; }
 }
 
-/* Per-paper @page rules — must be at top level, not nested */
-@media print {
-  body[data-po-paper="letter"] { }
-}
 @page po-a4     { size: A4 portrait;     margin: 0; }
 @page po-letter { size: Letter portrait; margin: 0; }
 
