@@ -76,7 +76,7 @@ function AppLayout() {
   const location = useLocation();
   const { isPro } = usePlan();
   const { isAdmin } = useIsSuperAdmin();
-  const [shop, setShop] = useState<{ name: string; logo_url: string | null } | null>(null);
+  const [shop, setShop] = useState<{ name: string; logo_url: string | null; suspended_at?: string | null; suspended_reason?: string | null } | null>(null);
   const [checking, setChecking] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
