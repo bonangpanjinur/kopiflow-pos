@@ -73,9 +73,27 @@ export const approveInvoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ invoiceId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: result, error } = await supabase.rpc("approve_plan_invoice", { _invoice_id: data.invoiceId });
     if (error) throw new Error(error.message);
+    const r = result as { shop_id?: string; plan_expires_at?: string } | null;
+    if (r?.shop_id) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.rpc("log_system_event", {
+        _event_type: "plan_approve",
+        _shop_id: r.shop_id,
+        _payload: { invoice_id: data.invoiceId, actor_id: userId, plan_expires_at: r.plan_expires_at },
+        _notes: "approved by super admin",
+      });
+      await supabaseAdmin.from("owner_notifications").insert({
+        shop_id: r.shop_id,
+        type: "invoice_approved",
+        title: "Pembayaran disetujui",
+        body: "Plan Pro Anda aktif sampai " + new Date(r.plan_expires_at ?? "").toLocaleDateString("id-ID"),
+        link: "/app/billing",
+        severity: "success",
+      });
+    }
     return { result };
   });
 
@@ -85,12 +103,34 @@ export const rejectInvoice = createServerFn({ method: "POST" })
     z.object({ invoiceId: z.string().uuid(), reason: z.string().max(500).optional() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const { data: inv } = await supabase
+      .from("plan_invoices")
+      .select("shop_id")
+      .eq("id", data.invoiceId)
+      .maybeSingle();
     const { error } = await supabase.rpc("reject_plan_invoice", {
       _invoice_id: data.invoiceId,
       _reason: data.reason ?? undefined,
     });
     if (error) throw new Error(error.message);
+    if (inv?.shop_id) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.rpc("log_system_event", {
+        _event_type: "plan_reject",
+        _shop_id: inv.shop_id,
+        _payload: { invoice_id: data.invoiceId, reason: data.reason ?? null, actor_id: userId },
+        _notes: data.reason ?? "rejected",
+      });
+      await supabaseAdmin.from("owner_notifications").insert({
+        shop_id: inv.shop_id,
+        type: "invoice_rejected",
+        title: "Pembayaran ditolak",
+        body: data.reason ?? "Mohon kirim ulang bukti pembayaran yang valid.",
+        link: "/app/billing",
+        severity: "danger",
+      });
+    }
     return { ok: true };
   });
 
