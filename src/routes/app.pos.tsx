@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useCurrentShop } from "@/lib/use-shop";
@@ -35,9 +35,19 @@ import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
-import { Receipt, type PaymentSplit } from "@/components/pos/receipt";
-import { ReceiptPaperPicker } from "@/components/pos/receipt-paper-picker";
+import type { PaymentSplit } from "@/components/pos/receipt";
 import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
+
+// Lazy-loaded — only fetched after a successful checkout, keeps the POS
+// initial bundle smaller and speeds up first paint on shop tablets.
+const Receipt = lazy(() =>
+  import("@/components/pos/receipt").then((m) => ({ default: m.Receipt })),
+);
+const ReceiptPaperPicker = lazy(() =>
+  import("@/components/pos/receipt-paper-picker").then((m) => ({
+    default: m.ReceiptPaperPicker,
+  })),
+);
 import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
 import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
 import { Link } from "@tanstack/react-router";
