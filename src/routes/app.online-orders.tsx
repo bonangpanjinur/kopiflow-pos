@@ -119,14 +119,24 @@ function OnlineOrders() {
         "postgres_changes",
         { event: "*", schema: "public", table: "orders", filter: `shop_id=eq.${shop.id}` },
         (payload) => {
-          load();
-          if (payload.eventType === "INSERT" && (payload.new as { channel: string }).channel === "online") {
-            const orderNo = (payload.new as { order_no: string }).order_no;
-            toast.info(`Pesanan baru #${orderNo}`, {
-              icon: <Bell className="h-4 w-4" />,
-            });
-            notifyOrder("Pesanan baru masuk", `Order #${orderNo} menunggu konfirmasi`);
-          }
+            // Patch state in-place to avoid a full refetch on every change.
+            // Only online-channel orders matter on this screen.
+            if (payload.eventType === "INSERT") {
+              const row = payload.new as Order & { channel: string };
+              if (row.channel !== "online") return;
+              setOrders((prev) => (prev.some((o) => o.id === row.id) ? prev : [row, ...prev]));
+              toast.info(`Pesanan baru #${row.order_no}`, {
+                icon: <Bell className="h-4 w-4" />,
+              });
+              notifyOrder("Pesanan baru masuk", `Order #${row.order_no} menunggu konfirmasi`);
+            } else if (payload.eventType === "UPDATE") {
+              const row = payload.new as Order & { channel: string };
+              if (row.channel !== "online") return;
+              setOrders((prev) => prev.map((o) => (o.id === row.id ? { ...o, ...row } : o)));
+            } else if (payload.eventType === "DELETE") {
+              const row = payload.old as { id: string };
+              setOrders((prev) => prev.filter((o) => o.id !== row.id));
+            }
         }
       )
       .subscribe();
