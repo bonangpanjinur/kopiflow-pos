@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useCurrentShop } from "@/lib/use-shop";
@@ -35,9 +35,19 @@ import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal } from "@/lib/cart";
-import { Receipt, type PaymentSplit } from "@/components/pos/receipt";
-import { ReceiptPaperPicker } from "@/components/pos/receipt-paper-picker";
+import type { PaymentSplit } from "@/components/pos/receipt";
 import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
+
+// Lazy-loaded — only fetched after a successful checkout, keeps the POS
+// initial bundle smaller and speeds up first paint on shop tablets.
+const Receipt = lazy(() =>
+  import("@/components/pos/receipt").then((m) => ({ default: m.Receipt })),
+);
+const ReceiptPaperPicker = lazy(() =>
+  import("@/components/pos/receipt-paper-picker").then((m) => ({
+    default: m.ReceiptPaperPicker,
+  })),
+);
 import { validatePromo, applyPostOrder } from "@/lib/promo-loyalty";
 import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
 import { Link } from "@tanstack/react-router";
@@ -1400,34 +1410,38 @@ function CheckoutDialog({
               </div>
               <div className="mt-4 hidden">
                 <div ref={printRef}>
-                  <Receipt
-                    shopName={shop.name}
-                    outletName={outlet.name}
-                    shopLogoUrl={shop.logo_url}
-                    shopAddress={shop.address}
-                    shopPhone={shop.phone}
-                    orderNo={done.orderNo}
-                    cashierName={cashierName}
-                    date={done.date}
-                    items={cart.items}
-                    subtotal={subtotal}
-                    total={total}
-                    paymentMethod={method}
-                    amountTendered={done.amountTendered}
-                    changeDue={done.changeDue}
-                    promoCode={promo?.code ?? null}
-                    promoDiscount={promoDisc}
-                    manualDiscount={manualDisc}
-                    tipAmount={done.tip}
-                    serviceCharge={done.service}
-                    tax={done.tax}
-                    paymentSplit={done.splitUsed}
-                  />
+                  <Suspense fallback={null}>
+                    <Receipt
+                      shopName={shop.name}
+                      outletName={outlet.name}
+                      shopLogoUrl={shop.logo_url}
+                      shopAddress={shop.address}
+                      shopPhone={shop.phone}
+                      orderNo={done.orderNo}
+                      cashierName={cashierName}
+                      date={done.date}
+                      items={cart.items}
+                      subtotal={subtotal}
+                      total={total}
+                      paymentMethod={method}
+                      amountTendered={done.amountTendered}
+                      changeDue={done.changeDue}
+                      promoCode={promo?.code ?? null}
+                      promoDiscount={promoDisc}
+                      manualDiscount={manualDisc}
+                      tipAmount={done.tip}
+                      serviceCharge={done.service}
+                      tax={done.tax}
+                      paymentSplit={done.splitUsed}
+                    />
+                  </Suspense>
                 </div>
               </div>
             </div>
             <DialogFooter className="flex-wrap gap-2 sm:gap-2">
-              <ReceiptPaperPicker className="mr-auto" />
+              <Suspense fallback={<div className="mr-auto" />}>
+                <ReceiptPaperPicker className="mr-auto" />
+              </Suspense>
               <Button variant="outline" onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" /> Cetak struk
               </Button>
