@@ -1410,34 +1410,38 @@ function CheckoutDialog({
               </div>
               <div className="mt-4 hidden">
                 <div ref={printRef}>
-                  <Receipt
-                    shopName={shop.name}
-                    outletName={outlet.name}
-                    shopLogoUrl={shop.logo_url}
-                    shopAddress={shop.address}
-                    shopPhone={shop.phone}
-                    orderNo={done.orderNo}
-                    cashierName={cashierName}
-                    date={done.date}
-                    items={cart.items}
-                    subtotal={subtotal}
-                    total={total}
-                    paymentMethod={method}
-                    amountTendered={done.amountTendered}
-                    changeDue={done.changeDue}
-                    promoCode={promo?.code ?? null}
-                    promoDiscount={promoDisc}
-                    manualDiscount={manualDisc}
-                    tipAmount={done.tip}
-                    serviceCharge={done.service}
-                    tax={done.tax}
-                    paymentSplit={done.splitUsed}
-                  />
+                  <Suspense fallback={null}>
+                    <Receipt
+                      shopName={shop.name}
+                      outletName={outlet.name}
+                      shopLogoUrl={shop.logo_url}
+                      shopAddress={shop.address}
+                      shopPhone={shop.phone}
+                      orderNo={done.orderNo}
+                      cashierName={cashierName}
+                      date={done.date}
+                      items={cart.items}
+                      subtotal={subtotal}
+                      total={total}
+                      paymentMethod={method}
+                      amountTendered={done.amountTendered}
+                      changeDue={done.changeDue}
+                      promoCode={promo?.code ?? null}
+                      promoDiscount={promoDisc}
+                      manualDiscount={manualDisc}
+                      tipAmount={done.tip}
+                      serviceCharge={done.service}
+                      tax={done.tax}
+                      paymentSplit={done.splitUsed}
+                    />
+                  </Suspense>
                 </div>
               </div>
             </div>
             <DialogFooter className="flex-wrap gap-2 sm:gap-2">
-              <ReceiptPaperPicker className="mr-auto" />
+              <Suspense fallback={<div className="mr-auto" />}>
+                <ReceiptPaperPicker className="mr-auto" />
+              </Suspense>
               <Button variant="outline" onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" /> Cetak struk
               </Button>
