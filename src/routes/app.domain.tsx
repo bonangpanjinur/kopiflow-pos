@@ -152,12 +152,23 @@ function DomainPage() {
                     </span>
                   )}
                 </div>
+                {verified && (
+                  <a href={`https://${state.custom_domain}`} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-primary underline">
+                    Buka https://{state.custom_domain}
+                  </a>
+                )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={onVerify} disabled={busy}>Cek Verifikasi</Button>
+                <Button variant="outline" onClick={onVerify} disabled={busy}>Cek DNS & SSL</Button>
                 <Button variant="outline" size="icon" onClick={onRemove} disabled={busy}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
+            {verified && lastCheck && (
+              <div className="mt-3 rounded border border-border p-3 text-xs space-y-1">
+                <div>CNAME mengarah ke proxy: <b className={lastCheck.cnameOk ? "text-green-700" : "text-amber-700"}>{lastCheck.cnameOk ? "Ya" : "Belum"}</b></div>
+                <div>SSL/HTTPS aktif: <b className={lastCheck.sslOk ? "text-green-700" : "text-amber-700"}>{lastCheck.sslOk ? "Ya" : "Belum"}</b>{lastCheck.sslError && <span className="ml-1 text-muted-foreground">({lastCheck.sslError})</span>}</div>
+              </div>
+            )}
           </Card>
 
           {!verified && (
