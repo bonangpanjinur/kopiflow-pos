@@ -191,16 +191,16 @@ body[data-receipt-paper="80"] .receipt-58 {
   body * { visibility: hidden !important; }
   .print-area, .print-area * { visibility: visible !important; }
   .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-  @page { size: 58mm auto; margin: 0; }
 }
+/* Receipt paper size — @page can't read body attributes, so we expose
+   two named pages and let JS pick which one via the `page:` property
+   on .print-area (set in receipt-printer.ts before window.print()). */
+@page receipt-58 { size: 58mm auto; margin: 0; }
+@page receipt-80 { size: 80mm auto; margin: 0; }
 @media print {
-  body[data-receipt-paper="80"] @page { size: 80mm auto; margin: 0; }
+  .print-area { page: receipt-58; }
+  body[data-receipt-paper="80"] .print-area { page: receipt-80; }
 }
-/* Per-paper @page must be a top-level rule, not nested */
-@media print {
-  body[data-receipt-paper="80"] { }
-}
-@page :where(body[data-receipt-paper="80"]) { size: 80mm auto; margin: 0; }
 
 
 /* PO print sheet — A4/Letter friendly. Shared styles applied to both the
@@ -283,9 +283,8 @@ body[data-po-orient="landscape"][data-po-paper="letter"] .po-preview { --po-pape
 
 @media print {
   /* Paper size + margins for the actual printout */
-  @page { size: A4; margin: 0; }
-  body[data-po-paper="letter"] { }
-  body[data-po-paper="letter"] .po-print { }
+  .po-print { page: po-a4; }
+  body[data-po-paper="letter"] .po-print { page: po-letter; }
 
   .po-print {
     display: block;
@@ -334,10 +333,6 @@ body[data-po-orient="landscape"][data-po-paper="letter"] .po-preview { --po-pape
   .po-print .note { margin-top: 14px; font-size: 10pt; white-space: pre-wrap; }
 }
 
-/* Per-paper @page rules — must be at top level, not nested */
-@media print {
-  body[data-po-paper="letter"] { }
-}
 @page po-a4     { size: A4 portrait;     margin: 0; }
 @page po-letter { size: Letter portrait; margin: 0; }
 
