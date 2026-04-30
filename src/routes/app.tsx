@@ -67,6 +67,7 @@ const NAV = [
   { to: "/app/loyalty", label: "Loyalty", icon: Award },
   { to: "/app/billing", label: "Plan & Tagihan", icon: CreditCard },
   { to: "/app/domain", label: "Domain Kustom", icon: Globe, proOnly: true },
+  { to: "/app/appearance", label: "Tampilan Toko", icon: Palette },
   { to: "/app/settings", label: "Pengaturan", icon: Settings },
 ] as const;
 
