@@ -135,6 +135,24 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     const cnames = await dohResolve(shop.custom_domain, "CNAME");
     const cnameOk = cnames.some((c) => c.toLowerCase() === cnameTarget.toLowerCase());
 
+    // SSL / HTTPS reachability probe (best effort).
+    // If CNAME is in place, hit https://<domain>/ and see if cert + handshake work.
+    let sslOk = false;
+    let sslError: string | null = null;
+    if (cnameOk) {
+      try {
+        const probe = await fetch(`https://${shop.custom_domain}/`, {
+          method: "HEAD",
+          redirect: "manual",
+          signal: AbortSignal.timeout(5000),
+        });
+        // Any HTTP response (even 404/3xx) means TLS handshake succeeded
+        sslOk = probe.status > 0;
+      } catch (e) {
+        sslError = (e as Error).message ?? "ssl_probe_failed";
+      }
+    }
+
     // Log attempt (best effort, ignore errors)
     await supabase.from("domain_verify_attempts").insert({
       shop_id: shop.id,
@@ -163,6 +181,8 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     return {
       verified: txtFound,
       cnameOk,
+      sslOk,
+      sslError,
       expectedRecord: recordName,
       expectedValue,
       cnameTarget,
