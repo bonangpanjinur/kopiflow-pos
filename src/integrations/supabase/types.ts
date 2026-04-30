@@ -390,6 +390,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_runs: {
+        Row: {
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          job_name: string
+          result: Json
+          started_at: string
+          status: string
+        }
+        Insert: {
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_name: string
+          result?: Json
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_name?: string
+          result?: Json
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       customer_addresses: {
         Row: {
           address_line: string
@@ -1135,6 +1168,48 @@ export type Database = {
           },
         ]
       }
+      owner_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string | null
+          dismissed_at: string | null
+          id: string
+          link: string | null
+          read_at: string | null
+          severity: string
+          shop_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          dismissed_at?: string | null
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          severity?: string
+          shop_id: string
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          dismissed_at?: string | null
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          severity?: string
+          shop_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       plan_invoices: {
         Row: {
           amount_idr: number
@@ -1688,6 +1763,36 @@ export type Database = {
         }
         Relationships: []
       }
+      system_audit: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          notes: string | null
+          payload: Json
+          shop_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          notes?: string | null
+          payload?: Json
+          shop_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          payload?: Json
+          shop_id?: string | null
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           active_carts: Json
@@ -1797,6 +1902,7 @@ export type Database = {
         }[]
       }
       expire_stale_pending_invoices: { Args: never; Returns: number }
+      generate_owner_reminders: { Args: never; Returns: Json }
       get_billing_settings_public: {
         Args: never
         Returns: {
@@ -1848,6 +1954,15 @@ export type Database = {
         Returns: boolean
       }
       increment_promo_usage: { Args: { _promo_id: string }; Returns: undefined }
+      log_system_event: {
+        Args: {
+          _event_type: string
+          _notes?: string
+          _payload?: Json
+          _shop_id: string
+        }
+        Returns: string
+      }
       next_order_no: { Args: { _outlet_id: string }; Returns: string }
       open_shift: {
         Args: { _opening_cash: number; _outlet_id: string }
