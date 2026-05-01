@@ -16,9 +16,7 @@ async function assertSuperAdmin(userId: string) {
  * Trigger the cron maintenance task on demand from the super admin UI.
  * Calls the public cron endpoint with the configured secret.
  */
-export const runPlanMaintenance = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+export const runPlanMaintenance = async ({ context }: { context: any }) => {
     await assertSuperAdmin(context.userId);
     const { data: settings } = await supabaseAdmin
       .from("billing_settings")
@@ -49,4 +47,4 @@ export const runPlanMaintenance = createServerFn({ method: "POST" })
     }
     if (!res.ok) throw new Error(`cron_failed_${res.status}: ${text.slice(0, 200)}`);
     return body;
-  });
+};
