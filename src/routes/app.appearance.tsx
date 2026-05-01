@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, Lock, Palette } from "lucide-react";
 import { toast } from "sonner";
+import { setShopTheme } from "@/server/entitlements.functions";
 import { useState } from "react";
 
 export const Route = createFileRoute("/app/appearance")({ component: AppearancePage });
@@ -15,7 +16,7 @@ function AppearancePage() {
   const apply = async (key: string) => {
     setBusy(key);
     try {
-      const { setShopTheme } = await import("@/server/entitlements.functions");
+
       await setShopTheme({ data: { themeKey: key } });
       toast.success("Tema diaktifkan");
       await reload();
