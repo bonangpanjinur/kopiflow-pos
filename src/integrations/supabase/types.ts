@@ -2110,6 +2110,10 @@ export type Database = {
         Returns: undefined
       }
       approve_plan_invoice: { Args: { _invoice_id: string }; Returns: Json }
+      assign_courier_atomic: {
+        Args: { _courier_id: string; _order_id: string }
+        Returns: Json
+      }
       auto_unverify_domain: {
         Args: { _reason: string; _shop_id: string }
         Returns: undefined
@@ -2178,6 +2182,21 @@ export type Database = {
         Returns: boolean
       }
       increment_promo_usage: { Args: { _promo_id: string }; Returns: undefined }
+      list_available_delivery_orders: {
+        Args: { _courier_id: string }
+        Returns: {
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          delivery_fee: number
+          id: string
+          note: string
+          order_no: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+        }[]
+      }
       log_system_event: {
         Args: {
           _event_type: string
