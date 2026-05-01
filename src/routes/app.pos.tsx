@@ -665,8 +665,13 @@ function POSPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium">{line.name}</div>
+                          {line.options && line.options.length > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              {line.options.map((o) => o.option_name).join(", ")}
+                            </div>
+                          )}
                           <div className="text-xs text-muted-foreground">
-                            {formatIDR(line.unit_price)}
+                            {formatIDR(lineUnitPrice(line))}
                           </div>
                           {line.note && (
                             <div className="mt-1 text-xs italic text-muted-foreground">
