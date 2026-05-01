@@ -2,10 +2,14 @@ import { createFileRoute, Link, useParams, useNavigate, notFound } from "@tansta
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatIDR } from "@/lib/format";
-import { addToCart } from "@/lib/customer-cart";
+import { addToCart, itemUnitPrice } from "@/lib/customer-cart";
+import type { SelectedOption } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Minus } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Plus, Minus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getMenuItemForStorefront } from "@/server/tenant.functions";
 
@@ -63,6 +67,14 @@ export const Route = createFileRoute("/s/$slug/menu/$menuId")({
   ),
 });
 
+type OptionGroup = {
+  id: string;
+  name: string;
+  is_required: boolean;
+  max_select: number;
+  options: { id: string; name: string; price_adjustment: number }[];
+};
+
 function MenuDetail() {
   const { slug, menuId } = useParams({ from: "/s/$slug/menu/$menuId" });
   const navigate = useNavigate();
@@ -72,21 +84,107 @@ function MenuDetail() {
     description: string | null;
     price: number;
     image_url: string | null;
+    shop_id: string;
   } | null>(null);
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [optionGroups, setOptionGroups] = useState<OptionGroup[]>([]);
+  const [selections, setSelections] = useState<Record<string, string[]>>({});
+  const [loadingOptions, setLoadingOptions] = useState(false);
 
   useEffect(() => {
     supabase
       .from("menu_items")
-      .select("id,name,description,price,image_url")
+      .select("id,name,description,price,image_url,shop_id")
       .eq("id", menuId)
       .eq("is_available", true)
       .maybeSingle()
-      .then(({ data }) => setItem(data as typeof item));
+      .then(({ data }) => {
+        setItem(data as typeof item);
+        if (data) loadOptions(data.id, data.shop_id);
+      });
   }, [menuId]);
 
+  async function loadOptions(itemId: string, shopId: string) {
+    setLoadingOptions(true);
+    const { data: grps } = await supabase
+      .from("menu_item_option_groups")
+      .select("id, name, is_required, max_select, sort_order")
+      .eq("menu_item_id", itemId)
+      .eq("shop_id", shopId)
+      .order("sort_order", { ascending: true });
+
+    if (!grps || grps.length === 0) {
+      setOptionGroups([]);
+      setLoadingOptions(false);
+      return;
+    }
+
+    const groupIds = grps.map((g) => g.id);
+    const { data: opts } = await supabase
+      .from("menu_item_options")
+      .select("id, group_id, name, price_adjustment, sort_order")
+      .in("group_id", groupIds)
+      .eq("is_available", true)
+      .order("sort_order", { ascending: true });
+
+    const optMap = new Map<string, { id: string; name: string; price_adjustment: number }[]>();
+    for (const o of opts ?? []) {
+      const list = optMap.get(o.group_id) ?? [];
+      list.push({ id: o.id, name: o.name, price_adjustment: Number(o.price_adjustment) });
+      optMap.set(o.group_id, list);
+    }
+
+    const full: OptionGroup[] = grps.map((g) => ({
+      id: g.id,
+      name: g.name,
+      is_required: g.is_required,
+      max_select: g.max_select,
+      options: optMap.get(g.id) ?? [],
+    }));
+
+    setOptionGroups(full);
+    const init: Record<string, string[]> = {};
+    full.forEach((g) => { init[g.id] = []; });
+    setSelections(init);
+    setLoadingOptions(false);
+  }
+
+  function toggleOption(groupId: string, optionId: string, maxSelect: number) {
+    setSelections((prev) => {
+      const curr = prev[groupId] ?? [];
+      if (curr.includes(optionId)) {
+        return { ...prev, [groupId]: curr.filter((id) => id !== optionId) };
+      }
+      if (maxSelect === 1) return { ...prev, [groupId]: [optionId] };
+      if (curr.length >= maxSelect) return prev;
+      return { ...prev, [groupId]: [...curr, optionId] };
+    });
+  }
+
   if (!item) return <p className="text-muted-foreground text-sm">Memuat…</p>;
+
+  const selectedOptions: SelectedOption[] = [];
+  for (const g of optionGroups) {
+    for (const optId of selections[g.id] ?? []) {
+      const opt = g.options.find((o) => o.id === optId);
+      if (opt) {
+        selectedOptions.push({
+          group_id: g.id,
+          group_name: g.name,
+          option_id: opt.id,
+          option_name: opt.name,
+          price_adjustment: opt.price_adjustment,
+        });
+      }
+    }
+  }
+
+  const optAdj = selectedOptions.reduce((s, o) => s + o.price_adjustment, 0);
+  const effectivePrice = Number(item.price) + optAdj;
+  const allValid = optionGroups.every(
+    (g) => !g.is_required || (selections[g.id] ?? []).length > 0,
+  );
 
   return (
     <div className="space-y-4 pb-24">
@@ -110,11 +208,74 @@ function MenuDetail() {
 
       <div>
         <h1 className="text-xl font-semibold">{item.name}</h1>
-        <p className="mt-1 text-lg font-semibold text-primary">{formatIDR(Number(item.price))}</p>
+        <p className="mt-1 text-lg font-semibold text-primary">{formatIDR(effectivePrice)}</p>
         {item.description && (
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
         )}
       </div>
+
+      {/* Option groups */}
+      {loadingOptions ? (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : optionGroups.length > 0 && (
+        <div className="space-y-4">
+          {optionGroups.map((g) => (
+            <div key={g.id} className="rounded-lg border border-border p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-semibold">{g.name}</span>
+                {g.is_required && (
+                  <span className="text-[10px] font-medium text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Wajib</span>
+                )}
+              </div>
+              {g.max_select === 1 ? (
+                <RadioGroup
+                  value={selections[g.id]?.[0] ?? ""}
+                  onValueChange={(v) => setSelections((prev) => ({ ...prev, [g.id]: [v] }))}
+                >
+                  {g.options.map((opt) => (
+                    <div key={opt.id} className="flex items-center justify-between py-1.5">
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value={opt.id} id={`sf-${opt.id}`} />
+                        <Label htmlFor={`sf-${opt.id}`} className="text-sm cursor-pointer">{opt.name}</Label>
+                      </div>
+                      {opt.price_adjustment !== 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {opt.price_adjustment > 0 ? "+" : ""}{formatIDR(opt.price_adjustment)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </RadioGroup>
+              ) : (
+                <div className="space-y-1">
+                  {g.options.map((opt) => {
+                    const checked = (selections[g.id] ?? []).includes(opt.id);
+                    return (
+                      <div key={opt.id} className="flex items-center justify-between py-1.5">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`sf-${opt.id}`}
+                            checked={checked}
+                            onCheckedChange={() => toggleOption(g.id, opt.id, g.max_select)}
+                          />
+                          <Label htmlFor={`sf-${opt.id}`} className="text-sm cursor-pointer">{opt.name}</Label>
+                        </div>
+                        {opt.price_adjustment !== 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {opt.price_adjustment > 0 ? "+" : ""}{formatIDR(opt.price_adjustment)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div>
         <label className="text-xs font-medium text-muted-foreground">Catatan</label>
@@ -139,6 +300,7 @@ function MenuDetail() {
           </div>
           <Button
             className="flex-1"
+            disabled={!allValid}
             onClick={() => {
               addToCart(
                 slug,
@@ -148,6 +310,7 @@ function MenuDetail() {
                   price: Number(item.price),
                   image_url: item.image_url,
                   note: note || undefined,
+                  options: selectedOptions.length > 0 ? selectedOptions : undefined,
                 },
                 qty,
               );
@@ -155,7 +318,7 @@ function MenuDetail() {
               navigate({ to: "/s/$slug", params: { slug } });
             }}
           >
-            Tambah {formatIDR(Number(item.price) * qty)}
+            Tambah {formatIDR(effectivePrice * qty)}
           </Button>
         </div>
       </div>
