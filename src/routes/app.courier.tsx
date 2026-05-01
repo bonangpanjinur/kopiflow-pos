@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Bike, Loader2, MapPin, Phone } from "lucide-react";
+import { Bike, Loader2, MapPin, Phone, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/courier")({
@@ -33,8 +33,10 @@ const STATUS_LABEL: Record<string, string> = {
 function CourierView() {
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [available, setAvailable] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [courierIds, setCourierIds] = useState<string[]>([]);
+  const [claiming, setClaiming] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -50,6 +52,7 @@ function CourierView() {
       setCourierIds(ids);
       if (ids.length === 0) {
         setOrders([]);
+        setAvailable([]);
         setLoading(false);
         return;
       }
@@ -64,6 +67,14 @@ function CourierView() {
         .limit(50);
       if (!cancelled) {
         setOrders((data ?? []) as Order[]);
+      }
+
+      // Available orders for the first courier ID (usually a courier has 1 row)
+      const { data: avail } = await supabase.rpc("list_available_delivery_orders", {
+        _courier_id: ids[0],
+      });
+      if (!cancelled) {
+        setAvailable((avail ?? []) as Order[]);
         setLoading(false);
       }
     };
@@ -87,6 +98,25 @@ function CourierView() {
       .eq("id", id);
     if (error) toast.error(error.message);
     else toast.success("Status diperbarui");
+  };
+
+  const claim = async (orderId: string) => {
+    if (courierIds.length === 0) return;
+    setClaiming(orderId);
+    try {
+      const { error } = await supabase.rpc("assign_courier_atomic", {
+        _order_id: orderId,
+        _courier_id: courierIds[0],
+      });
+      if (error) throw error;
+      toast.success("Pesanan berhasil diklaim");
+    } catch (e) {
+      const msg = (e as { message?: string })?.message ?? "Gagal klaim";
+      if (msg.includes("already_claimed")) toast.error("Pesanan sudah diambil kurir lain");
+      else toast.error(msg);
+    } finally {
+      setClaiming(null);
+    }
   };
 
   if (authLoading || loading) {
@@ -209,6 +239,34 @@ function CourierView() {
                     Sudah diantar
                   </Button>
                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h2 className="mb-2 mt-2 text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+        <PackageCheck className="h-3.5 w-3.5" /> Tersedia untuk diklaim ({available.length})
+      </h2>
+      {available.length === 0 ? (
+        <p className="mb-6 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+          Tidak ada pesanan delivery menunggu kurir.
+        </p>
+      ) : (
+        <div className="mb-6 space-y-2">
+          {available.map((o) => (
+            <div key={o.id} className="rounded-lg border border-border bg-card p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm">#{o.order_no}</p>
+                  {o.delivery_address && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{o.delivery_address}</p>
+                  )}
+                  <p className="text-xs mt-0.5">Ongkir: <span className="font-semibold">{formatIDR(Number(o.delivery_fee || 0))}</span></p>
+                </div>
+                <Button size="sm" onClick={() => claim(o.id)} disabled={claiming === o.id}>
+                  {claiming === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Klaim"}
+                </Button>
               </div>
             </div>
           ))}
