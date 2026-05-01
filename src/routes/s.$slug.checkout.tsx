@@ -619,10 +619,17 @@ function CheckoutPage() {
         <div className="space-y-1 text-sm">
           {items.map((i) => (
             <div key={i.menu_item_id} className="flex justify-between">
-              <span className="text-muted-foreground">
-                {i.qty}× {i.name}
-              </span>
-              <span>{formatIDR(i.price * i.qty)}</span>
+              <div>
+                <span className="text-muted-foreground">
+                  {i.qty}× {i.name}
+                </span>
+                {i.options && i.options.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground ml-1">
+                    ({i.options.map((o) => o.option_name).join(", ")})
+                  </span>
+                )}
+              </div>
+              <span>{formatIDR(itemUnitPrice(i) * i.qty)}</span>
             </div>
           ))}
         </div>
