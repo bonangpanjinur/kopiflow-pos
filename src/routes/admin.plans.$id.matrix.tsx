@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { updateMinMonths, undoMinMonths, fetchMatrixAuditLogs } from "@/server/plan-matrix.functions.server";
+import { updateMinMonths, undoMinMonths, fetchMatrixAuditLogs } from "@/server/plan-matrix.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { downloadCSV } from "@/lib/export";
 

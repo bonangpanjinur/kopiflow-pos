@@ -35,7 +35,7 @@ function AdminInvoices() {
   const onApprove = async (id: string) => {
     setBusy(id);
     try {
-      const { approveInvoice } = await import("@/server/billing.functions.server");
+      const { approveInvoice } = await import("@/server/billing.functions");
       await approveInvoice({ data: { invoiceId: id } });
       toast.success("Tagihan disetujui & paket diaktifkan");
       await reload();
@@ -47,7 +47,7 @@ function AdminInvoices() {
     const reason = prompt("Alasan penolakan?") ?? undefined;
     setBusy(id);
     try {
-      const { rejectInvoice } = await import("@/server/billing.functions.server");
+      const { rejectInvoice } = await import("@/server/billing.functions");
       await rejectInvoice({ data: { invoiceId: id, reason } });
       toast.success("Tagihan ditolak");
       await reload();
@@ -57,7 +57,7 @@ function AdminInvoices() {
   };
   const onViewProof = async (id: string) => {
     try {
-      const { getProofSignedUrl } = await import("@/server/billing.functions.server");
+      const { getProofSignedUrl } = await import("@/server/billing.functions");
       const { url } = await getProofSignedUrl({ data: { invoiceId: id } });
       if (url) window.open(url, "_blank"); else toast.error("Bukti tidak tersedia");
     } catch (e) { toast.error((e as Error).message); }

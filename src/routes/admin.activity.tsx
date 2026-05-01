@@ -53,7 +53,7 @@ function AdminActivity() {
   const load = async () => {
     setLoading(true);
     try {
-      const { listCronRuns, listSystemAudit } = await import("@/server/observability.functions.server");
+      const { listCronRuns, listSystemAudit } = await import("@/server/observability.functions");
       const [r, a] = await Promise.all([
         listCronRuns({ data: { limit: 30 } }),
         listSystemAudit({
