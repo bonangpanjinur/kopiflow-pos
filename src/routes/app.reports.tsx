@@ -24,7 +24,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Loader2, Download, TrendingUp, Receipt, Coins, ShoppingBag } from "lucide-react";
+import { Loader2, Download, TrendingUp, Receipt, Coins, ShoppingBag, FileSpreadsheet } from "lucide-react";
+import { downloadXLSX } from "@/lib/export";
 import { formatIDR } from "@/lib/format";
 
 export const Route = createFileRoute("/app/reports")({
@@ -220,26 +221,36 @@ function ReportsPage() {
     return [...map.values()].sort((a, b) => b.total - a.total);
   }, [orders, cashierNames]);
 
+  function getExportRows() {
+    return orders.map((o) => ({
+      Tanggal: o.business_date,
+      Jam: new Date(o.created_at).toLocaleTimeString("id-ID"),
+      "Order ID": o.id,
+      Total: o.total,
+      Bayar: o.payment_method.toUpperCase(),
+      Kasir: cashierNames.get(o.cashier_id) ?? "",
+    }));
+  }
+
   function exportCSV() {
-    const rows = [
-      ["Tanggal", "Jam", "Order ID", "Total", "Bayar", "Kasir"],
-      ...orders.map((o) => [
-        o.business_date,
-        new Date(o.created_at).toLocaleTimeString("id-ID"),
-        o.id,
-        String(o.total),
-        o.payment_method,
-        cashierNames.get(o.cashier_id) ?? "",
-      ]),
-    ];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const rows = getExportRows();
+    const headers = ["Tanggal", "Jam", "Order ID", "Total", "Bayar", "Kasir"];
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) => [r.Tanggal, r.Jam, r.["Order ID"], r.Total, r.Bayar, r.Kasir].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `kopihub-orders-${range}-${fmtDateISO(new Date())}.csv`;
+    a.download = `kopiflow-orders-${range}-${fmtDateISO(new Date())}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function exportXLSX() {
+    const rows = getExportRows();
+    downloadXLSX(`kopiflow-orders-${range}-${fmtDateISO(new Date())}.xlsx`, rows);
   }
 
   if (shopLoading) {
@@ -273,7 +284,10 @@ function ReportsPage() {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={exportCSV} disabled={orders.length === 0}>
-            <Download className="mr-1.5 h-4 w-4" /> Export CSV
+            <Download className="mr-1.5 h-4 w-4" /> CSV
+          </Button>
+          <Button variant="outline" onClick={exportXLSX} disabled={orders.length === 0}>
+            <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Excel
           </Button>
         </div>
       </div>

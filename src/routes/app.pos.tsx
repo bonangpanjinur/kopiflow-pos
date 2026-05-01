@@ -1007,7 +1007,9 @@ function CheckoutDialog({
     tax_percent: number;
     service_charge_percent: number;
     tax_inclusive: boolean;
-  }>({ tax_percent: 0, service_charge_percent: 0, tax_inclusive: false });
+    receipt_header: string | null;
+    receipt_footer: string | null;
+  }>({ tax_percent: 0, service_charge_percent: 0, tax_inclusive: false, receipt_header: null, receipt_footer: null });
   const [done, setDone] = useState<{
     orderNo: string;
     date: Date;
@@ -1025,12 +1027,12 @@ function CheckoutDialog({
     if (open) applyReceiptPaper();
   }, [open]);
 
-  // Load shop tax/service config when dialog opens
+  // Load shop tax/service and receipt config when dialog opens
   useEffect(() => {
     if (!open) return;
     supabase
       .from("coffee_shops")
-      .select("tax_percent, service_charge_percent, tax_inclusive")
+      .select("tax_percent, service_charge_percent, tax_inclusive, receipt_header, receipt_footer")
       .eq("id", shop.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -1039,6 +1041,8 @@ function CheckoutDialog({
             tax_percent: Number(data.tax_percent ?? 0),
             service_charge_percent: Number(data.service_charge_percent ?? 0),
             tax_inclusive: Boolean(data.tax_inclusive),
+            receipt_header: data.receipt_header,
+            receipt_footer: data.receipt_footer,
           });
         }
       });
@@ -1468,6 +1472,8 @@ function CheckoutDialog({
                       serviceCharge={done.service}
                       tax={done.tax}
                       paymentSplit={done.splitUsed}
+                      receiptHeader={taxCfg.receipt_header}
+                      receiptFooter={taxCfg.receipt_footer}
                     />
                   </Suspense>
                 </div>
