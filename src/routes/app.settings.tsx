@@ -215,6 +215,8 @@ function SettingsPage() {
         tax_percent: form.tax_percent,
         service_charge_percent: form.service_charge_percent,
         tax_inclusive: form.tax_inclusive,
+        receipt_header: form.receipt_header,
+        receipt_footer: form.receipt_footer,
       })
       .eq("id", shop.id);
     setSaving(false);
