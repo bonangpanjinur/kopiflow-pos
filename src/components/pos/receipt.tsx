@@ -69,6 +69,8 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     shopLogoUrl = null,
     shopAddress = null,
     shopPhone = null,
+    receiptHeader = null,
+    receiptFooter = null,
   },
   ref,
 ) {
