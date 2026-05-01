@@ -216,7 +216,7 @@ function CustomerProfilePage() {
                     <Badge variant={o.status === "completed" || o.status === "delivered" ? "default" : "secondary"}>
                       {o.status}
                     </Badge>
-                    <span className="font-medium">{formatRupiah(o.total)}</span>
+                    <span className="font-medium">{formatIDR(o.total)}</span>
                   </div>
                 </div>
               ))}

@@ -173,7 +173,7 @@ function CustomersPage() {
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <TrendingUp className="h-4 w-4" /> Total Revenue
             </div>
-            <p className="text-2xl font-bold mt-1">{formatRupiah(stats.totalSpent)}</p>
+            <p className="text-2xl font-bold mt-1">{formatIDR(stats.totalSpent)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -250,7 +250,7 @@ function CustomersPage() {
                       <TableCell className="font-medium">{c.display_name || "-"}</TableCell>
                       <TableCell>{c.phone || "-"}</TableCell>
                       <TableCell className="text-right">{c.total_orders}</TableCell>
-                      <TableCell className="text-right">{formatRupiah(c.total_spent)}</TableCell>
+                      <TableCell className="text-right">{formatIDR(c.total_spent)}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{c.segment ?? "new"}</Badge>
                       </TableCell>
