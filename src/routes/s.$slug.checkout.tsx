@@ -323,9 +323,9 @@ function CheckoutPage() {
         order_id: order.id,
         menu_item_id: i.menu_item_id,
         name: i.name,
-        unit_price: i.price,
+        unit_price: itemUnitPrice(i),
         quantity: i.qty,
-        subtotal: i.price * i.qty,
+        subtotal: itemUnitPrice(i) * i.qty,
         note: i.note ?? null,
       }));
       const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
