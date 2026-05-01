@@ -237,7 +237,7 @@ function ReportsPage() {
     const headers = ["Tanggal", "Jam", "Order ID", "Total", "Bayar", "Kasir"];
     const csv = [
       headers.join(","),
-      ...rows.map((r) => [r.Tanggal, r.Jam, r.["Order ID"], r.Total, r.Bayar, r.Kasir].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      ...rows.map((r) => [r.Tanggal, r.Jam, r["Order ID"], r.Total, r.Bayar, r.Kasir].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
