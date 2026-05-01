@@ -585,7 +585,7 @@ function POSPage() {
                   {filtered.map((it) => (
                     <button
                       key={it.id}
-                      onClick={() => addToCart(it)}
+                      onClick={() => handleMenuClick(it)}
                       className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
                     >
                       <div className="aspect-square w-full bg-muted">
