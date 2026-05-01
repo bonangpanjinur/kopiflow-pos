@@ -8,6 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, ShieldAlert, ShieldCheck, KeyRound, Crown, Loader2 } from "lucide-react";
+import {
+  getShopDetail,
+  setShopPlanManual,
+  suspendShop,
+  unsuspendShop,
+  sendOwnerPasswordReset,
+} from "@/server/admin-shops.functions";
 
 export const Route = createFileRoute("/admin/shops/$id")({
   component: AdminShopDetail,
@@ -49,7 +56,6 @@ function AdminShopDetail() {
   const refresh = async () => {
     setLoading(true);
     try {
-      const { getShopDetail } = await import("@/server/admin-shops.functions");
       const res = (await getShopDetail({ data: { shopId: id } })) as Detail;
       setD(res);
       setPlanMode(res.shop.plan === "pro" ? "pro" : "free");
@@ -69,7 +75,6 @@ function AdminShopDetail() {
   const applyPlan = async () => {
     setBusy(true);
     try {
-      const { setShopPlanManual } = await import("@/server/admin-shops.functions");
       const expiresIso =
         planMode === "pro" && planExpires
           ? new Date(planExpires + "T23:59:59").toISOString()
@@ -91,7 +96,6 @@ function AdminShopDetail() {
     }
     setBusy(true);
     try {
-      const { suspendShop } = await import("@/server/admin-shops.functions");
       await suspendShop({ data: { shopId: id, reason: suspendReason.trim() } });
       toast.success("Toko dinonaktifkan");
       setSuspendReason("");
@@ -106,7 +110,6 @@ function AdminShopDetail() {
   const doUnsuspend = async () => {
     setBusy(true);
     try {
-      const { unsuspendShop } = await import("@/server/admin-shops.functions");
       await unsuspendShop({ data: { shopId: id } });
       toast.success("Toko diaktifkan kembali");
       await refresh();
@@ -120,7 +123,6 @@ function AdminShopDetail() {
   const doReset = async () => {
     setBusy(true);
     try {
-      const { sendOwnerPasswordReset } = await import("@/server/admin-shops.functions");
       const res = (await sendOwnerPasswordReset({ data: { shopId: id } })) as { email: string };
       toast.success(`Link reset dikirim ke ${res.email}`);
     } catch (e) {
