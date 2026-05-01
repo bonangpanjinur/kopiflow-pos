@@ -104,7 +104,7 @@ function CustomerProfilePage() {
     return (
       <div className="p-6 text-center space-y-4">
         <p className="text-muted-foreground">Silakan login untuk melihat profil Anda.</p>
-        <Link to="/s/$slug/login" params={{ slug }}>
+        <Link to={`/s/${slug}/login`}>
           <Button>Login</Button>
         </Link>
       </div>
