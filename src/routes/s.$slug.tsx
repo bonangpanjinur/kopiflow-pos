@@ -136,12 +136,20 @@ function ShopLayout() {
           </Link>
           <div className="flex items-center gap-1">
             {user ? (
-              <Link to="/s/$slug/orders" params={{ slug }}>
-                <Button variant="ghost" size="sm" className="gap-1">
-                  <UserIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Pesanan</span>
-                </Button>
-              </Link>
+              <>
+                <Link to="/s/$slug/me" params={{ slug }}>
+                  <Button variant="ghost" size="sm" className="gap-1">
+                    <UserIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Profil</span>
+                  </Button>
+                </Link>
+                <Link to="/s/$slug/orders" params={{ slug }}>
+                  <Button variant="ghost" size="sm" className="gap-1">
+                    <ShoppingBag className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Pesanan</span>
+                  </Button>
+                </Link>
+              </>
             ) : (
               <Link to="/s/$slug/login" params={{ slug }} search={{ redirect: `/s/${slug}` }}>
                 <Button variant="ghost" size="sm">Masuk</Button>
