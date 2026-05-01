@@ -257,3 +257,35 @@ function AppLayoutInner() {
     </div>
   );
 }
+
+function OutletSwitcher({ shopName }: { shopName?: string }) {
+  const { outlets, current, setCurrent } = useOutletContext();
+  if (outlets.length <= 1) {
+    return (
+      <div className="border-b border-sidebar-border px-3 py-3">
+        <div className="flex items-center gap-2 rounded-md bg-sidebar-accent/50 px-2.5 py-2">
+          <Store className="h-4 w-4 text-sidebar-accent-foreground shrink-0" />
+          <div className="min-w-0">
+            <div className="text-xs text-sidebar-foreground/60">Toko aktif</div>
+            <div className="truncate text-sm font-medium text-sidebar-foreground">{shopName}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="border-b border-sidebar-border px-3 py-3 space-y-1.5">
+      <div className="text-xs text-sidebar-foreground/60 px-1">Outlet</div>
+      <Select value={current?.id ?? ""} onValueChange={(v) => { const o = outlets.find((x) => x.id === v); if (o) setCurrent(o); }}>
+        <SelectTrigger className="h-8 text-xs bg-sidebar-accent/50 border-sidebar-border">
+          <SelectValue placeholder="Pilih outlet" />
+        </SelectTrigger>
+        <SelectContent>
+          {outlets.map((o) => (
+            <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
