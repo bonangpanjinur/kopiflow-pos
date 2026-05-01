@@ -35,6 +35,7 @@ import { formatIDR } from "@/lib/format";
 import type { CartItem, SelectedOption } from "@/lib/cart";
 import { cartCount, cartTotal, cartItemKey, lineUnitPrice } from "@/lib/cart";
 import { ModifierPicker } from "@/components/modifier-picker";
+import type { PaymentSplit } from "@/components/pos/receipt";
 import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
 
 // Lazy-loaded — only fetched after a successful checkout, keeps the POS
