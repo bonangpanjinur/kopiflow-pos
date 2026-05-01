@@ -98,6 +98,17 @@ function InventoryPage() {
   const [bulkOnlyChanged, setBulkOnlyChanged] = useState(false);
   const [bulkSaving, setBulkSaving] = useState(false);
 
+  // opname history
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [opnames, setOpnames] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // price history
+  const [priceHistoryOpen, setPriceHistoryOpen] = useState(false);
+  const [priceHistory, setPriceHistory] = useState<any[]>([]);
+  const [priceHistoryLoading, setPriceHistoryLoading] = useState(false);
+  const [priceHistoryTarget, setPriceHistoryTarget] = useState<Ingredient | null>(null);
+
   // low-stock dialog
   const [lowOpen, setLowOpen] = useState(false);
 
@@ -125,10 +136,23 @@ function InventoryPage() {
         .order("name"),
     ]);
     if (ing.error) toast.error(ing.error.message);
-    setItems((ing.data ?? []) as Ingredient[]);
+    const ingredients = (ing.data ?? []) as Ingredient[];
+    setItems(ingredients);
     setMovements((mv.data ?? []) as Movement[]);
     setSuppliers((sup.data ?? []) as SupplierOpt[]);
     setLoading(false);
+
+    // Alert low stock
+    const low = ingredients.filter((i) => i.current_stock <= i.min_stock && i.min_stock > 0);
+    if (low.length > 0) {
+      toast.warning(`${low.length} bahan baku menipis!`, {
+        description: "Segera lakukan pembelian stok.",
+        action: {
+          label: "Lihat",
+          onClick: () => setLowOpen(true),
+        },
+      });
+    }
   }
 
   useEffect(() => {
@@ -240,20 +264,37 @@ function InventoryPage() {
     const delta = actual - opnameTarget.current_stock;
     if (delta === 0) { toast.info("Tidak ada selisih"); setOpnameOpen(false); return; }
     setOpnameSaving(true);
+
+    const { data: opname, error: opErr } = await supabase.from("stock_opnames").insert({
+      shop_id: shop.id,
+      notes: opnameNote.trim() || "Opname tunggal",
+      status: "completed",
+    }).select("id").single();
+
+    if (opErr) { toast.error(opErr.message); setOpnameSaving(false); return; }
+
+    await supabase.from("stock_opname_items").insert({
+      stock_opname_id: opname.id,
+      ingredient_id: opnameTarget.id,
+      system_stock: opnameTarget.current_stock,
+      actual_stock: actual,
+      adjustment: delta,
+      notes: opnameNote.trim() || null,
+    });
+
     const note = `Opname: aktual ${actual} ${opnameTarget.unit}` + (opnameNote.trim() ? ` — ${opnameNote.trim()}` : "");
     if (delta > 0) {
-      const { error } = await supabase.from("stock_movements").insert({
+      await supabase.from("stock_movements").insert({
         shop_id: shop.id, ingredient_id: opnameTarget.id,
         type: "adjustment", quantity: delta, note,
       });
-      if (error) { toast.error(error.message); setOpnameSaving(false); return; }
     } else {
-      const { error } = await supabase.from("stock_movements").insert({
+      await supabase.from("stock_movements").insert({
         shop_id: shop.id, ingredient_id: opnameTarget.id,
         type: "waste", quantity: Math.abs(delta), note,
       });
-      if (error) { toast.error(error.message); setOpnameSaving(false); return; }
     }
+
     toast.success(`Opname tersimpan (${delta > 0 ? "+" : ""}${delta})`);
     setOpnameOpen(false);
     setOpnameSaving(false);
@@ -272,10 +313,12 @@ function InventoryPage() {
 
   async function saveBulkOpname() {
     if (!shop) return;
-    const movements: Array<{ shop_id: string; ingredient_id: string; type: "adjustment" | "waste"; quantity: number; note: string }> = [];
+    const movements: any[] = [];
+    const opnameItems: any[] = [];
     let totalDeltaValue = 0;
     let adjusted = 0;
     const today = new Date().toLocaleDateString("id-ID");
+
     for (const i of items) {
       const raw = bulkValues[i.id];
       if (raw === undefined || raw === "") continue;
@@ -289,20 +332,76 @@ function InventoryPage() {
       adjusted += 1;
       totalDeltaValue += delta * Number(i.cost_per_unit);
       const note = `Opname ${today}: sistem ${i.current_stock} → aktual ${actual} ${i.unit}` + (bulkNote.trim() ? ` — ${bulkNote.trim()}` : "");
+      
+      opnameItems.push({
+        ingredient_id: i.id,
+        system_stock: i.current_stock,
+        actual_stock: actual,
+        adjustment: delta,
+      });
+
       if (delta > 0) {
         movements.push({ shop_id: shop.id, ingredient_id: i.id, type: "adjustment", quantity: delta, note });
       } else {
         movements.push({ shop_id: shop.id, ingredient_id: i.id, type: "waste", quantity: Math.abs(delta), note });
       }
     }
+
     if (movements.length === 0) { toast.info("Tidak ada selisih untuk disimpan"); return; }
     setBulkSaving(true);
+
+    const { data: opname, error: opErr } = await supabase.from("stock_opnames").insert({
+      shop_id: shop.id,
+      notes: bulkNote.trim() || `Opname massal ${today}`,
+      status: "completed",
+    }).select("id").single();
+
+    if (opErr) { toast.error(opErr.message); setBulkSaving(false); return; }
+
+    await supabase.from("stock_opname_items").insert(
+      opnameItems.map(oi => ({ ...oi, stock_opname_id: opname.id }))
+    );
+
     const { error } = await supabase.from("stock_movements").insert(movements);
     setBulkSaving(false);
     if (error) { toast.error(error.message); return; }
+    
     toast.success(`Opname tersimpan: ${adjusted} bahan disesuaikan (${totalDeltaValue >= 0 ? "+" : ""}${formatIDR(totalDeltaValue)})`);
     setBulkOpen(false);
     load();
+  }
+
+  async function loadOpnameHistory() {
+    if (!shop) return;
+    setHistoryLoading(true);
+    setHistoryOpen(true);
+    const { data, error } = await supabase
+      .from("stock_opnames")
+      .select("*, stock_opname_items(*, ingredients(name, unit))")
+      .eq("shop_id", shop.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (error) toast.error(error.message);
+    else setOpnames(data || []);
+    setHistoryLoading(false);
+  }
+
+  async function loadPriceHistory(i: Ingredient) {
+    if (!shop) return;
+    setPriceHistoryTarget(i);
+    setPriceHistoryLoading(true);
+    setPriceHistoryOpen(true);
+    const { data, error } = await supabase
+      .from("stock_movements")
+      .select("created_at, unit_cost, quantity, note")
+      .eq("ingredient_id", i.id)
+      .eq("type", "purchase")
+      .not("unit_cost", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (error) toast.error(error.message);
+    else setPriceHistory(data || []);
+    setPriceHistoryLoading(false);
   }
 
   if (shopLoading) {
@@ -330,6 +429,9 @@ function InventoryPage() {
               <ShoppingCart className="mr-1.5 h-4 w-4" /> Pesan stok ({lowStock.length})
             </Button>
           )}
+          <Button variant="outline" onClick={loadOpnameHistory}>
+            <ClipboardCheck className="mr-1.5 h-4 w-4" /> Riwayat Opname
+          </Button>
           <Button variant="outline" onClick={openBulkOpname} disabled={items.length === 0}>
             <ListChecks className="mr-1.5 h-4 w-4" /> Opname Massal
           </Button>
@@ -475,7 +577,12 @@ function InventoryPage() {
                       {i.min_stock}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                      {formatIDR(i.cost_per_unit)}
+                      <button 
+                        onClick={() => loadPriceHistory(i)}
+                        className="hover:text-primary hover:underline underline-offset-4"
+                      >
+                        {formatIDR(i.cost_per_unit)}
+                      </button>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
@@ -702,6 +809,103 @@ function InventoryPage() {
             <Button onClick={saveBulkOpname} disabled={bulkSaving}>
               {bulkSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan Opname
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Riwayat Stok Opname</DialogTitle>
+          </DialogHeader>
+          {historyLoading ? (
+            <div className="flex h-32 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : opnames.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">Belum ada riwayat opname.</div>
+          ) : (
+            <div className="space-y-6">
+              {opnames.map((op) => (
+                <div key={op.id} className="rounded-lg border border-border overflow-hidden">
+                  <div className="bg-muted/30 px-4 py-2 flex justify-between items-center border-b border-border">
+                    <div>
+                      <div className="text-sm font-semibold">
+                        {new Date(op.created_at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{op.notes || "Tanpa catatan"}</div>
+                    </div>
+                    <div className="text-xs font-medium px-2 py-1 rounded bg-emerald-100 text-emerald-700 uppercase">
+                      {op.status}
+                    </div>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/10 text-xs text-muted-foreground uppercase">
+                      <tr>
+                        <th className="px-4 py-2 text-left">Bahan</th>
+                        <th className="px-4 py-2 text-right">Sistem</th>
+                        <th className="px-4 py-2 text-right">Aktual</th>
+                        <th className="px-4 py-2 text-right">Selisih</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {op.stock_opname_items?.map((item: any) => (
+                        <tr key={item.id}>
+                          <td className="px-4 py-2 font-medium">{item.ingredients?.name}</td>
+                          <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{item.system_stock} {item.ingredients?.unit}</td>
+                          <td className="px-4 py-2 text-right tabular-nums font-medium">{item.actual_stock} {item.ingredients?.unit}</td>
+                          <td className={`px-4 py-2 text-right tabular-nums font-semibold ${item.adjustment === 0 ? "text-muted-foreground" : item.adjustment > 0 ? "text-emerald-600" : "text-destructive"}`}>
+                            {item.adjustment > 0 ? "+" : ""}{item.adjustment}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setHistoryOpen(false)}>Tutup</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={priceHistoryOpen} onOpenChange={setPriceHistoryOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Riwayat Harga Beli — {priceHistoryTarget?.name}</DialogTitle>
+          </DialogHeader>
+          {priceHistoryLoading ? (
+            <div className="flex h-32 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : priceHistory.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">Belum ada riwayat pembelian untuk bahan ini.</div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Tanggal</th>
+                    <th className="px-4 py-2 text-right">Harga / unit</th>
+                    <th className="px-4 py-2 text-right">Jumlah</th>
+                    <th className="px-4 py-2 text-left">Catatan</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {priceHistory.map((h, idx) => (
+                    <tr key={idx} className="hover:bg-muted/30">
+                      <td className="px-4 py-2 text-xs text-muted-foreground tabular-nums">
+                        {new Date(h.created_at).toLocaleDateString("id-ID", { dateStyle: "medium" })}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums font-medium">{formatIDR(h.unit_cost)}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{h.quantity} {priceHistoryTarget?.unit}</td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">{h.note || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPriceHistoryOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
