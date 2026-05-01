@@ -31,6 +31,8 @@ type Props = {
   shopLogoUrl?: string | null;
   shopAddress?: string | null;
   shopPhone?: string | null;
+  receiptHeader?: string | null;
+  receiptFooter?: string | null;
 };
 
 function methodLabel(m: string) {
@@ -67,6 +69,8 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
     shopLogoUrl = null,
     shopAddress = null,
     shopPhone = null,
+    receiptHeader = null,
+    receiptFooter = null,
   },
   ref,
 ) {
@@ -95,6 +99,7 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
       {safeOutletName && <div className="r-center">{safeOutletName}</div>}
       {safeAddress && <div className="r-center r-small">{safeAddress}</div>}
       {safePhone && <div className="r-center r-small">Telp. {safePhone}</div>}
+      {receiptHeader && <div className="r-center r-small" style={{ marginTop: 2 }}>{receiptHeader}</div>}
       <div className="r-divider" />
       <div className="r-row">
         <span>No</span>
@@ -206,6 +211,7 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
         </>
       )}
       <div className="r-divider" />
+      {receiptFooter && <div className="r-center r-small" style={{ marginBottom: 2 }}>{receiptFooter}</div>}
       <div className="r-center">Terima kasih!</div>
       <div className="r-center r-small">Powered by KopiHub</div>
     </div>

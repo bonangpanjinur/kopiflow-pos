@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LowStockDialog } from "@/components/inventory/low-stock-dialog";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";
 import {
@@ -15,8 +15,12 @@ import {
   Loader2,
   ArrowRight,
   AlertTriangle,
+  CalendarDays,
 } from "lucide-react";
 import { formatIDR } from "@/lib/format";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from "recharts";
 
 export const Route = createFileRoute("/app/")({
   component: Dashboard,
@@ -24,6 +28,7 @@ export const Route = createFileRoute("/app/")({
 
 type Order = { id: string; total: number; created_at: string };
 type Item = { menu_item_id: string | null; name: string; quantity: number };
+type DayStat = { date: string; label: string; total: number; count: number };
 
 function Dashboard() {
   const { shop, loading: shopLoading } = useCurrentShop();
@@ -35,6 +40,8 @@ function Dashboard() {
   const [recent, setRecent] = useState<Order[]>([]);
   const [lowStock, setLowStock] = useState<{ id: string; name: string; current_stock: number; unit: string }[]>([]);
   const [lowOpen, setLowOpen] = useState(false);
+  const [trendDays, setTrendDays] = useState<7 | 30>(7);
+  const [trend, setTrend] = useState<DayStat[]>([]);
 
   useEffect(() => {
     if (!shop) return;
@@ -88,6 +95,64 @@ function Dashboard() {
     })();
   }, [shop]);
 
+  // Fetch trend data
+  useEffect(() => {
+    if (!shop) return;
+    (async () => {
+      const now = new Date();
+      const from = new Date(now);
+      from.setDate(from.getDate() - trendDays);
+      const fromISO = new Date(from.getTime() - from.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+      const { data } = await supabase
+        .from("orders")
+        .select("total, business_date")
+        .eq("shop_id", shop.id)
+        .eq("status", "completed")
+        .gte("business_date", fromISO)
+        .order("business_date");
+
+      const byDate = new Map<string, { total: number; count: number }>();
+      // Pre-fill all dates
+      for (let d = 0; d < trendDays; d++) {
+        const dt = new Date(from);
+        dt.setDate(dt.getDate() + d + 1);
+        const key = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        byDate.set(key, { total: 0, count: 0 });
+      }
+      (data ?? []).forEach((o: { total: number; business_date: string }) => {
+        const cur = byDate.get(o.business_date) ?? { total: 0, count: 0 };
+        cur.total += Number(o.total);
+        cur.count += 1;
+        byDate.set(o.business_date, cur);
+      });
+      const result: DayStat[] = [];
+      byDate.forEach((v, k) => {
+        const dt = new Date(k + "T00:00:00");
+        result.push({
+          date: k,
+          label: dt.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+          total: v.total,
+          count: v.count,
+        });
+      });
+      result.sort((a, b) => a.date.localeCompare(b.date));
+      setTrend(result);
+    })();
+  }, [shop, trendDays]);
+
+  // Period comparison
+  const comparison = useMemo(() => {
+    if (trend.length === 0) return null;
+    const half = Math.floor(trend.length / 2);
+    const recent = trend.slice(half);
+    const prev = trend.slice(0, half);
+    const recentTotal = recent.reduce((s, d) => s + d.total, 0);
+    const prevTotal = prev.reduce((s, d) => s + d.total, 0);
+    const pct = prevTotal > 0 ? ((recentTotal - prevTotal) / prevTotal) * 100 : 0;
+    return { recentTotal, prevTotal, pct };
+  }, [trend]);
+
   if (shopLoading || loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -112,6 +177,58 @@ function Dashboard() {
         <Kpi icon={Receipt} label="Transaksi" value={String(todayCount)} />
         <Kpi icon={TrendingUp} label="Rata-rata / order" value={formatIDR(aov)} />
         <Kpi icon={ShoppingBag} label="Open bills" value={String(openBills)} />
+      </div>
+
+      {/* Sales Trend Chart */}
+      <div className="mt-6 rounded-xl border border-border bg-card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Tren Penjualan</h3>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setTrendDays(7)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${trendDays === 7 ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground hover:bg-accent/80"}`}
+            >
+              7 Hari
+            </button>
+            <button
+              onClick={() => setTrendDays(30)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${trendDays === 30 ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground hover:bg-accent/80"}`}
+            >
+              30 Hari
+            </button>
+          </div>
+        </div>
+        {comparison && (
+          <div className="mb-3 flex flex-wrap gap-4 text-xs">
+            <div>
+              <span className="text-muted-foreground">Paruh akhir:</span>{" "}
+              <span className="font-semibold">{formatIDR(comparison.recentTotal)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Paruh awal:</span>{" "}
+              <span className="font-semibold">{formatIDR(comparison.prevTotal)}</span>
+            </div>
+            <div>
+              <span className={`font-semibold ${comparison.pct >= 0 ? "text-green-600" : "text-red-500"}`}>
+                {comparison.pct >= 0 ? "↑" : "↓"} {Math.abs(comparison.pct).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        )}
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={trend}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={trendDays === 30 ? 4 : 0} />
+              <YAxis tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}rb` : String(v)} tick={{ fontSize: 10 }} width={50} />
+              <Tooltip formatter={(v: number) => formatIDR(v)} labelFormatter={(l) => `Tanggal: ${l}`} />
+              <Bar dataKey="total" name="Omzet" fill="var(--color-primary, hsl(var(--primary)))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {shop && (

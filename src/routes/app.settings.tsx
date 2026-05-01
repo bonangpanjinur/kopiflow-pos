@@ -59,6 +59,8 @@ type ShopRow = {
   tax_percent: number;
   service_charge_percent: number;
   tax_inclusive: boolean;
+  receipt_header: string | null;
+  receipt_footer: string | null;
 };
 
 function SettingsPage() {
@@ -77,7 +79,7 @@ function SettingsPage() {
       setLoading(true);
       const { data } = await supabase
         .from("coffee_shops")
-        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours, qris_image_url, qris_merchant_name, payment_methods_enabled, tax_percent, service_charge_percent, tax_inclusive")
+        .select("id, name, slug, description, tagline, logo_url, phone, email, address, instagram, whatsapp, open_hours, qris_image_url, qris_merchant_name, payment_methods_enabled, tax_percent, service_charge_percent, tax_inclusive, receipt_header, receipt_footer")
         .eq("id", shop.id)
         .maybeSingle();
       if (data) {
@@ -88,6 +90,8 @@ function SettingsPage() {
           tax_percent: Number(data.tax_percent ?? 0),
           service_charge_percent: Number(data.service_charge_percent ?? 0),
           tax_inclusive: Boolean(data.tax_inclusive ?? false),
+          receipt_header: data.receipt_header ?? null,
+          receipt_footer: data.receipt_footer ?? null,
         } as ShopRow);
       }
       setLoading(false);
@@ -211,6 +215,8 @@ function SettingsPage() {
         tax_percent: form.tax_percent,
         service_charge_percent: form.service_charge_percent,
         tax_inclusive: form.tax_inclusive,
+        receipt_header: form.receipt_header,
+        receipt_footer: form.receipt_footer,
       })
       .eq("id", shop.id);
     setSaving(false);
@@ -506,6 +512,32 @@ function SettingsPage() {
             />
             <span className="text-sm">Harga sudah termasuk pajak (tax inclusive)</span>
           </label>
+        </div>
+      </Section>
+
+      {/* Struk / Receipt */}
+      <Section icon={ReceiptIcon} title="Kustomisasi Struk" desc="Teks header & footer yang dicetak di struk.">
+        <div className="grid gap-4">
+          <div>
+            <Label>Header struk</Label>
+            <Textarea
+              rows={2}
+              placeholder="Mis. Terima kasih sudah berkunjung!"
+              value={form.receipt_header ?? ""}
+              onChange={(e) => update("receipt_header", e.target.value || null)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Ditampilkan di atas struk setelah nama toko.</p>
+          </div>
+          <div>
+            <Label>Footer struk</Label>
+            <Textarea
+              rows={2}
+              placeholder="Mis. Follow IG @tokokopi untuk promo terbaru"
+              value={form.receipt_footer ?? ""}
+              onChange={(e) => update("receipt_footer", e.target.value || null)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Ditampilkan di bawah struk setelah total.</p>
+          </div>
         </div>
       </Section>
 
