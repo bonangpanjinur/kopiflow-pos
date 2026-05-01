@@ -5,6 +5,7 @@ import {
   setQty,
   removeItem,
   cartTotal,
+  itemUnitPrice,
   type CustomerCartItem,
 } from "@/lib/customer-cart";
 import { formatIDR } from "@/lib/format";
