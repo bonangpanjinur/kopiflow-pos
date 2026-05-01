@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-r
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { readCart, cartTotal, clearCart, type CustomerCartItem } from "@/lib/customer-cart";
+import { readCart, cartTotal, clearCart, itemUnitPrice, type CustomerCartItem } from "@/lib/customer-cart";
 import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
