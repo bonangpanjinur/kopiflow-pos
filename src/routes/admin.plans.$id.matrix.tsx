@@ -49,35 +49,74 @@ function PlanMatrix() {
   const getFeatureMinMonths = (key: string) => pf.find((x) => x.feature_key === key)?.requires_min_months ?? 0;
   const getThemeMinMonths = (key: string) => pt.find((x) => x.theme_key === key)?.requires_min_months ?? 0;
 
+  const [busy, setBusy] = useState<string | null>(null);
+
   const toggleFeature = async (key: string, enabled: boolean) => {
-    if (enabled) {
-      const { error } = await supabase.from("plan_features").insert({ plan_id: planId, feature_key: key });
-      if (error) { toast.error(error.message); return; }
-    } else {
-      const { error } = await supabase.from("plan_features").delete().eq("plan_id", planId).eq("feature_key", key);
-      if (error) { toast.error(error.message); return; }
-    }
-    load();
+    if (busy) return;
+    if (enabled && isFeatureEnabled(key)) { toast.info("Fitur ini sudah aktif untuk plan ini"); return; }
+    setBusy(key);
+    try {
+      if (enabled) {
+        const { error } = await supabase.from("plan_features").insert({ plan_id: planId, feature_key: key });
+        if (error) {
+          if (error.code === "23505") toast.error("Fitur sudah terdaftar (duplikat)");
+          else toast.error(error.message);
+          return;
+        }
+      } else {
+        const { error } = await supabase.from("plan_features").delete().eq("plan_id", planId).eq("feature_key", key);
+        if (error) { toast.error(error.message); return; }
+      }
+      await load();
+    } finally { setBusy(null); }
   };
 
   const toggleTheme = async (key: string, enabled: boolean) => {
-    if (enabled) {
-      const { error } = await supabase.from("plan_themes").insert({ plan_id: planId, theme_key: key });
-      if (error) { toast.error(error.message); return; }
-    } else {
-      const { error } = await supabase.from("plan_themes").delete().eq("plan_id", planId).eq("theme_key", key);
-      if (error) { toast.error(error.message); return; }
-    }
-    load();
+    if (busy) return;
+    if (enabled && isThemeEnabled(key)) { toast.info("Tema ini sudah aktif untuk plan ini"); return; }
+    setBusy(key);
+    try {
+      if (enabled) {
+        const { error } = await supabase.from("plan_themes").insert({ plan_id: planId, theme_key: key });
+        if (error) {
+          if (error.code === "23505") toast.error("Tema sudah terdaftar (duplikat)");
+          else toast.error(error.message);
+          return;
+        }
+      } else {
+        const { error } = await supabase.from("plan_themes").delete().eq("plan_id", planId).eq("theme_key", key);
+        if (error) { toast.error(error.message); return; }
+      }
+      await load();
+    } finally { setBusy(null); }
   };
 
-  const updateFeatureMinMonths = async (key: string, months: number) => {
+  const validateMinMonths = (value: number): string | null => {
+    if (!Number.isInteger(value)) return "Harus bilangan bulat";
+    if (value < 0) return "Tidak boleh negatif";
+    if (value > 120) return "Maksimal 120 bulan";
+    return null;
+  };
+
+  const updateFeatureMinMonths = async (key: string, raw: string) => {
+    const months = Number(raw);
+    if (Number.isNaN(months)) { toast.error("Masukkan angka yang valid"); return; }
+    const err = validateMinMonths(months);
+    if (err) { toast.error(err); return; }
+    const current = getFeatureMinMonths(key);
+    if (months === current) return;
     const { error } = await supabase.from("plan_features").update({ requires_min_months: months }).eq("plan_id", planId).eq("feature_key", key);
     if (error) toast.error(error.message);
     else { toast.success("Tersimpan"); load(); }
   };
 
-  const updateThemeMinMonths = async (key: string, months: number) => {
+  const updateThemeMinMonths = async (key: string, raw: string) => {
+    const months = Number(raw);
+    if (Number.isNaN(months)) { toast.error("Masukkan angka yang valid"); return; }
+    const err = validateMinMonths(months);
+    if (err) { toast.error(err); return; }
+    const current = getThemeMinMonths(key);
+    if (months === current) return;
     const { error } = await supabase.from("plan_themes").update({ requires_min_months: months }).eq("plan_id", planId).eq("theme_key", key);
     if (error) toast.error(error.message);
     else { toast.success("Tersimpan"); load(); }
