@@ -149,6 +149,44 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_recipients: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          customer_id: string
+          error: string | null
+          id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          customer_id: string
+          error?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          customer_id?: string
+          error?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           amount: number
@@ -510,6 +548,30 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string
+          shop_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id: string
+          shop_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+          shop_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customer_profiles: {
         Row: {
           created_at: string
@@ -537,6 +599,42 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      customer_segments: {
+        Row: {
+          color: string | null
+          created_at: string
+          criteria: Json
+          description: string | null
+          id: string
+          is_auto: boolean
+          name: string
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_auto?: boolean
+          name: string
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_auto?: boolean
+          name?: string
+          shop_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -882,6 +980,54 @@ export type Database = {
           point_value?: number
           rupiah_per_point?: number
           shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketing_campaigns: {
+        Row: {
+          audience_count: number
+          audience_segment: string | null
+          channel: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          scheduled_at: string | null
+          sent_at: string | null
+          shop_id: string
+          status: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          audience_count?: number
+          audience_segment?: string | null
+          channel?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          shop_id: string
+          status?: string
+          template?: string
+          updated_at?: string
+        }
+        Update: {
+          audience_count?: number
+          audience_segment?: string | null
+          channel?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          shop_id?: string
+          status?: string
+          template?: string
           updated_at?: string
         }
         Relationships: []
@@ -1823,6 +1969,60 @@ export type Database = {
           shop_id?: string
           size_bytes?: number | null
           status?: string
+        }
+        Relationships: []
+      }
+      shop_customers: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          first_order_at: string | null
+          id: string
+          last_order_at: string | null
+          notes: string | null
+          phone: string | null
+          segment: string | null
+          shop_id: string
+          tags: string[]
+          total_orders: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          first_order_at?: string | null
+          id?: string
+          last_order_at?: string | null
+          notes?: string | null
+          phone?: string | null
+          segment?: string | null
+          shop_id: string
+          tags?: string[]
+          total_orders?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          first_order_at?: string | null
+          id?: string
+          last_order_at?: string | null
+          notes?: string | null
+          phone?: string | null
+          segment?: string | null
+          shop_id?: string
+          tags?: string[]
+          total_orders?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
