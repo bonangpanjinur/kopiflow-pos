@@ -347,6 +347,8 @@ export type Database = {
           prep_minutes: number
           qris_image_url: string | null
           qris_merchant_name: string | null
+          receipt_footer: string | null
+          receipt_header: string | null
           service_charge_percent: number
           slug: string
           suspended_at: string | null
@@ -383,6 +385,8 @@ export type Database = {
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
+          receipt_footer?: string | null
+          receipt_header?: string | null
           service_charge_percent?: number
           slug: string
           suspended_at?: string | null
@@ -419,6 +423,8 @@ export type Database = {
           prep_minutes?: number
           qris_image_url?: string | null
           qris_merchant_name?: string | null
+          receipt_footer?: string | null
+          receipt_header?: string | null
           service_charge_percent?: number
           slug?: string
           suspended_at?: string | null
@@ -2110,6 +2116,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           accepted_by: string | null
+          allowed_modules: string[] | null
           created_at: string
           email: string
           expires_at: string
@@ -2123,6 +2130,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           accepted_by?: string | null
+          allowed_modules?: string[] | null
           created_at?: string
           email: string
           expires_at?: string
@@ -2136,6 +2144,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           accepted_by?: string | null
+          allowed_modules?: string[] | null
           created_at?: string
           email?: string
           expires_at?: string
@@ -2147,6 +2156,44 @@ export type Database = {
           token?: string
         }
         Relationships: []
+      }
+      staff_permissions: {
+        Row: {
+          allowed_modules: string[] | null
+          created_at: string
+          id: string
+          role: string
+          shop_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_modules?: string[] | null
+          created_at?: string
+          id?: string
+          role?: string
+          shop_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_modules?: string[] | null
+          created_at?: string
+          id?: string
+          role?: string
+          shop_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_permissions_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "coffee_shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_movements: {
         Row: {
