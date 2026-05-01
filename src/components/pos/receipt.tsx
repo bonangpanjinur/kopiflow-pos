@@ -211,6 +211,7 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
         </>
       )}
       <div className="r-divider" />
+      {receiptFooter && <div className="r-center r-small" style={{ marginBottom: 2 }}>{receiptFooter}</div>}
       <div className="r-center">Terima kasih!</div>
       <div className="r-center r-small">Powered by KopiHub</div>
     </div>
