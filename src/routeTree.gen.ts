@@ -52,6 +52,9 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPlansRouteImport } from './routes/admin.plans'
 import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
 import { Route as AdminDomainsRouteImport } from './routes/admin.domains'
+import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
+import { Route as AdminBroadcastRouteImport } from './routes/admin.broadcast'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminActivityRouteImport } from './routes/admin.activity'
 import { Route as SSlugIndexRouteImport } from './routes/s.$slug.index'
 import { Route as SSlugOrdersRouteImport } from './routes/s.$slug.orders'
@@ -65,6 +68,7 @@ import { Route as SSlugPayOrderIdRouteImport } from './routes/s.$slug.pay.$order
 import { Route as SSlugMenuMenuIdRouteImport } from './routes/s.$slug.menu.$menuId'
 import { Route as ApiPublicManifestSlugRouteImport } from './routes/api/public/manifest.$slug'
 import { Route as ApiPublicCronPlanMaintenanceRouteImport } from './routes/api/public/cron/plan-maintenance'
+import { Route as AdminPlansIdMatrixRouteImport } from './routes/admin.plans.$id.matrix'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -281,6 +285,21 @@ const AdminDomainsRoute = AdminDomainsRouteImport.update({
   path: '/domains',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCatalogRoute = AdminCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBroadcastRoute = AdminBroadcastRouteImport.update({
+  id: '/broadcast',
+  path: '/broadcast',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminActivityRoute = AdminActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
@@ -347,6 +366,11 @@ const ApiPublicCronPlanMaintenanceRoute =
     path: '/api/public/cron/plan-maintenance',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminPlansIdMatrixRoute = AdminPlansIdMatrixRouteImport.update({
+  id: '/$id/matrix',
+  path: '/$id/matrix',
+  getParentRoute: () => AdminPlansRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -358,9 +382,12 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/activity': typeof AdminActivityRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/broadcast': typeof AdminBroadcastRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
-  '/admin/plans': typeof AdminPlansRoute
+  '/admin/plans': typeof AdminPlansRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/appearance': typeof AppAppearanceRoute
@@ -401,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/s/$slug/me': typeof SSlugMeRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
+  '/admin/plans/$id/matrix': typeof AdminPlansIdMatrixRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
   '/api/public/manifest/$slug': typeof ApiPublicManifestSlugRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
@@ -414,9 +442,12 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/activity': typeof AdminActivityRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/broadcast': typeof AdminBroadcastRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
-  '/admin/plans': typeof AdminPlansRoute
+  '/admin/plans': typeof AdminPlansRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/appearance': typeof AppAppearanceRoute
@@ -456,6 +487,7 @@ export interface FileRoutesByTo {
   '/s/$slug/me': typeof SSlugMeRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug': typeof SSlugIndexRoute
+  '/admin/plans/$id/matrix': typeof AdminPlansIdMatrixRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
   '/api/public/manifest/$slug': typeof ApiPublicManifestSlugRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
@@ -472,9 +504,12 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/activity': typeof AdminActivityRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/broadcast': typeof AdminBroadcastRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/domains': typeof AdminDomainsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
-  '/admin/plans': typeof AdminPlansRoute
+  '/admin/plans': typeof AdminPlansRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/appearance': typeof AppAppearanceRoute
@@ -515,6 +550,7 @@ export interface FileRoutesById {
   '/s/$slug/me': typeof SSlugMeRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
+  '/admin/plans/$id/matrix': typeof AdminPlansIdMatrixRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
   '/api/public/manifest/$slug': typeof ApiPublicManifestSlugRoute
   '/s/$slug/menu/$menuId': typeof SSlugMenuMenuIdRoute
@@ -532,6 +568,9 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/admin/activity'
+    | '/admin/audit'
+    | '/admin/broadcast'
+    | '/admin/catalog'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -575,6 +614,7 @@ export interface FileRouteTypes {
     | '/s/$slug/me'
     | '/s/$slug/orders'
     | '/s/$slug/'
+    | '/admin/plans/$id/matrix'
     | '/api/public/cron/plan-maintenance'
     | '/api/public/manifest/$slug'
     | '/s/$slug/menu/$menuId'
@@ -588,6 +628,9 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/admin/activity'
+    | '/admin/audit'
+    | '/admin/broadcast'
+    | '/admin/catalog'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -630,6 +673,7 @@ export interface FileRouteTypes {
     | '/s/$slug/me'
     | '/s/$slug/orders'
     | '/s/$slug'
+    | '/admin/plans/$id/matrix'
     | '/api/public/cron/plan-maintenance'
     | '/api/public/manifest/$slug'
     | '/s/$slug/menu/$menuId'
@@ -645,6 +689,9 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/admin/activity'
+    | '/admin/audit'
+    | '/admin/broadcast'
+    | '/admin/catalog'
     | '/admin/domains'
     | '/admin/invoices'
     | '/admin/plans'
@@ -688,6 +735,7 @@ export interface FileRouteTypes {
     | '/s/$slug/me'
     | '/s/$slug/orders'
     | '/s/$slug/'
+    | '/admin/plans/$id/matrix'
     | '/api/public/cron/plan-maintenance'
     | '/api/public/manifest/$slug'
     | '/s/$slug/menu/$menuId'
@@ -1013,6 +1061,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDomainsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/catalog': {
+      id: '/admin/catalog'
+      path: '/catalog'
+      fullPath: '/admin/catalog'
+      preLoaderRoute: typeof AdminCatalogRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/broadcast': {
+      id: '/admin/broadcast'
+      path: '/broadcast'
+      fullPath: '/admin/broadcast'
+      preLoaderRoute: typeof AdminBroadcastRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/activity': {
       id: '/admin/activity'
       path: '/activity'
@@ -1104,8 +1173,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronPlanMaintenanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/plans/$id/matrix': {
+      id: '/admin/plans/$id/matrix'
+      path: '/$id/matrix'
+      fullPath: '/admin/plans/$id/matrix'
+      preLoaderRoute: typeof AdminPlansIdMatrixRouteImport
+      parentRoute: typeof AdminPlansRoute
+    }
   }
 }
+
+interface AdminPlansRouteChildren {
+  AdminPlansIdMatrixRoute: typeof AdminPlansIdMatrixRoute
+}
+
+const AdminPlansRouteChildren: AdminPlansRouteChildren = {
+  AdminPlansIdMatrixRoute: AdminPlansIdMatrixRoute,
+}
+
+const AdminPlansRouteWithChildren = AdminPlansRoute._addFileChildren(
+  AdminPlansRouteChildren,
+)
 
 interface AdminShopsRouteChildren {
   AdminShopsIdRoute: typeof AdminShopsIdRoute
@@ -1121,9 +1209,12 @@ const AdminShopsRouteWithChildren = AdminShopsRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminActivityRoute: typeof AdminActivityRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminBroadcastRoute: typeof AdminBroadcastRoute
+  AdminCatalogRoute: typeof AdminCatalogRoute
   AdminDomainsRoute: typeof AdminDomainsRoute
   AdminInvoicesRoute: typeof AdminInvoicesRoute
-  AdminPlansRoute: typeof AdminPlansRoute
+  AdminPlansRoute: typeof AdminPlansRouteWithChildren
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminShopsRoute: typeof AdminShopsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1131,9 +1222,12 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminActivityRoute: AdminActivityRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminBroadcastRoute: AdminBroadcastRoute,
+  AdminCatalogRoute: AdminCatalogRoute,
   AdminDomainsRoute: AdminDomainsRoute,
   AdminInvoicesRoute: AdminInvoicesRoute,
-  AdminPlansRoute: AdminPlansRoute,
+  AdminPlansRoute: AdminPlansRouteWithChildren,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminShopsRoute: AdminShopsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
+import { Grid3X3 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/plans")({ component: AdminPlans });
 
@@ -44,7 +45,12 @@ function AdminPlans() {
               <div className="flex items-center gap-2"><Switch checked={p.is_active} onCheckedChange={(v) => setPlans((arr) => arr.map((x) => x.id === p.id ? { ...x, is_active: v } : x))} /><Label>Aktif</Label></div>
               <div><Label>Urutan</Label><Input type="number" value={p.sort_order} onChange={(e) => setPlans((arr) => arr.map((x) => x.id === p.id ? { ...x, sort_order: Number(e.target.value) } : x))} /></div>
             </div>
-            <Button className="mt-3" onClick={() => save(p)}>Simpan</Button>
+            <div className="flex gap-2 mt-3">
+              <Button onClick={() => save(p)}>Simpan</Button>
+              <Link to="/admin/plans/$id/matrix" params={{ id: p.id }}>
+                <Button variant="outline" size="sm"><Grid3X3 className="h-3.5 w-3.5 mr-1" />Matrix Fitur & Tema</Button>
+              </Link>
+            </div>
           </Card>
         ))}
       </div>
