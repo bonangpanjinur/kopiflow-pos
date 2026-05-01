@@ -31,6 +31,8 @@ type Props = {
   shopLogoUrl?: string | null;
   shopAddress?: string | null;
   shopPhone?: string | null;
+  receiptHeader?: string | null;
+  receiptFooter?: string | null;
 };
 
 function methodLabel(m: string) {
