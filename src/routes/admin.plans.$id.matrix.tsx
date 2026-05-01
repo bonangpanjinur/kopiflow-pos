@@ -156,7 +156,7 @@ function PlanMatrix() {
                       {on && (
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs text-muted-foreground">Min bulan:</span>
-                          <Input type="number" className="w-16 h-7 text-xs" defaultValue={getFeatureMinMonths(f.key)} onBlur={(e) => updateFeatureMinMonths(f.key, Number(e.target.value))} />
+                          <Input type="number" className="w-16 h-7 text-xs" defaultValue={getFeatureMinMonths(f.key)} onBlur={(e) => updateFeatureMinMonths(f.key, e.target.value)} min={0} max={120} />
                         </div>
                       )}
                     </div>
@@ -183,7 +183,7 @@ function PlanMatrix() {
                     {on && (
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-muted-foreground">Min bulan:</span>
-                        <Input type="number" className="w-16 h-7 text-xs" defaultValue={getThemeMinMonths(t.key)} onBlur={(e) => updateThemeMinMonths(t.key, Number(e.target.value))} />
+                        <Input type="number" className="w-16 h-7 text-xs" defaultValue={getThemeMinMonths(t.key)} onBlur={(e) => updateThemeMinMonths(t.key, e.target.value)} min={0} max={120} />
                       </div>
                     )}
                   </div>
