@@ -88,6 +88,8 @@ function AppLayout() {
 }
 
 function AppLayoutInner() {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const { isPro } = usePlan();
   const { isAdmin } = useIsSuperAdmin();
