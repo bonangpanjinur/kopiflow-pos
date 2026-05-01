@@ -82,7 +82,7 @@ function CartPage() {
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
-                <span className="text-sm font-semibold">{formatIDR(i.price * i.qty)}</span>
+                <span className="text-sm font-semibold">{formatIDR(itemUnitPrice(i) * i.qty)}</span>
               </div>
             </div>
           </div>
