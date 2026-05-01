@@ -95,6 +95,12 @@ export const Route = createRootRoute({
       { name: "theme-color", content: "#0f172a" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "KopiHub" },
+      { name: "twitter:title", content: "KopiHub — POS & Marketplace untuk Coffeeshop" },
+      { name: "description", content: "KopiFlow POS is a point-of-sale and marketplace platform for coffee shops." },
+      { property: "og:description", content: "KopiFlow POS is a point-of-sale and marketplace platform for coffee shops." },
+      { name: "twitter:description", content: "KopiFlow POS is a point-of-sale and marketplace platform for coffee shops." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0d4c95e4-d789-4885-a53a-cd889f90c287/id-preview-95bc6df1--046b15f3-138a-4522-832a-df9d863e5d6f.lovable.app-1777618423484.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0d4c95e4-d789-4885-a53a-cd889f90c287/id-preview-95bc6df1--046b15f3-138a-4522-832a-df9d863e5d6f.lovable.app-1777618423484.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
