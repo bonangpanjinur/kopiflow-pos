@@ -15,7 +15,7 @@ function AppearancePage() {
   const apply = async (key: string) => {
     setBusy(key);
     try {
-      const { setShopTheme } = await import("@/server/entitlements.functions.server");
+      const { setShopTheme } = await import("@/server/entitlements.functions");
       await setShopTheme({ data: { themeKey: key } });
       toast.success("Tema diaktifkan");
       await reload();

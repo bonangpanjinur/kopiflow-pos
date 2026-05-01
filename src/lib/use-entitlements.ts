@@ -40,7 +40,7 @@ export function useEntitlements() {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const { getEntitlements } = await import("@/server/entitlements.functions.server");
+      const { getEntitlements } = await import("@/server/entitlements.functions");
       const r = await getEntitlements();
       // Defensive: ensure features & themes are arrays even if RPC returns null
       const safe: Entitlements = {

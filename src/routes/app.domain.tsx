@@ -63,7 +63,7 @@ function DomainPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      const { requestCustomDomain } = await import("@/server/domain.functions.server");
+      const { requestCustomDomain } = await import("@/server/domain.functions");
       await requestCustomDomain({ data: { domain: domainInput.trim().toLowerCase() } });
       toast.success("Domain disimpan. Atur DNS sesuai instruksi lalu verifikasi.");
       setDomainInput("");
@@ -76,7 +76,7 @@ function DomainPage() {
   const onVerify = async () => {
     setBusy(true);
     try {
-      const { verifyCustomDomain } = await import("@/server/domain.functions.server");
+      const { verifyCustomDomain } = await import("@/server/domain.functions");
       const r = await verifyCustomDomain();
       setLastCheck({ verified: r.verified, cnameOk: r.cnameOk, sslOk: r.sslOk, sslError: r.sslError, txtValues: r.txtValues });
       if (r.cnameTarget) setCnameTarget(r.cnameTarget);
@@ -96,7 +96,7 @@ function DomainPage() {
     if (!confirm("Hapus custom domain?")) return;
     setBusy(true);
     try {
-      const { removeCustomDomain } = await import("@/server/domain.functions.server");
+      const { removeCustomDomain } = await import("@/server/domain.functions");
       await removeCustomDomain();
       toast.success("Domain dihapus");
       await reload();
