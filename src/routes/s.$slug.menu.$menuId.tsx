@@ -11,7 +11,42 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Plus, Minus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getMenuItemForStorefront } from "@/server/tenant.functions";
+import { createServerFn } from "@tanstack/react-start";
+
+const getMenuItemForStorefront = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => {
+    const v = input as { slug?: string; menuId?: string };
+    if (!v?.slug || !v?.menuId) throw new Error("invalid_input");
+    return { slug: String(v.slug), menuId: String(v.menuId) };
+  })
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: shop } = await supabaseAdmin
+      .from("coffee_shops")
+      .select("id, name, slug, custom_domain, custom_domain_verified_at, is_active")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (!shop || !shop.is_active) return { item: null, shop: null, baseUrl: "" };
+
+    const { data: item } = await supabaseAdmin
+      .from("menu_items")
+      .select("id, name, description, price, image_url, is_available")
+      .eq("id", data.menuId)
+      .eq("shop_id", shop.id)
+      .maybeSingle();
+
+    const { getRequestHeader } = await import("@tanstack/react-start/server");
+    const rawHost = (getRequestHeader("x-forwarded-host") || getRequestHeader("host") || "").toLowerCase();
+    const reqHost = rawHost.split(":")[0] || "";
+
+    const verifiedCustom = shop.custom_domain && shop.custom_domain_verified_at ? shop.custom_domain : null;
+    const host = verifiedCustom ?? reqHost;
+    const isLocal = host === "localhost" || host.startsWith("127.0.0.1");
+    const origin = host ? `${isLocal ? "http" : "https"}://${host}` : "";
+    const baseUrl = verifiedCustom ? origin : `${origin}/s/${shop.slug}`;
+
+    return { item, shop, baseUrl };
+  });
 
 export const Route = createFileRoute("/s/$slug/menu/$menuId")({
   loader: async ({ params }) => {

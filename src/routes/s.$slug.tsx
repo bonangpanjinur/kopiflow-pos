@@ -4,7 +4,42 @@ import { Coffee, ShoppingBag, User as UserIcon } from "lucide-react";
 import { readCart, cartCount } from "@/lib/customer-cart";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { getShopForStorefront } from "@/server/tenant.functions";
+import { createServerFn } from "@tanstack/react-start";
+
+const getShopForStorefront = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => {
+    const v = input as { slug?: string };
+    if (!v?.slug) throw new Error("slug_required");
+    return { slug: String(v.slug) };
+  })
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: shop } = await supabaseAdmin
+      .from("coffee_shops")
+      .select(
+        "id, name, slug, description, tagline, logo_url, address, phone, whatsapp, open_hours, custom_domain, custom_domain_verified_at, is_active",
+      )
+      .eq("slug", data.slug)
+      .maybeSingle();
+
+    if (!shop || !shop.is_active) {
+      return { shop: null, baseUrl: "", canonicalPath: "" };
+    }
+
+    const { getRequestHeader } = await import("@tanstack/react-start/server");
+    const rawHost = (getRequestHeader("x-forwarded-host") || getRequestHeader("host") || "").toLowerCase();
+    const reqHost = rawHost.split(":")[0] || "";
+
+    const verifiedCustom = shop.custom_domain && shop.custom_domain_verified_at ? shop.custom_domain : null;
+    const onCustom = verifiedCustom && reqHost === verifiedCustom;
+
+    const host = verifiedCustom ?? reqHost;
+    const isLocal = host === "localhost" || host.startsWith("127.0.0.1");
+    const origin = host ? `${isLocal ? "http" : "https"}://${host}` : "";
+    const baseUrl = onCustom || verifiedCustom ? `${origin}` : `${origin}/s/${shop.slug}`;
+
+    return { shop, baseUrl, canonicalPath: baseUrl };
+  });
 
 export const Route = createFileRoute("/s/$slug")({
   loader: async ({ params }) => {
