@@ -1,7 +1,8 @@
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useStaffRole, isModuleAllowed } from "@/lib/use-staff";
 import {
   Coffee,
   LayoutDashboard,
