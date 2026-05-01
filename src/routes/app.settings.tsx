@@ -515,6 +515,31 @@ function SettingsPage() {
         </div>
       </Section>
 
+      {/* Struk / Receipt */}
+      <Section icon={ReceiptIcon} title="Kustomisasi Struk" desc="Teks header & footer yang dicetak di struk.">
+        <div className="grid gap-4">
+          <div>
+            <Label>Header struk</Label>
+            <Textarea
+              rows={2}
+              placeholder="Mis. Terima kasih sudah berkunjung!"
+              value={form.receipt_header ?? ""}
+              onChange={(e) => update("receipt_header", e.target.value || null)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Ditampilkan di atas struk setelah nama toko.</p>
+          </div>
+          <div>
+            <Label>Footer struk</Label>
+            <Textarea
+              rows={2}
+              placeholder="Mis. Follow IG @tokokopi untuk promo terbaru"
+              value={form.receipt_footer ?? ""}
+              onChange={(e) => update("receipt_footer", e.target.value || null)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Ditampilkan di bawah struk setelah total.</p>
+          </div>
+        </div>
+
       {/* Share */}
       <Section icon={Share2} title="Bagikan etalase" desc="Salin link untuk dibagikan ke pelanggan.">
         <div className="flex gap-2">
