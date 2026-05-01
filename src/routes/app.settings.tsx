@@ -539,6 +539,7 @@ function SettingsPage() {
             <p className="mt-1 text-xs text-muted-foreground">Ditampilkan di bawah struk setelah total.</p>
           </div>
         </div>
+      </Section>
 
       {/* Share */}
       <Section icon={Share2} title="Bagikan etalase" desc="Salin link untuk dibagikan ke pelanggan.">
