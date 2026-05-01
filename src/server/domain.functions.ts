@@ -214,30 +214,4 @@ export const removeCustomDomain = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/**
- * Resolve current request Host header to a tenant shop slug.
- */
-export const resolveHost = createServerFn({ method: "GET" }).handler(async () => {
-  const { getRequestHeader } = await import("@tanstack/react-start/server");
-  const rawHost = (getRequestHeader("x-forwarded-host") || getRequestHeader("host") || "").toLowerCase();
-  if (!rawHost) return { tenantSlug: null as string | null, host: "" };
-  const host = rawHost.split(":")[0];
 
-  if (
-    host === "localhost" ||
-    host.endsWith(".lovable.app") ||
-    host.endsWith(".lovable.dev") ||
-    host === "127.0.0.1"
-  ) {
-    return { tenantSlug: null, host };
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from("coffee_shops")
-    .select("slug, custom_domain_verified_at")
-    .eq("custom_domain", host)
-    .maybeSingle();
-  if (error || !data) return { tenantSlug: null, host };
-  if (!data.custom_domain_verified_at) return { tenantSlug: null, host };
-  return { tenantSlug: data.slug as string, host };
-});
