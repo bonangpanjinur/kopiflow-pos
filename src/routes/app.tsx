@@ -80,8 +80,14 @@ const NAV = [
 ] as const;
 
 function AppLayout() {
-  const { user, loading, signOut } = useAuth();
-  const navigate = useNavigate();
+  return (
+    <OutletProvider>
+      <AppLayoutInner />
+    </OutletProvider>
+  );
+}
+
+function AppLayoutInner() {
   const location = useLocation();
   const { isPro } = usePlan();
   const { isAdmin } = useIsSuperAdmin();
