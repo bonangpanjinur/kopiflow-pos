@@ -59,7 +59,7 @@ function AdminCatalog() {
 
   const saveTheme = async (t: Theme) => {
     const { error } = await supabase.from("themes").update({
-      name: t.name, description: t.description, tier_hint: t.tier_hint, component_id: t.component_id, is_active: t.is_active, sort_order: t.sort_order,
+      name: t.name, description: t.description ?? undefined, tier_hint: t.tier_hint ?? undefined, component_id: t.component_id ?? undefined, is_active: t.is_active, sort_order: t.sort_order,
     }).eq("key", t.key);
     if (error) toast.error(error.message); else toast.success("Tema tersimpan");
     loadThemes();
