@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, Activity, AlertCircle, CheckCircle2 } from "lucide-react";
-import { listCronRuns, listSystemAudit } from "@/server/observability.functions";
+import { listCronRuns, listSystemAudit } from "@/server/observability.functions.server";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 

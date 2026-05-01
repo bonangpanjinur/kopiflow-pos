@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import { Loader2, Eye } from "lucide-react";
-import { approveInvoice, rejectInvoice, getProofSignedUrl } from "@/server/billing.functions";
+import { approveInvoice, rejectInvoice, getProofSignedUrl } from "@/server/billing.functions.server";
 
 export const Route = createFileRoute("/admin/invoices")({
   component: AdminInvoices,

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { listMyNotifications, markNotification, dismissAllNotifications } from "@/server/notifications.functions";
+import { listMyNotifications, markNotification, dismissAllNotifications } from "@/server/notifications.functions.server";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 

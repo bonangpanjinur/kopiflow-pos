@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEntitlements } from "@/lib/use-entitlements";
-import { setShopTheme } from "@/server/entitlements.functions";
+import { setShopTheme } from "@/server/entitlements.functions.server";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, Lock, Palette } from "lucide-react";

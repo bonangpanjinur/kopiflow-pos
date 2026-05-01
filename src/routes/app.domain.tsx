@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Globe, Lock, Loader2, CheckCircle2, AlertTriangle, Copy, Trash2 } from "lucide-react";
-import { requestCustomDomain, verifyCustomDomain, removeCustomDomain } from "@/server/domain.functions";
+import { requestCustomDomain, verifyCustomDomain, removeCustomDomain } from "@/server/domain.functions.server";
 
 export const Route = createFileRoute("/app/domain")({
   component: DomainPage,

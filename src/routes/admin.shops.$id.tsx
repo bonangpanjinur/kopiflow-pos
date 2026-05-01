@@ -14,7 +14,7 @@ import {
   suspendShop,
   unsuspendShop,
   sendOwnerPasswordReset,
-} from "@/server/admin-shops.functions";
+} from "@/server/admin-shops.functions.server";
 
 export const Route = createFileRoute("/admin/shops/$id")({
   component: AdminShopDetail,

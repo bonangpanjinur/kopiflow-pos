@@ -14,7 +14,7 @@ import {
   deleteBackup,
   upsertBackupSchedule,
   getBackupSchedule,
-} from "@/server/backup.functions";
+} from "@/server/backup.functions.server";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { getEntitlements, type Entitlements } from "@/server/entitlements.functions";
+import { getEntitlements, type Entitlements } from "@/server/entitlements.functions.server";
 
 export function useEntitlements() {
   const [data, setData] = useState<Entitlements | null>(null);
