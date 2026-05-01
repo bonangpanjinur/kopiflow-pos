@@ -94,6 +94,7 @@ function AppLayoutInner() {
   const location = useLocation();
   const { isPro } = usePlan();
   const { isAdmin } = useIsSuperAdmin();
+  const staff = useStaffRole();
   const [shop, setShop] = useState<{ name: string; logo_url: string | null; suspended_at?: string | null; suspended_reason?: string | null } | null>(null);
   const [checking, setChecking] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -105,23 +106,45 @@ function AppLayoutInner() {
       return;
     }
     (async () => {
+      // Owner flow
       const { data } = await supabase
         .from("coffee_shops")
         .select("name, logo_url, suspended_at, suspended_reason")
         .eq("owner_id", user.id)
         .maybeSingle();
-      if (!data) {
-        navigate({ to: "/onboarding" });
+      if (data) {
+        setShop(data);
+        setChecking(false);
+        if (data.suspended_at && location.pathname !== "/app/billing") {
+          toast.error("Toko Anda dinonaktifkan oleh admin. Hubungi admin.");
+          navigate({ to: "/app/billing" });
+        }
         return;
       }
-      setShop(data);
-      setChecking(false);
-      if (data.suspended_at && location.pathname !== "/app/billing") {
-        toast.error("Toko Anda dinonaktifkan oleh admin. Hubungi admin.");
-        navigate({ to: "/app/billing" });
+      // Staff flow — find shop via staff_permissions
+      if (staff.loading) return;
+      if (staff.isStaff && staff.shopId) {
+        const { data: s } = await supabase
+          .from("coffee_shops")
+          .select("name, logo_url, suspended_at, suspended_reason")
+          .eq("id", staff.shopId)
+          .maybeSingle();
+        if (s) {
+          setShop(s);
+          setChecking(false);
+          return;
+        }
       }
+      // Neither owner nor staff
+      navigate({ to: "/onboarding" });
     })();
-  }, [user, loading, navigate, location.pathname]);
+  }, [user, loading, navigate, location.pathname, staff.loading, staff.isStaff, staff.shopId]);
+
+  // Filter nav for staff
+  const visibleNav = useMemo(() => {
+    if (staff.isOwner || !staff.isStaff) return NAV;
+    return NAV.filter((item) => isModuleAllowed(item.to, staff.allowedModules));
+  }, [staff.isOwner, staff.isStaff, staff.allowedModules]);
 
   // Close mobile menu on route change
   useEffect(() => {
