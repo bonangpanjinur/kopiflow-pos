@@ -22,7 +22,8 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, Upload, ImageIcon, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, Upload, ImageIcon, AlertTriangle, TrendingUp, TrendingDown, SlidersHorizontal } from "lucide-react";
+import { ModifierManager } from "@/components/modifier-manager";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 
@@ -93,6 +94,7 @@ function MenuPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [modifierItem, setModifierItem] = useState<MenuItem | null>(null);
 
   async function load() {
     if (!shop) return;
@@ -529,14 +531,18 @@ function MenuPage() {
                     )}
                   </div>
                   <div className="mt-auto flex items-center gap-1 pt-2">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(it)}>
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(it)} title="Edit">
                       <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setModifierItem(it)} title="Varian & Modifier">
+                      <SlidersHorizontal className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => remove(it)}
                       className="text-destructive hover:text-destructive"
+                      title="Hapus"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -546,6 +552,16 @@ function MenuPage() {
             );
           })}
         </div>
+      )}
+
+      {modifierItem && shop && (
+        <ModifierManager
+          open={!!modifierItem}
+          onClose={() => setModifierItem(null)}
+          menuItemId={modifierItem.id}
+          menuItemName={modifierItem.name}
+          shopId={shop.id}
+        />
       )}
     </div>
   );

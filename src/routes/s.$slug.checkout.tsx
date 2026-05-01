@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-r
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { readCart, cartTotal, clearCart, type CustomerCartItem } from "@/lib/customer-cart";
+import { readCart, cartTotal, clearCart, itemUnitPrice, type CustomerCartItem } from "@/lib/customer-cart";
 import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -323,9 +323,9 @@ function CheckoutPage() {
         order_id: order.id,
         menu_item_id: i.menu_item_id,
         name: i.name,
-        unit_price: i.price,
+        unit_price: itemUnitPrice(i),
         quantity: i.qty,
-        subtotal: i.price * i.qty,
+        subtotal: itemUnitPrice(i) * i.qty,
         note: i.note ?? null,
       }));
       const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
@@ -619,10 +619,17 @@ function CheckoutPage() {
         <div className="space-y-1 text-sm">
           {items.map((i) => (
             <div key={i.menu_item_id} className="flex justify-between">
-              <span className="text-muted-foreground">
-                {i.qty}× {i.name}
-              </span>
-              <span>{formatIDR(i.price * i.qty)}</span>
+              <div>
+                <span className="text-muted-foreground">
+                  {i.qty}× {i.name}
+                </span>
+                {i.options && i.options.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground ml-1">
+                    ({i.options.map((o) => o.option_name).join(", ")})
+                  </span>
+                )}
+              </div>
+              <span>{formatIDR(itemUnitPrice(i) * i.qty)}</span>
             </div>
           ))}
         </div>

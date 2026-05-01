@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
+import { lineUnitPrice } from "@/lib/cart";
 
 export type PaymentSplit = { method: string; amount: number };
 
@@ -119,11 +120,14 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
       {items.map((it, idx) => (
         <div key={idx} className="r-item">
           <div>{it.name}</div>
+          {it.options && it.options.length > 0 && (
+            <div className="r-small">  {it.options.map((o) => o.option_name).join(", ")}</div>
+          )}
           <div className="r-row">
             <span>
-              {it.quantity} x {formatIDR(it.unit_price)}
+              {it.quantity} x {formatIDR(lineUnitPrice(it))}
             </span>
-            <span>{formatIDR(it.unit_price * it.quantity)}</span>
+            <span>{formatIDR(lineUnitPrice(it) * it.quantity)}</span>
           </div>
           {it.note && <div className="r-small">  · {it.note}</div>}
         </div>

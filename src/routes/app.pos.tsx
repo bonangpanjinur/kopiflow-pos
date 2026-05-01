@@ -32,8 +32,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
-import type { CartItem } from "@/lib/cart";
-import { cartCount, cartTotal } from "@/lib/cart";
+import type { CartItem, SelectedOption } from "@/lib/cart";
+import { cartCount, cartTotal, cartItemKey, lineUnitPrice } from "@/lib/cart";
+import { ModifierPicker } from "@/components/modifier-picker";
 import type { PaymentSplit } from "@/components/pos/receipt";
 import { printReceiptNode, applyReceiptPaper } from "@/lib/receipt-printer";
 
@@ -151,6 +152,7 @@ function POSPage() {
   const [parkOpen, setParkOpen] = useState(false);
   const [parkLabel, setParkLabel] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [modPickerItem, setModPickerItem] = useState<MenuItem | null>(null);
 
   const cart = carts[activeIdx] ?? carts[0];
   const total = useMemo(() => (cart ? cartTotal(cart.items) : 0), [cart]);
@@ -307,11 +309,29 @@ function POSPage() {
     };
   }, [outlet?.id]);
 
-  function addToCart(it: MenuItem) {
+  function handleMenuClick(it: MenuItem) {
+    // Check if item has modifiers — if so, show picker
+    if (!shop) return;
+    supabase
+      .from("menu_item_option_groups")
+      .select("id", { count: "exact", head: true })
+      .eq("menu_item_id", it.id)
+      .eq("shop_id", shop.id)
+      .then(({ count }) => {
+        if ((count ?? 0) > 0) {
+          setModPickerItem(it);
+        } else {
+          addToCartDirect(it, []);
+        }
+      });
+  }
+
+  function addToCartDirect(it: MenuItem, options: SelectedOption[]) {
     setCarts((cs) => {
       const next = cs.slice();
       const c = { ...next[activeIdx] };
-      const found = c.items.findIndex((x) => x.menu_item_id === it.id);
+      const newKey = cartItemKey({ menu_item_id: it.id, options });
+      const found = c.items.findIndex((x) => cartItemKey(x) === newKey);
       if (found >= 0) {
         c.items = c.items.map((x, i) =>
           i === found ? { ...x, quantity: x.quantity + 1 } : x,
@@ -319,7 +339,7 @@ function POSPage() {
       } else {
         c.items = [
           ...c.items,
-          { menu_item_id: it.id, name: it.name, unit_price: Number(it.price), quantity: 1 },
+          { menu_item_id: it.id, name: it.name, unit_price: Number(it.price), quantity: 1, options: options.length > 0 ? options : undefined },
         ];
       }
       next[activeIdx] = c;
@@ -565,7 +585,7 @@ function POSPage() {
                   {filtered.map((it) => (
                     <button
                       key={it.id}
-                      onClick={() => addToCart(it)}
+                      onClick={() => handleMenuClick(it)}
                       className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
                     >
                       <div className="aspect-square w-full bg-muted">
@@ -645,8 +665,13 @@ function POSPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium">{line.name}</div>
+                          {line.options && line.options.length > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              {line.options.map((o) => o.option_name).join(", ")}
+                            </div>
+                          )}
                           <div className="text-xs text-muted-foreground">
-                            {formatIDR(line.unit_price)}
+                            {formatIDR(lineUnitPrice(line))}
                           </div>
                           {line.note && (
                             <div className="mt-1 text-xs italic text-muted-foreground">
@@ -701,7 +726,7 @@ function POSPage() {
                           </button>
                         </div>
                         <div className="text-sm font-semibold">
-                          {formatIDR(line.unit_price * line.quantity)}
+                          {formatIDR(lineUnitPrice(line) * line.quantity)}
                         </div>
                       </div>
                     </li>
@@ -828,6 +853,18 @@ function POSPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {modPickerItem && shop && (
+        <ModifierPicker
+          open={!!modPickerItem}
+          onClose={() => setModPickerItem(null)}
+          menuItemId={modPickerItem.id}
+          menuItemName={modPickerItem.name}
+          shopId={shop.id}
+          onConfirm={(selected) => {
+            addToCartDirect(modPickerItem, selected);
+          }}
+        />
+      )}
     </div>
   );
 }
