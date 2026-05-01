@@ -726,7 +726,7 @@ function POSPage() {
                           </button>
                         </div>
                         <div className="text-sm font-semibold">
-                          {formatIDR(line.unit_price * line.quantity)}
+                          {formatIDR(lineUnitPrice(line) * line.quantity)}
                         </div>
                       </div>
                     </li>
