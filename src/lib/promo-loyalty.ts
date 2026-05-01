@@ -7,6 +7,32 @@ export type PromoValidation = {
   error: string | null;
 };
 
+export async function getAutoPromos(
+  shopId: string,
+  subtotal: number,
+  channel: "pos" | "online" | "all",
+): Promise<PromoValidation[]> {
+  const { data, error } = await supabase
+    .from("promos")
+    .select("*")
+    .eq("shop_id", shopId)
+    .eq("is_active", true)
+    .eq("code", "") // Auto-promo typically has no code or a specific flag
+    .lte("min_order", subtotal)
+    .or(`channel.eq.${channel},channel.eq.all`);
+
+  if (error || !data) return [];
+
+  return data.map((p) => ({
+    promo_id: p.id,
+    code: p.code,
+    discount: p.type === "percent" 
+      ? Math.min((subtotal * p.value) / 100, p.max_discount || Infinity)
+      : p.value,
+    error: null,
+  }));
+}
+
 export async function validatePromo(
   shopId: string,
   code: string,
@@ -51,19 +77,47 @@ export async function getLoyaltySettings(shopId: string): Promise<LoyaltySetting
   return data as LoyaltySettings;
 }
 
-export async function getUserPoints(shopId: string, userId: string): Promise<number> {
-  const { data } = await supabase
+export type LoyaltyTier = {
+  id: string;
+  name: string;
+  min_points: number;
+  multiplier: number;
+};
+
+export async function getUserLoyalty(shopId: string, userId: string): Promise<{ balance: number; tier: LoyaltyTier | null }> {
+  const { data: points } = await supabase
     .from("loyalty_points")
     .select("balance")
     .eq("shop_id", shopId)
     .eq("user_id", userId)
     .maybeSingle();
-  return data?.balance ?? 0;
+  
+  const balance = points?.balance ?? 0;
+
+  const { data: tiers } = await supabase
+    .from("loyalty_tiers" as any)
+    .select("*")
+    .eq("shop_id", shopId)
+    .lte("min_points", balance)
+    .order("min_points", { ascending: false })
+    .limit(1);
+
+  return {
+    balance,
+    tier: (tiers?.[0] as unknown as LoyaltyTier) ?? null,
+  };
 }
 
-export function calcPointsEarned(subtotal: number, settings: LoyaltySettings | null): number {
+export async function getUserPoints(shopId: string, userId: string): Promise<number> {
+  const { balance } = await getUserLoyalty(shopId, userId);
+  return balance;
+}
+
+export function calcPointsEarned(subtotal: number, settings: LoyaltySettings | null, tier?: LoyaltyTier | null): number {
   if (!settings || settings.rupiah_per_point <= 0) return 0;
-  return Math.floor(subtotal / settings.rupiah_per_point);
+  const basePoints = Math.floor(subtotal / settings.rupiah_per_point);
+  const multiplier = tier?.multiplier ?? 1;
+  return Math.floor(basePoints * multiplier);
 }
 
 export function maxRedeemDiscount(

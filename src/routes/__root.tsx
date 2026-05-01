@@ -1,6 +1,8 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, redirect } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { PWAUpdater } from "@/components/PWAUpdater";
+import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { resolveHost } from "@/server/domain.functions";
 
 import appCss from "../styles.css?url";
@@ -96,6 +98,8 @@ function RootComponent() {
   return (
     <AuthProvider>
       <Outlet />
+      <PWAUpdater />
+      <PushNotificationManager />
       <Toaster richColors position="top-center" />
     </AuthProvider>
   );
