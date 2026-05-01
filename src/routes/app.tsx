@@ -43,6 +43,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { OwnerReminderBanner } from "@/components/owner-reminder-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { OutletProvider, useOutletContext } from "@/lib/outlet-context";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
