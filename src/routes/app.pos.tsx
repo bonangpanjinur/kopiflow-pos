@@ -309,11 +309,29 @@ function POSPage() {
     };
   }, [outlet?.id]);
 
-  function addToCart(it: MenuItem) {
+  function handleMenuClick(it: MenuItem) {
+    // Check if item has modifiers — if so, show picker
+    if (!shop) return;
+    supabase
+      .from("menu_item_option_groups")
+      .select("id", { count: "exact", head: true })
+      .eq("menu_item_id", it.id)
+      .eq("shop_id", shop.id)
+      .then(({ count }) => {
+        if ((count ?? 0) > 0) {
+          setModPickerItem(it);
+        } else {
+          addToCartDirect(it, []);
+        }
+      });
+  }
+
+  function addToCartDirect(it: MenuItem, options: SelectedOption[]) {
     setCarts((cs) => {
       const next = cs.slice();
       const c = { ...next[activeIdx] };
-      const found = c.items.findIndex((x) => x.menu_item_id === it.id);
+      const newKey = cartItemKey({ menu_item_id: it.id, options });
+      const found = c.items.findIndex((x) => cartItemKey(x) === newKey);
       if (found >= 0) {
         c.items = c.items.map((x, i) =>
           i === found ? { ...x, quantity: x.quantity + 1 } : x,
@@ -321,7 +339,7 @@ function POSPage() {
       } else {
         c.items = [
           ...c.items,
-          { menu_item_id: it.id, name: it.name, unit_price: Number(it.price), quantity: 1 },
+          { menu_item_id: it.id, name: it.name, unit_price: Number(it.price), quantity: 1, options: options.length > 0 ? options : undefined },
         ];
       }
       next[activeIdx] = c;
