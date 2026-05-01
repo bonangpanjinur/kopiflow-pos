@@ -35,18 +35,20 @@ export const updateMinMonths = createServerFn({ method: "POST" })
     const { plan_id, item_key, kind, new_value } = data;
 
     // 1. Read current value
-    const table = kind === "feature" ? "plan_features" : "plan_themes";
-    const keyCol = kind === "feature" ? "feature_key" : "theme_key";
-
-    const readCurrent = async () => {
-      const { data: row, error } = await supabase
-        .from(table)
-        .select("requires_min_months")
-        .eq("plan_id", plan_id)
-        .eq(keyCol, item_key)
-        .single();
-      if (error) throw new Error(error.message);
-      return (row?.requires_min_months as number | null) ?? 0;
+    const readCurrent = async (): Promise<number> => {
+      if (kind === "feature") {
+        const { data: row, error } = await supabase
+          .from("plan_features").select("requires_min_months")
+          .eq("plan_id", plan_id).eq("feature_key", item_key).single();
+        if (error) throw new Error(error.message);
+        return (row?.requires_min_months as number | null) ?? 0;
+      } else {
+        const { data: row, error } = await supabase
+          .from("plan_themes").select("requires_min_months")
+          .eq("plan_id", plan_id).eq("theme_key", item_key).single();
+        if (error) throw new Error(error.message);
+        return (row?.requires_min_months as number | null) ?? 0;
+      }
     };
 
     const oldValue = await withRetry(readCurrent);
@@ -57,12 +59,17 @@ export const updateMinMonths = createServerFn({ method: "POST" })
 
     // 2. Update with retry (idempotent — same value each retry)
     const doUpdate = async () => {
-      const { error } = await supabase
-        .from(table)
-        .update({ requires_min_months: new_value })
-        .eq("plan_id", plan_id)
-        .eq(keyCol, item_key);
-      if (error) throw new Error(error.message);
+      if (kind === "feature") {
+        const { error } = await supabase.from("plan_features")
+          .update({ requires_min_months: new_value })
+          .eq("plan_id", plan_id).eq("feature_key", item_key);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from("plan_themes")
+          .update({ requires_min_months: new_value })
+          .eq("plan_id", plan_id).eq("theme_key", item_key);
+        if (error) throw new Error(error.message);
+      }
     };
 
     await withRetry(doUpdate);
