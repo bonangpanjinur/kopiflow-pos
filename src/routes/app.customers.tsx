@@ -137,7 +137,7 @@ function CustomersPage() {
       Segmen: c.segment ?? "-",
       Tags: (c.tags ?? []).join("; "),
     }));
-    downloadCSV(rows, "pelanggan");
+    downloadCSV("pelanggan", rows);
     toast.success("Export selesai");
   }
 
