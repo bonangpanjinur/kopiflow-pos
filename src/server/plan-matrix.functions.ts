@@ -41,7 +41,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = MAX_RETRIES, _onRetr
 }
 
 async function readCurrentValue(
-  supabase: Parameters<typeof updateMinMonths>[0] extends { data: infer D } ? never : any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   kind: "feature" | "theme",
   plan_id: string,
   item_key: string,
