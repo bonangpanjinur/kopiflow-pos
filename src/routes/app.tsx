@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   ListOrdered,
   UtensilsCrossed,
+  Tags,
   UserCheck,
   Package,
   ChefHat,
