@@ -94,6 +94,7 @@ function MenuPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [modifierItem, setModifierItem] = useState<MenuItem | null>(null);
 
   async function load() {
     if (!shop) return;
