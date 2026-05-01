@@ -39,6 +39,7 @@ import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppDomainRouteImport } from './routes/app.domain'
 import { Route as AppDeliveryRouteImport } from './routes/app.delivery'
+import { Route as AppCustomersRouteImport } from './routes/app.customers'
 import { Route as AppCouriersRouteImport } from './routes/app.couriers'
 import { Route as AppCourierRouteImport } from './routes/app.courier'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
@@ -54,6 +55,7 @@ import { Route as AdminDomainsRouteImport } from './routes/admin.domains'
 import { Route as AdminActivityRouteImport } from './routes/admin.activity'
 import { Route as SSlugIndexRouteImport } from './routes/s.$slug.index'
 import { Route as SSlugOrdersRouteImport } from './routes/s.$slug.orders'
+import { Route as SSlugMeRouteImport } from './routes/s.$slug.me'
 import { Route as SSlugLoginRouteImport } from './routes/s.$slug.login'
 import { Route as SSlugCheckoutRouteImport } from './routes/s.$slug.checkout'
 import { Route as SSlugCartRouteImport } from './routes/s.$slug.cart'
@@ -214,6 +216,11 @@ const AppDeliveryRoute = AppDeliveryRouteImport.update({
   path: '/delivery',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCustomersRoute = AppCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCouriersRoute = AppCouriersRouteImport.update({
   id: '/couriers',
   path: '/couriers',
@@ -289,6 +296,11 @@ const SSlugOrdersRoute = SSlugOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => SSlugRoute,
 } as any)
+const SSlugMeRoute = SSlugMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => SSlugRoute,
+} as any)
 const SSlugLoginRoute = SSlugLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -358,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
+  '/app/customers': typeof AppCustomersRoute
   '/app/delivery': typeof AppDeliveryRoute
   '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
@@ -385,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
   '/s/$slug/login': typeof SSlugLoginRoute
+  '/s/$slug/me': typeof SSlugMeRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
@@ -412,6 +426,7 @@ export interface FileRoutesByTo {
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
+  '/app/customers': typeof AppCustomersRoute
   '/app/delivery': typeof AppDeliveryRoute
   '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
@@ -438,6 +453,7 @@ export interface FileRoutesByTo {
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
   '/s/$slug/login': typeof SSlugLoginRoute
+  '/s/$slug/me': typeof SSlugMeRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug': typeof SSlugIndexRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
@@ -468,6 +484,7 @@ export interface FileRoutesById {
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
   '/app/couriers': typeof AppCouriersRoute
+  '/app/customers': typeof AppCustomersRoute
   '/app/delivery': typeof AppDeliveryRoute
   '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
@@ -495,6 +512,7 @@ export interface FileRoutesById {
   '/s/$slug/cart': typeof SSlugCartRoute
   '/s/$slug/checkout': typeof SSlugCheckoutRoute
   '/s/$slug/login': typeof SSlugLoginRoute
+  '/s/$slug/me': typeof SSlugMeRoute
   '/s/$slug/orders': typeof SSlugOrdersRoute
   '/s/$slug/': typeof SSlugIndexRoute
   '/api/public/cron/plan-maintenance': typeof ApiPublicCronPlanMaintenanceRoute
@@ -526,6 +544,7 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/courier'
     | '/app/couriers'
+    | '/app/customers'
     | '/app/delivery'
     | '/app/domain'
     | '/app/employees'
@@ -553,6 +572,7 @@ export interface FileRouteTypes {
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
     | '/s/$slug/login'
+    | '/s/$slug/me'
     | '/s/$slug/orders'
     | '/s/$slug/'
     | '/api/public/cron/plan-maintenance'
@@ -580,6 +600,7 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/courier'
     | '/app/couriers'
+    | '/app/customers'
     | '/app/delivery'
     | '/app/domain'
     | '/app/employees'
@@ -606,6 +627,7 @@ export interface FileRouteTypes {
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
     | '/s/$slug/login'
+    | '/s/$slug/me'
     | '/s/$slug/orders'
     | '/s/$slug'
     | '/api/public/cron/plan-maintenance'
@@ -635,6 +657,7 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/courier'
     | '/app/couriers'
+    | '/app/customers'
     | '/app/delivery'
     | '/app/domain'
     | '/app/employees'
@@ -662,6 +685,7 @@ export interface FileRouteTypes {
     | '/s/$slug/cart'
     | '/s/$slug/checkout'
     | '/s/$slug/login'
+    | '/s/$slug/me'
     | '/s/$slug/orders'
     | '/s/$slug/'
     | '/api/public/cron/plan-maintenance'
@@ -898,6 +922,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDeliveryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/customers': {
+      id: '/app/customers'
+      path: '/customers'
+      fullPath: '/app/customers'
+      preLoaderRoute: typeof AppCustomersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/couriers': {
       id: '/app/couriers'
       path: '/couriers'
@@ -1001,6 +1032,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/s/$slug/orders'
       preLoaderRoute: typeof SSlugOrdersRouteImport
+      parentRoute: typeof SSlugRoute
+    }
+    '/s/$slug/me': {
+      id: '/s/$slug/me'
+      path: '/me'
+      fullPath: '/s/$slug/me'
+      preLoaderRoute: typeof SSlugMeRouteImport
       parentRoute: typeof SSlugRoute
     }
     '/s/$slug/login': {
@@ -1122,6 +1160,7 @@ interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCourierRoute: typeof AppCourierRoute
   AppCouriersRoute: typeof AppCouriersRoute
+  AppCustomersRoute: typeof AppCustomersRoute
   AppDeliveryRoute: typeof AppDeliveryRoute
   AppDomainRoute: typeof AppDomainRoute
   AppEmployeesRoute: typeof AppEmployeesRoute
@@ -1150,6 +1189,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppCourierRoute: AppCourierRoute,
   AppCouriersRoute: AppCouriersRoute,
+  AppCustomersRoute: AppCustomersRoute,
   AppDeliveryRoute: AppDeliveryRoute,
   AppDomainRoute: AppDomainRoute,
   AppEmployeesRoute: AppEmployeesRoute,
@@ -1176,6 +1216,7 @@ interface SSlugRouteChildren {
   SSlugCartRoute: typeof SSlugCartRoute
   SSlugCheckoutRoute: typeof SSlugCheckoutRoute
   SSlugLoginRoute: typeof SSlugLoginRoute
+  SSlugMeRoute: typeof SSlugMeRoute
   SSlugOrdersRoute: typeof SSlugOrdersRoute
   SSlugIndexRoute: typeof SSlugIndexRoute
   SSlugMenuMenuIdRoute: typeof SSlugMenuMenuIdRoute
@@ -1186,6 +1227,7 @@ const SSlugRouteChildren: SSlugRouteChildren = {
   SSlugCartRoute: SSlugCartRoute,
   SSlugCheckoutRoute: SSlugCheckoutRoute,
   SSlugLoginRoute: SSlugLoginRoute,
+  SSlugMeRoute: SSlugMeRoute,
   SSlugOrdersRoute: SSlugOrdersRoute,
   SSlugIndexRoute: SSlugIndexRoute,
   SSlugMenuMenuIdRoute: SSlugMenuMenuIdRoute,
