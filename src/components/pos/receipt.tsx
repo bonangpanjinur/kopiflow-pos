@@ -99,6 +99,7 @@ export const Receipt = forwardRef<HTMLDivElement, Props>(function Receipt(
       {safeOutletName && <div className="r-center">{safeOutletName}</div>}
       {safeAddress && <div className="r-center r-small">{safeAddress}</div>}
       {safePhone && <div className="r-center r-small">Telp. {safePhone}</div>}
+      {receiptHeader && <div className="r-center r-small" style={{ marginTop: 2 }}>{receiptHeader}</div>}
       <div className="r-divider" />
       <div className="r-row">
         <span>No</span>
