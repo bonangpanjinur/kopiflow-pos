@@ -183,7 +183,7 @@ function AppLayoutInner() {
       <OutletSwitcher shopName={shop?.name} />
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
-        {NAV.map((item) => {
+        {visibleNav.map((item) => {
           const active = (item as { exact?: boolean }).exact
             ? location.pathname === item.to
             : location.pathname.startsWith(item.to);
