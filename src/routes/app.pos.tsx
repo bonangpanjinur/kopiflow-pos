@@ -853,6 +853,18 @@ function POSPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {modPickerItem && shop && (
+        <ModifierPicker
+          open={!!modPickerItem}
+          onClose={() => setModPickerItem(null)}
+          menuItemId={modPickerItem.id}
+          menuItemName={modPickerItem.name}
+          shopId={shop.id}
+          onConfirm={(selected) => {
+            addToCartDirect(modPickerItem, selected);
+          }}
+        />
+      )}
     </div>
   );
 }
