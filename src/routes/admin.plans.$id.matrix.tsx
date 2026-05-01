@@ -149,7 +149,7 @@ function PlanMatrix() {
                   return (
                     <div key={f.key} className="flex items-center justify-between gap-3 py-1.5 border-b border-border/50 last:border-0">
                       <div className="flex items-center gap-3 flex-1">
-                        <Switch checked={on} onCheckedChange={(v) => toggleFeature(f.key, v)} />
+                        <Switch checked={on} disabled={busy !== null} onCheckedChange={(v) => toggleFeature(f.key, v)} />
                         <span className="text-sm font-medium">{f.name}</span>
                         <span className="text-xs text-muted-foreground font-mono">{f.key}</span>
                       </div>
@@ -175,7 +175,7 @@ function PlanMatrix() {
                 return (
                   <div key={t.key} className="flex items-center justify-between gap-3 py-1.5 border-b border-border/50 last:border-0">
                     <div className="flex items-center gap-3 flex-1">
-                      <Switch checked={on} onCheckedChange={(v) => toggleTheme(t.key, v)} />
+                      <Switch checked={on} disabled={busy !== null} onCheckedChange={(v) => toggleTheme(t.key, v)} />
                       <span className="text-sm font-medium">{t.name}</span>
                       <span className="text-xs text-muted-foreground font-mono">{t.key}</span>
                       {t.tier_hint && <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{t.tier_hint}</span>}
