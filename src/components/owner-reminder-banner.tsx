@@ -4,6 +4,7 @@ import { AlertTriangle, Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listMyNotifications, markNotification, dismissAllNotifications } from "@/server/notifications.functions";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type Notif = {
   id: string;
@@ -32,16 +33,35 @@ export function OwnerReminderBanner() {
   const load = async () => {
     try {
       const rows = await listMyNotifications();
-      setItems(rows as Notif[]);
+      // Defensive: server fn proxy may wrap response or return null/object on error
+      const arr = Array.isArray(rows)
+        ? rows
+        : Array.isArray((rows as { result?: unknown })?.result)
+          ? ((rows as { result: Notif[] }).result)
+          : [];
+      setItems(arr as Notif[]);
     } catch {
-      // ignore — likely not signed in yet
+      setItems([]);
     }
   };
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(t);
+    // Realtime: refresh when owner_notifications changes for me
+    const ch = supabase
+      .channel("owner-notif-banner")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "owner_notifications" },
+        () => load(),
+      )
+      .subscribe();
+    // Lightweight fallback poll every 10 minutes (in case realtime drops)
+    const t = setInterval(load, 10 * 60 * 1000);
+    return () => {
+      clearInterval(t);
+      supabase.removeChannel(ch);
+    };
   }, []);
 
   const dismissOne = async (id: string) => {
@@ -65,9 +85,10 @@ export function OwnerReminderBanner() {
     }
   };
 
-  if (items.length === 0) return null;
+  const safeItems = Array.isArray(items) ? items : [];
+  if (safeItems.length === 0) return null;
 
-  const top = items.slice(0, open ? items.length : 1);
+  const top = safeItems.slice(0, open ? safeItems.length : 1);
 
   return (
     <div className="space-y-2 px-3 py-2 lg:px-4">
@@ -95,11 +116,11 @@ export function OwnerReminderBanner() {
           </button>
         </div>
       ))}
-      {items.length > 1 && (
+      {safeItems.length > 1 && (
         <div className="flex items-center justify-between text-xs">
           <Button variant="ghost" size="sm" className="h-7 gap-1" onClick={() => setOpen((v) => !v)}>
             <Bell className="h-3.5 w-3.5" />
-            {open ? "Sembunyikan" : `Lihat ${items.length - 1} lainnya`}
+            {open ? "Sembunyikan" : `Lihat ${safeItems.length - 1} lainnya`}
           </Button>
           <Button variant="ghost" size="sm" className="h-7 gap-1" onClick={dismissAll}>
             <Check className="h-3.5 w-3.5" /> Tutup semua

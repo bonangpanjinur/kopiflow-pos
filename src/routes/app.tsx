@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { OwnerReminderBanner } from "@/components/owner-reminder-banner";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
@@ -243,7 +244,9 @@ function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-auto">
-          <OwnerReminderBanner />
+          <ErrorBoundary>
+            <OwnerReminderBanner />
+          </ErrorBoundary>
           <Outlet />
         </main>
       </div>
