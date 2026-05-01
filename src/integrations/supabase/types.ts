@@ -56,6 +56,36 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_schedules: {
+        Row: {
+          created_at: string
+          frequency: string
+          last_run_at: string | null
+          next_run_at: string
+          retention_days: number
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          frequency?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          retention_days?: number
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          retention_days?: number
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       billing_settings: {
         Row: {
           account_name: string | null
@@ -1754,6 +1784,45 @@ export type Database = {
           start_time?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      shop_backups: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          file_path: string | null
+          id: string
+          includes: Json
+          requested_by: string
+          shop_id: string
+          size_bytes: number | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          id?: string
+          includes?: Json
+          requested_by: string
+          shop_id: string
+          size_bytes?: number | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          id?: string
+          includes?: Json
+          requested_by?: string
+          shop_id?: string
+          size_bytes?: number | null
+          status?: string
         }
         Relationships: []
       }
