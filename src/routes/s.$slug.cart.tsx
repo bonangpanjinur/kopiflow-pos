@@ -57,7 +57,12 @@ function CartPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">{i.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatIDR(i.price)}</p>
+                  {i.options && i.options.length > 0 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {i.options.map((o) => o.option_name).join(", ")}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{formatIDR(itemUnitPrice(i))}</p>
                   {i.note && <p className="mt-0.5 text-xs italic text-muted-foreground">"{i.note}"</p>}
                 </div>
                 <button
