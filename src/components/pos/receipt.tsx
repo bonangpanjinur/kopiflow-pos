@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
+import { lineUnitPrice } from "@/lib/cart";
 
 export type PaymentSplit = { method: string; amount: number };
 
