@@ -43,6 +43,7 @@ import { Route as AppCouriersRouteImport } from './routes/app.couriers'
 import { Route as AppCourierRouteImport } from './routes/app.courier'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 import { Route as AppBillingRouteImport } from './routes/app.billing'
+import { Route as AppBackupRouteImport } from './routes/app.backup'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
 import { Route as AppAppearanceRouteImport } from './routes/app.appearance'
 import { Route as AdminShopsRouteImport } from './routes/admin.shops'
@@ -233,6 +234,11 @@ const AppBillingRoute = AppBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBackupRoute = AppBackupRouteImport.update({
+  id: '/backup',
+  path: '/backup',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -347,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/appearance': typeof AppAppearanceRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/backup': typeof AppBackupRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
@@ -400,6 +407,7 @@ export interface FileRoutesByTo {
   '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/appearance': typeof AppAppearanceRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/backup': typeof AppBackupRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
@@ -455,6 +463,7 @@ export interface FileRoutesById {
   '/admin/shops': typeof AdminShopsRouteWithChildren
   '/app/appearance': typeof AppAppearanceRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/backup': typeof AppBackupRoute
   '/app/billing': typeof AppBillingRoute
   '/app/categories': typeof AppCategoriesRoute
   '/app/courier': typeof AppCourierRoute
@@ -512,6 +521,7 @@ export interface FileRouteTypes {
     | '/admin/shops'
     | '/app/appearance'
     | '/app/attendance'
+    | '/app/backup'
     | '/app/billing'
     | '/app/categories'
     | '/app/courier'
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/admin/shops'
     | '/app/appearance'
     | '/app/attendance'
+    | '/app/backup'
     | '/app/billing'
     | '/app/categories'
     | '/app/courier'
@@ -619,6 +630,7 @@ export interface FileRouteTypes {
     | '/admin/shops'
     | '/app/appearance'
     | '/app/attendance'
+    | '/app/backup'
     | '/app/billing'
     | '/app/categories'
     | '/app/courier'
@@ -914,6 +926,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBillingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/backup': {
+      id: '/app/backup'
+      path: '/backup'
+      fullPath: '/app/backup'
+      preLoaderRoute: typeof AppBackupRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/attendance': {
       id: '/app/attendance'
       path: '/attendance'
@@ -1098,6 +1117,7 @@ const AppPurchaseOrdersRouteWithChildren =
 interface AppRouteChildren {
   AppAppearanceRoute: typeof AppAppearanceRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppBackupRoute: typeof AppBackupRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCourierRoute: typeof AppCourierRoute
@@ -1125,6 +1145,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAppearanceRoute: AppAppearanceRoute,
   AppAttendanceRoute: AppAttendanceRoute,
+  AppBackupRoute: AppBackupRoute,
   AppBillingRoute: AppBillingRoute,
   AppCategoriesRoute: AppCategoriesRoute,
   AppCourierRoute: AppCourierRoute,

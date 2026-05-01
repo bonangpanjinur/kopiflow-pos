@@ -34,12 +34,14 @@ import {
   ShieldCheck,
   Lock,
   Palette,
+  Database,
 } from "lucide-react";
 import { usePlan, useIsSuperAdmin } from "@/lib/use-plan";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { OwnerReminderBanner } from "@/components/owner-reminder-banner";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
@@ -69,6 +71,7 @@ const NAV = [
   { to: "/app/billing", label: "Plan & Tagihan", icon: CreditCard },
   { to: "/app/domain", label: "Domain Kustom", icon: Globe, proOnly: true },
   { to: "/app/appearance", label: "Tampilan Toko", icon: Palette },
+  { to: "/app/backup", label: "Backup Data", icon: Database },
   { to: "/app/settings", label: "Pengaturan", icon: Settings },
 ] as const;
 
@@ -243,7 +246,9 @@ function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-auto">
-          <OwnerReminderBanner />
+          <ErrorBoundary>
+            <OwnerReminderBanner />
+          </ErrorBoundary>
           <Outlet />
         </main>
       </div>

@@ -10,7 +10,13 @@ export function useEntitlements() {
     setLoading(true);
     try {
       const r = await getEntitlements();
-      setData(r);
+      // Defensive: ensure features & themes are arrays even if RPC returns null
+      const safe: Entitlements = {
+        ...r,
+        features: Array.isArray(r?.features) ? r.features : [],
+        themes: Array.isArray(r?.themes) ? r.themes : [],
+      };
+      setData(safe);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -22,7 +28,8 @@ export function useEntitlements() {
 
   const hasFeature = useCallback((key: string) => {
     if (!data) return false;
-    return data.features.some((f) => f.key === key && f.allowed);
+    const features = Array.isArray(data.features) ? data.features : [];
+    return features.some((f) => f.key === key && f.allowed);
   }, [data]);
 
   return {
@@ -33,7 +40,7 @@ export function useEntitlements() {
     isPro: data ? data.plan_code !== "basic" && data.plan_code !== "free" : false,
     planCode: data?.plan_code ?? "basic",
     monthsActive: data?.months_active ?? 0,
-    themes: data?.themes ?? [],
+    themes: Array.isArray(data?.themes) ? data.themes : [],
     activeThemeKey: data?.active_theme_key ?? "classic",
     reload,
   };

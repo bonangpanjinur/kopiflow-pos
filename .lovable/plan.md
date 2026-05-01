@@ -1,122 +1,220 @@
 
-# Theme Marketplace + Dynamic Plan/Feature System
+# Audit Menyeluruh & Rencana Pengembangan
 
-Saat ini paket hanya `free`/`pro` (hardcode). Storefront pakai 1 layout. Kita ubah jadi: super admin definisikan **paket apa saja**, **fitur apa saja**, **tema apa saja**, dan **aturan add-on** (mis. custom domain butuh Pro min 1 tahun atau Pro Plus min 6 bulan). Owner pilih tema dari yang tersedia di paketnya.
+## 1) Bug & Error yang Terdeteksi
 
-## Konsep Inti
+### A. Runtime crash di `/app` — `TypeError: s.slice is not a function`
+Konsol menunjukkan crash berulang saat memuat layout `/app`. Sumbernya **`src/components/owner-reminder-banner.tsx` baris 70** (`items.slice(0, ...)`).
 
-3 sumbu yang dapat dikelola admin:
+Penyebab: `listMyNotifications()` dipanggil sebagai server function TanStack. Dalam beberapa kasus respons tidak berbentuk array (mis. saat user belum punya `shop_id` / RLS memfilter habis / proxy SSR mengembalikan objek `{result, context}`). State `items` menjadi non-array, lalu `.length` mengembalikan `undefined`, kondisi `=== 0` false, jalur render mencapai `.slice` dan error.
 
-1. **Plans** (sudah ada) — basic, pro, pro plus, dst. Bisa ditambah/diatur.
-2. **Features** (baru) — kapabilitas atomik: `custom_domain`, `online_orders`, `loyalty`, `multi_outlet`, `theme_picker`, dst.
-3. **Themes** (baru) — varian visual storefront (`classic`, `minimal`, `dark-luxe`, `vibrant`, …).
+Perbaikan:
+- Normalisasi: `setItems(Array.isArray(rows) ? rows : [])`
+- Tambah guard: `const safeItems = Array.isArray(items) ? items : [];`
+- Tambah ErrorBoundary lokal di `app.tsx` agar crash banner tidak menjatuhkan seluruh dashboard.
 
-Lalu 2 tabel relasi yang menghubungkan plan → fitur & plan → tema, plus aturan tambahan (`requires_min_months`).
+### B. Bug & Tech-debt lain (hasil scan)
+1. `useEntitlements` tidak menangani `data.features` / `data.themes` jika RPC `get_shop_entitlements` return shape JSON — beberapa pemanggil bisa crash bila salah satunya null.
+2. `app.online-orders.tsx` & `s.$slug.orders.tsx` belum subscribe Realtime → status order tidak refresh otomatis kecuali polling.
+3. `app.appearance.tsx` belum mem-validasi entitlement secara server-side saat aktivasi (sudah ada di RPC `set_shop_theme`, tapi UI tidak menampilkan reason gating).
+4. `OwnerReminderBanner` interval 5 menit polling — boros; pakai Realtime channel `owner_notifications`.
+5. Kurir view (`/app/courier`): tidak ada filter outlet & tidak ada tombol "ambil pesanan" eksplisit (race condition kalau dua kurir sekaligus).
+6. Tidak ada rate-limit di endpoint publik `/api/public/cron/*` selain secret — perlu IP allowlist atau dedupe `cron_runs`.
+7. Sebagian route `/app/*` belum lazy-load → bundle awal besar (sumber lambatnya hydrate di mobile).
 
-## Database
+---
 
-### Tabel baru
+## 2) Gap Fitur per-Role
 
-- **`features`** — katalog fitur global
-  - `key` (slug unik, mis. `custom_domain`), `name`, `description`, `category` (`storefront`/`pos`/`add_on`), `is_active`
-- **`themes`** — katalog desain storefront
-  - `key`, `name`, `preview_image_url`, `description`, `tier_hint` (info), `component_id` (mis. `classic`, `minimal`), `is_active`, `sort_order`
-- **`plan_features`** — fitur yang termasuk dalam tiap paket
-  - `plan_id`, `feature_key`, `requires_min_months` (int, opsional → fitur baru aktif kalau langganan saat ini ≥ X bulan), `limit_value` (int opsional, mis. jumlah tema), `meta` (jsonb)
-  - PK: (`plan_id`, `feature_key`)
-- **`plan_themes`** — tema yang boleh dipilih owner per paket
-  - `plan_id`, `theme_key`, `requires_min_months`
-  - PK: (`plan_id`, `theme_key`)
+### Super Admin
+Sudah ada: daftar toko, plan invoices, domain, plans CRUD basic, activity, dashboard stats, suspend.
+Kurang:
+- **Editor Plan→Feature/Theme** (UI matrix) — tabel `plan_features`/`plan_themes` ada tapi belum punya halaman GUI.
+- **Catalog Editor** untuk `features` & `themes` (tambah/edit/sortir).
+- **Broadcast/Pengumuman** ke semua owner (`owner_notifications` global).
+- **Audit log viewer** terpadu (`branding_audit`, `domain_audit`, `system_audit`, `cron_runs`) dengan filter.
+- **Refund/credit note** untuk plan_invoices.
+- **Impersonate owner** (read-only) untuk troubleshooting.
+- **Backup global**: trigger backup penuh tenant on-demand.
 
-### Modifikasi `coffee_shops`
+### Owner / Toko
+Sudah ada: POS, menu, kategori, inventori, supplier, PO, resep, pegawai, jadwal, absensi, delivery, kurir, shift, laporan, promo, loyalty, billing, domain, appearance, settings.
+Kurang:
+- **Multi-outlet management UI** (tabel `outlets` ada, tapi route khusus belum lengkap untuk CRUD & switcher).
+- **Customer database** terpusat (CRM ringan) — daftar pelanggan + total spend + last order + segmentasi.
+- **Marketing**: broadcast WhatsApp/email ke pelanggan (template + segmen).
+- **Reservation / table booking** untuk dine-in.
+- **Tabel & QR per meja** (table service: scan QR meja → pesan langsung).
+- **Modifier/varian menu** (size, sugar level, topping) — sekarang hanya item flat.
+- **Bundling/combo deal** sebagai jenis promo lanjutan.
+- **Expense tracking** (selain PO) — biaya operasional umum (listrik, gaji, sewa).
+- **Cash flow & laba-rugi** otomatis (laporan keuangan).
+- **Stock opname** (adjustment + reason + foto bukti).
+- **Wastage / kehilangan stok** dengan kategori.
+- **Print queue** untuk dapur (KOT) terpisah dari struk kasir.
+- **Notifikasi push** (PWA + WebPush) untuk owner saat ada order online.
+- **Integrasi payment gateway** (Midtrans/Xendit) — sekarang hanya QRIS manual + cash + transfer.
+- **Backup & export data** (CSV/XLSX/JSON) per modul + scheduled backup.
+- **Audit log per toko** (siapa edit menu/promo/harga).
 
-- Tambah `active_theme_key text` (default `'classic'`) — tema yang dipilih owner
-- Tambah `plan_started_at timestamptz` — kapan langganan saat ini dimulai (untuk hitung "min X bulan")
-- (`plan` & `plan_expires_at` tetap; nilainya jadi kode plan dari tabel `plans`, bukan literal `pro`)
+### Pegawai (Cashier/Barista)
+Sudah ada: POS, orders, shifts, inventory read, attendance.
+Kurang:
+- **Daily briefing/checklist** opening & closing.
+- **Tip/komisi tracker** per shift.
+- **Pesan internal antar staff** (chat ringan).
+- **Notifikasi order baru** real-time (suara/badge).
+- **Quick void/refund** dengan persetujuan owner (PIN).
+- **Performance metrics** (jumlah order yg diproses, rata-rata waktu).
 
-### RPC baru (security definer)
+### Kurir
+Sudah ada: list pengantaran, status update.
+Kurang:
+- **Klaim pesanan** atomic (`assign_courier_atomic` RPC) untuk hindari double-claim.
+- **Navigasi GPS** (deeplink Google Maps) ke `delivery_address`.
+- **Riwayat & earning** kurir (per pengantaran, total harian/bulanan).
+- **Bukti pengiriman** (foto upload + tanda tangan).
+- **Status real-time** ke pelanggan (track order live).
+- **Mode offline** dengan queue sync.
 
-- `get_shop_entitlements(_shop_id)` → returns `{ plan_code, expires_at, months_active, features: [{key, allowed, reason}], themes: [{key, allowed, reason}] }`
-  Logika:
-  - hitung `months_active = (now - plan_started_at)/30`
-  - untuk tiap baris di `plan_features`/`plan_themes` dengan plan saat ini: `allowed = months_active ≥ requires_min_months`
-  - kalau plan expired, fallback ke plan `basic`/`free`
-- `set_shop_theme(_shop_id, _theme_key)` → validasi tema termasuk dalam entitlements, lalu update `coffee_shops.active_theme_key`
-- `admin_upsert_plan_feature(_plan_id, _feature_key, _requires_min_months, _limit_value, _meta)` — super admin
-- `admin_remove_plan_feature(_plan_id, _feature_key)` — super admin
-- `admin_upsert_plan_theme(_plan_id, _theme_key, _requires_min_months)` — super admin
-- `admin_remove_plan_theme(_plan_id, _theme_key)` — super admin
+### Pelanggan
+Sudah ada: storefront, cart, checkout, orders, pay, track, profil cart customer.
+Kurang:
+- **Profil & alamat saved** (tabel `customer_addresses` ada, tapi UI minim).
+- **Review & rating** menu.
+- **Favorite items / re-order one-tap**.
+- **Notifikasi push** status pesanan.
+- **Loyalty dashboard** (poin, riwayat, redeem self-service).
+- **Voucher/promo wallet** pelanggan.
+- **Multi-shop discovery** (jika nanti ada marketplace pusat).
+- **Referral code** (ajak teman dapat poin).
+- **Kompleks pesan terjadwal** (pre-order untuk besok pagi) — kolom `scheduled_for` ada, UI belum.
 
-### RLS
+---
 
-- `features`, `themes`, `plan_features`, `plan_themes`: SELECT untuk semua authenticated (& public utk themes/features katalog supaya halaman pricing publik bisa render); ALL hanya `super_admin`.
-- `coffee_shops.active_theme_key`: update via RPC `set_shop_theme` (validasi entitlement); kolom ditolak via policy biasa kalau langsung diupdate dengan tema yang tidak entitled (cek di RPC saja, simple).
+## 3) Sistem Backup & Export Data
 
-### Seed
+Tujuan: setiap toko bisa **backup** semua data operasional + pelanggan, untuk audit, migrasi, atau pemulihan.
 
-Insert paket `basic` (gratis), `pro`, `pro_plus`. Insert fitur inti (`online_orders`, `loyalty`, `multi_outlet`, `custom_domain`, `theme_picker`, `priority_support`, `advanced_reports`). Insert 4 tema dummy (`classic`, `minimal`, `dark-luxe`, `vibrant`). Mapping awal:
-- basic: classic
-- pro: classic, minimal, dark-luxe (3 tema), `custom_domain` dengan `requires_min_months=12`
-- pro_plus: 4 tema, `custom_domain` dengan `requires_min_months=6`, `priority_support`, `advanced_reports`
+Komponen:
+1. **Per-modul export** (instant):
+   - Tombol "Export CSV/XLSX" di tiap halaman: Menu, Inventori, Orders, Pelanggan, Promo, Loyalty ledger, Shift, PO, Absensi, Pegawai.
+2. **Backup Penuh (Snapshot)**:
+   - Tabel baru `shop_backups (id, shop_id, requested_by, status, file_url, size_bytes, includes jsonb, created_at, completed_at)`.
+   - Server function `requestShopBackup` → background job: kumpulkan semua tabel terkait shop_id, susun file `backup-{slug}-{date}.zip` berisi `*.json` + `manifest.json` + `README.txt`, upload ke Supabase Storage bucket `shop-backups` (private), simpan signed URL berlaku 7 hari.
+   - Batas: 1 backup per 24 jam (rate-limit).
+3. **Scheduled backup** (Pro+):
+   - Tabel `backup_schedules (shop_id, frequency, retention_days, next_run_at)`.
+   - Cron `/api/public/cron/backups` jalan harian, eksekusi yang due, hapus snapshot lama > retention.
+4. **Restore (Pro Plus / Super Admin)**:
+   - Wizard upload file backup → preview → "dry-run" → apply per-tabel (transaksional).
+   - Restore selalu ditulis ke audit log.
+5. **Customer self-export** (GDPR-ready):
+   - Pelanggan bisa request "Unduh data saya" (orders, addresses, loyalty). Email link.
+6. **Storage**:
+   - Bucket `shop-backups` private, RLS: hanya owner toko terkait.
+   - Bucket `customer-exports` private, RLS: hanya pemilik user_id.
 
-## Backend (server functions)
+---
 
-`src/server/entitlements.functions.ts` (baru):
-- `getEntitlements()` — auth, panggil RPC `get_shop_entitlements` untuk shop owner
-- `setShopTheme({ themeKey })` — auth, panggil RPC `set_shop_theme`
-- `getPublicThemeForSlug({ slug })` — public, balikan `active_theme_key` + plan untuk render storefront
+## 4) Rencana Pengembangan Bertahap (Roadmap)
 
-`src/server/admin-plans.functions.ts` (baru): CRUD plan_features & plan_themes (super admin only).
+Disusun jadi **6 sprint (H1–H6)**. Boleh dieksekusi berurutan; tiap sprint ≈ 1 batch implementasi.
 
-## Frontend
+### H1 — Stabilisasi (PRIORITAS TINGGI)
+- Fix `OwnerReminderBanner` + ErrorBoundary di `/app`.
+- Hardening `useEntitlements` (default array kosong, retry).
+- Realtime subscription untuk `owner_notifications` (gantikan polling).
+- Lazy-load route berat: reports, admin.*, purchase-orders.
+- Atomic `assign_courier(_order_id)` RPC + UI klaim kurir.
+- Tambah validasi server di `set_shop_theme` (sudah ada) + tampilkan reason gating di UI.
 
-### Hook baru `useEntitlements()`
-Ganti `usePlan()` di tempat-tempat gating. Hasil: `{ plan_code, hasFeature(key), themes: AllowedTheme[], loading }`. Backward-compat: ekspos `isPro` (= bukan `basic`).
+### H2 — Data Backup & Export
+- Tabel `shop_backups`, `backup_schedules`, bucket Storage + RLS.
+- Server fn `requestShopBackup`, `listShopBackups`, `downloadShopBackup`.
+- Halaman `/app/backup` (owner): tombol "Backup sekarang", riwayat, jadwal otomatis (gated Pro+).
+- Per-modul "Export CSV" universal helper di `src/lib/export.ts`.
+- `/api/public/cron/backups` + cron entry.
+- Customer "Download my data" di `/s/$slug` profil.
 
-Update file gating existing:
-- `src/routes/app.domain.tsx` — gunakan `hasFeature("custom_domain")` (sudah include cek min-months); pesan error baru kalau belum memenuhi durasi.
-- `src/routes/app.tsx` (suspended check tetap)
-- `src/routes/app.loyalty.tsx`, dll. yang pakai `isPro` → migrasi ke `hasFeature(...)`.
+### H3 — CRM Pelanggan + Marketing
+- Tabel `shop_customers` (denormalized view dari orders + customer_user_id) — atau view materialized.
+- Halaman `/app/customers`: list + filter + segmentasi (RFM ringan).
+- Tabel `customer_segments`, `marketing_campaigns`, `campaign_recipients`.
+- Broadcast WhatsApp link / email (template `{{nama}}`, `{{poin}}`).
+- Halaman pelanggan: `/s/$slug/me` (profil, alamat, poin, voucher, history, favorit).
+- Referral code system.
 
-### Halaman owner: `src/routes/app.appearance.tsx` (baru)
-- Grid tema yang allowed (dengan preview), dan tema yang locked (dengan label "Butuh Pro Plus" / "Butuh berlangganan ≥ 6 bulan").
-- Tombol "Aktifkan tema" memanggil `setShopTheme`.
-- Tampilkan plan saat ini & sisa hari.
+### H4 — Operasional & Keuangan
+- **Modifier/varian menu** (`menu_item_options`, `menu_item_option_values`) + UI POS picker.
+- **Bundling/combo** sebagai promo type baru.
+- **Stock opname** (`stock_adjustments` dengan reason + foto).
+- **Expense tracker** (`expenses` non-PO) + masuk laporan laba-rugi.
+- **Laporan P&L bulanan** otomatis.
+- **Reservation & QR table** (`tables`, `reservations`, route `/s/$slug/t/$tableCode`).
+- **Push notif** (PWA WebPush) untuk owner & pelanggan.
 
-### Storefront dinamis
-Refactor `src/routes/s.$slug.index.tsx`:
-- Pisahkan UI ke `src/components/storefront/themes/{classic,minimal,dark-luxe,vibrant}/Home.tsx`. Tiap tema export `Home`, `Header`, `MenuCard`.
-- Loader parent `s.$slug.tsx` ambil `active_theme_key` dari shop. Index page render `<ThemeRegistry themeKey={...} page="home" />` yang dynamic-import komponen tema (lazy, code-split).
-- Fallback ke `classic` kalau key tidak dikenal / tema tidak aktif lagi.
+### H5 — Super Admin Power Tools
+- Halaman `/admin/plans/$id/matrix` — matrix Plan × Feature/Theme dengan toggle & min-months inline.
+- Halaman `/admin/catalog/features` & `/admin/catalog/themes` (CRUD).
+- Halaman `/admin/broadcast` (kirim notif global → semua owner / per plan).
+- Halaman `/admin/audit` terpadu (filter actor, action, shop, range tanggal).
+- Impersonate owner (`admin_impersonate_token` dengan TTL 15 menit, audit).
+- Refund/credit note untuk `plan_invoices`.
 
-(Untuk batch pertama: implement 2 tema fungsional — `classic` (refactor existing) & `minimal` — sisanya bisa skeleton dulu agar admin sudah bisa setup.)
+### H6 — Skala & Polish
+- Multi-outlet switcher di header `/app`.
+- Print queue dapur (KOT) terpisah, mendukung printer Bluetooth/ESC-POS.
+- Integrasi Midtrans/Xendit (gantikan QRIS manual untuk Pro+).
+- Mode offline POS (IndexedDB queue → sync).
+- Performance budget: code-split per route, prefetch on hover, image CDN.
+- A11y audit + i18n (en/id) toggle.
 
-### Halaman admin
-Refactor `src/routes/admin.plans.tsx` jadi tabbed:
-- Tab **Paket**: edit plan (existing, ditambah toggle `is_signup_default` + edit code).
-- Tab **Fitur per Paket**: untuk paket terpilih → daftar fitur, toggle on/off, set `requires_min_months`.
-- Tab **Tema per Paket**: pilih tema yang termasuk + `requires_min_months`.
-- Tab **Katalog Fitur** & **Katalog Tema** (CRUD baris katalog).
+---
 
-## Halaman pricing publik
-Update halaman billing/pricing supaya render dinamis dari `plans + plan_features + plan_themes` (bukan hardcode "pro"). User lihat: "Paket Pro Plus — 4 tema, custom domain (min 6 bulan), …".
+## 5) Detail Teknis (untuk implementasi)
 
-## Migrasi data existing
+### Database tambahan (akan di sprint terkait)
+```text
+shop_backups        — snapshot per toko
+backup_schedules    — jadwal otomatis
+shop_customers      — view/cache CRM
+customer_segments   — segmentasi
+marketing_campaigns — broadcast
+menu_item_options   — varian/modifier
+stock_adjustments   — opname & wastage
+expenses            — biaya operasional
+tables, reservations
+push_subscriptions  — WebPush endpoints
+expense_categories
+```
 
-- Shop dengan `plan='free'` → set ke `basic` (insert plan basic dulu).
-- Shop dengan `plan='pro'` → set `plan_code='pro'`, isi `plan_started_at = COALESCE(plan_started_at, now() - 30 days)` agar tetap menikmati fitur saat ini.
-- Set semua shop `active_theme_key='classic'`.
+### Storage buckets
+- `shop-backups` (private, RLS: owner toko)
+- `customer-exports` (private, RLS: user_id)
+- `delivery-proofs` (private, RLS: kurir + owner toko + customer)
+- `kot-receipts` (opsional)
 
-## Out of scope (batch berikutnya)
+### RPC tambahan
+- `assign_courier_atomic(_order_id)` — dengan SELECT … FOR UPDATE
+- `request_shop_backup(_shop_id)` — enqueue
+- `apply_shop_restore(_backup_id, _scope text[])` — transaksional
+- `admin_broadcast_notification(_audience, _title, _body, _link)`
+- `admin_impersonate(_shop_id)` → returns short-lived token
+- `customer_export_request(_user_id)` → enqueue
 
-- Implementasi visual penuh untuk 4 tema (batch ini cukup 2 tema kerja + 2 placeholder).
-- Payment gateway (sesuai keinginan kamu, tetap manual transfer dulu).
-- Theme customization per-shop (warna brand, font) — saat ini owner cuma pilih tema, tweak detail dilakukan via Settings → Branding existing.
+### Konvensi UI
+- Setiap fitur "Pro/Pro Plus" gunakan komponen `<EntitlementGate feature="...">` baru di `src/components/entitlement-gate.tsx` (centralize gating + CTA upgrade).
+- Setiap halaman daftar pakai `<ExportButton table="..." />` reusable.
 
-## Risiko & Mitigasi
+---
 
-- **Breaking gating**: kode yang sekarang cek `plan === 'pro'` literal. Mitigasi: hook `useEntitlements` juga ekspos `isPro` agar transisi mulus; saya update semua file pemakai dalam batch yang sama.
-- **Storefront break saat refactor**: mitigasi dengan fallback `classic` selalu ada, dan refactor pertama hanya membungkus existing UI ke folder `themes/classic/` (tanpa mengubah markup).
-- **`requires_min_months` membingungkan owner**: UI menjelaskan jelas — "Tersedia setelah 6 bulan berlangganan Pro Plus" + counter.
+## 6) Saran Eksekusi
 
-Setujui plan ini? Setelah approve saya jalankan migration + kode dalam 1 batch.
+Mulai dari **H1 (Stabilisasi)** dulu — wajib karena ada crash aktif di `/app`. Kemudian **H2 (Backup)** karena permintaan eksplisit user. Sprint berikutnya bisa dipilih sesuai prioritas bisnis.
+
+Setelah Anda menyetujui rencana ini, saya usulkan langsung eksekusi **H1 + H2** dalam 1–2 batch implementasi:
+1. Batch 1: H1 lengkap (fix bug, lazy-load, atomic kurir, ErrorBoundary).
+2. Batch 2: H2 lengkap (backup + export + customer self-export).
+
+Jika setuju atau ingin mengubah prioritas (mis. mau H3 CRM dulu), beri tahu sebelum approve.

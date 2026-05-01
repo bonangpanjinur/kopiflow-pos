@@ -56,6 +56,36 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_schedules: {
+        Row: {
+          created_at: string
+          frequency: string
+          last_run_at: string | null
+          next_run_at: string
+          retention_days: number
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          frequency?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          retention_days?: number
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          retention_days?: number
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       billing_settings: {
         Row: {
           account_name: string | null
@@ -1757,6 +1787,45 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_backups: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          file_path: string | null
+          id: string
+          includes: Json
+          requested_by: string
+          shop_id: string
+          size_bytes: number | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          id?: string
+          includes?: Json
+          requested_by: string
+          shop_id: string
+          size_bytes?: number | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          id?: string
+          includes?: Json
+          requested_by?: string
+          shop_id?: string
+          size_bytes?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
       staff_invitations: {
         Row: {
           accepted_at: string | null
@@ -2110,6 +2179,10 @@ export type Database = {
         Returns: undefined
       }
       approve_plan_invoice: { Args: { _invoice_id: string }; Returns: Json }
+      assign_courier_atomic: {
+        Args: { _courier_id: string; _order_id: string }
+        Returns: Json
+      }
       auto_unverify_domain: {
         Args: { _reason: string; _shop_id: string }
         Returns: undefined
@@ -2178,6 +2251,21 @@ export type Database = {
         Returns: boolean
       }
       increment_promo_usage: { Args: { _promo_id: string }; Returns: undefined }
+      list_available_delivery_orders: {
+        Args: { _courier_id: string }
+        Returns: {
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          delivery_fee: number
+          id: string
+          note: string
+          order_no: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+        }[]
+      }
       log_system_event: {
         Args: {
           _event_type: string
