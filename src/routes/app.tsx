@@ -56,6 +56,7 @@ const NAV = [
   { to: "/app/pos", label: "POS", icon: ShoppingBag },
   { to: "/app/orders", label: "Order", icon: ListOrdered },
   { to: "/app/online-orders", label: "Order Online", icon: Bell },
+  { to: "/app/kds", label: "Kitchen (KDS)", icon: ChefHat },
   { to: "/app/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/app/categories", label: "Kategori", icon: Tags },
   { to: "/app/inventory", label: "Inventori", icon: Package },
