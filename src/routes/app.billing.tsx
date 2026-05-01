@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import { Loader2, Upload, CheckCircle2, Clock, XCircle, Copy, Eye } from "lucide-react";
+import { createPlanInvoice, submitPaymentProof, cancelPlanInvoice, getProofSignedUrl } from "@/server/billing.functions";
 
 export const Route = createFileRoute("/app/billing")({
   component: BillingPage,
@@ -53,7 +54,6 @@ function BillingPage() {
   const onUpgrade = async (planCode: string) => {
     setBusy(planCode);
     try {
-      const { createPlanInvoice } = await import("@/server/billing.functions");
       await createPlanInvoice({ data: { planCode } });
       toast.success("Tagihan dibuat. Lakukan pembayaran lalu upload bukti.");
       await reload();
@@ -74,7 +74,6 @@ function BillingPage() {
       const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, file, { upsert: false, contentType: file.type });
       if (upErr) throw upErr;
       
-      const { submitPaymentProof } = await import("@/server/billing.functions");
       // Store the storage path (not a signed URL) so admin & owner can re-sign on demand.
       await submitPaymentProof({ data: { invoiceId: inv.id, proofUrl: path } });
       toast.success("Bukti terkirim. Menunggu review super admin.");
@@ -90,7 +89,6 @@ function BillingPage() {
     if (!confirm(`Batalkan tagihan ${inv.invoice_no}?`)) return;
     setBusy(inv.id);
     try {
-      const { cancelPlanInvoice } = await import("@/server/billing.functions");
       await cancelPlanInvoice({ data: { invoiceId: inv.id } });
       toast.success("Tagihan dibatalkan");
       await reload();
@@ -100,7 +98,6 @@ function BillingPage() {
 
   const onViewProof = async (inv: Invoice) => {
     try {
-      const { getProofSignedUrl } = await import("@/server/billing.functions");
       const { url } = await getProofSignedUrl({ data: { invoiceId: inv.id } });
       if (url) window.open(url, "_blank"); else toast.error("Bukti tidak tersedia");
     } catch (e) { toast.error((e as Error).message); }
