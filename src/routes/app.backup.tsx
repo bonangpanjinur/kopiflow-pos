@@ -42,7 +42,7 @@ function BackupPage() {
 
   const reload = async () => {
     try {
-      const { listShopBackups, getBackupSchedule } = await import("@/server/backup.functions.server");
+      const { listShopBackups, getBackupSchedule } = await import("@/server/backup.functions");
       const list = await listShopBackups();
       setItems(Array.isArray(list) ? (list as Backup[]) : []);
       const sched = await getBackupSchedule();
@@ -69,7 +69,7 @@ function BackupPage() {
     if (!shopId) return;
     setBusy(true);
     try {
-      const { requestShopBackup } = await import("@/server/backup.functions.server");
+      const { requestShopBackup } = await import("@/server/backup.functions");
       const res = await requestShopBackup({ data: { shopId } });
       toast.success(`Backup berhasil — ${res.tableCount} tabel, ${formatBytes(res.sizeBytes)}`);
       await reload();
@@ -82,7 +82,7 @@ function BackupPage() {
 
   const download = async (id: string) => {
     try {
-      const { getBackupDownloadUrl } = await import("@/server/backup.functions.server");
+      const { getBackupDownloadUrl } = await import("@/server/backup.functions");
       const { url } = await getBackupDownloadUrl({ data: { backupId: id } });
       window.open(url, "_blank");
     } catch (e) {
@@ -93,7 +93,7 @@ function BackupPage() {
   const remove = async (id: string) => {
     if (!confirm("Hapus backup ini? Tindakan tidak bisa dibatalkan.")) return;
     try {
-      const { deleteBackup } = await import("@/server/backup.functions.server");
+      const { deleteBackup } = await import("@/server/backup.functions");
       await deleteBackup({ data: { backupId: id } });
       toast.success("Backup dihapus");
       await reload();
@@ -104,7 +104,7 @@ function BackupPage() {
 
   const saveSchedule = async () => {
     try {
-      const { upsertBackupSchedule } = await import("@/server/backup.functions.server");
+      const { upsertBackupSchedule } = await import("@/server/backup.functions");
       await upsertBackupSchedule({ data: { frequency: freq, retentionDays: retention } });
       toast.success("Jadwal backup tersimpan");
       await reload();
