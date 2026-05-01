@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Play, RefreshCw, Eye, EyeOff } from "lucide-react";
-import { runPlanMaintenance } from "@/server/admin.functions";
 
 export const Route = createFileRoute("/admin/settings")({ component: AdminSettings });
 
@@ -48,6 +47,7 @@ function AdminSettings() {
   const runNow = async () => {
     setRunning(true);
     try {
+      const { runPlanMaintenance } = await import("@/server/admin.functions");
       const result = await runPlanMaintenance();
       setLastRun(JSON.stringify(result, null, 2));
       toast.success("Maintenance dijalankan");

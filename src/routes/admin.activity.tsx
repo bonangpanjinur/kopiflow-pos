@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, Activity, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { listCronRuns, listSystemAudit } from "@/server/observability.functions";
 
 export const Route = createFileRoute("/admin/activity")({ component: AdminActivity });
 
@@ -54,6 +53,7 @@ function AdminActivity() {
   const load = async () => {
     setLoading(true);
     try {
+      const { listCronRuns, listSystemAudit } = await import("@/server/observability.functions");
 
       const [r, a] = await Promise.all([
         listCronRuns({ data: { limit: 30 } }),

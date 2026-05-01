@@ -13,8 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { updateMinMonths, undoMinMonths, fetchMatrixAuditLogs } from "@/server/plan-matrix.functions";
-import { useServerFn } from "@tanstack/react-start";
 import { downloadCSV } from "@/lib/export";
 
 export const Route = createFileRoute("/admin/plans/$id/matrix")({ component: PlanMatrix });
@@ -76,10 +74,6 @@ function PlanMatrix() {
   const [exportTo, setExportTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf">("csv");
   const [exporting, setExporting] = useState(false);
-
-  const updateMinMonthsFn = useServerFn(updateMinMonths);
-  const undoMinMonthsFn = useServerFn(undoMinMonths);
-  const fetchAuditFn = useServerFn(fetchMatrixAuditLogs);
 
   // Track load timestamp for staleness detection
   const loadedAt = useRef(Date.now());
@@ -216,7 +210,8 @@ function PlanMatrix() {
 
     setSavingStatus((s) => ({ ...s, [editKey]: { state: "saving" } }));
     try {
-      const res = await updateMinMonthsFn({
+      const { updateMinMonths } = await import("@/server/plan-matrix.functions");
+      const res = await updateMinMonths({
         data: {
           plan_id: planId,
           item_key: itemKey,
@@ -229,276 +224,287 @@ function PlanMatrix() {
       if (res.conflict) {
         toast.warning(
           `Konflik: ${itemLabel} [${planName}]`,
-          { description: res.message ?? "Nilai berubah oleh pengguna lain. Data dimuat ulang.", duration: 6000 },
+          { description: `Data telah diubah oleh orang lain (menjadi ${res.actual_value}). Silakan muat ulang.` }
         );
         await load();
         return;
       }
 
-      if (res.changed) {
-        // Push to undo stack
+      if (res.success) {
+        toast.success(`Min bulan "${itemLabel}" [${planName}] diperbarui ke ${result.value}`);
         setUndoStack((s) => ({
           ...s,
-          [editKey]: { editKey, itemKey, kind, oldValue: res.old_value, newValue: res.new_value },
+          [editKey]: { editKey, itemKey, kind, oldValue: currentVal, newValue: result.value },
         }));
-
-        const retryNote = (res as any).retries_used > 0 ? ` (retry ${(res as any).retries_used}×)` : "";
-        toast.success(
-          `${itemLabel} [${planName}]: ${res.old_value} → ${res.new_value}${retryNote}`,
-          { description: "Dicatat ke audit log" },
-        );
+        await load();
       } else {
-        toast.info("Nilai tidak berubah (sudah sesuai di server)");
+        toast.error(describeError(undefined, res.error || "Gagal simpan", itemLabel));
       }
-      await load();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyimpan";
-      toast.error(`[${planName} / ${itemLabel}] ${msg}`);
+    } catch (e) {
+      toast.error(`[System Error] ${itemLabel}: ${(e as Error).message}`);
     } finally {
       setSavingStatus((s) => { const n = { ...s }; delete n[editKey]; return n; });
     }
   };
 
-  // ── Undo last change ──
-  const handleUndo = async (editKey: string) => {
+  // ── Undo ──
+  const undoChange = async (editKey: string) => {
     const entry = undoStack[editKey];
     if (!entry) return;
     const itemLabel = entry.kind === "feature" ? fName(entry.itemKey) : tName(entry.itemKey);
 
     setUndoing((s) => new Set(s).add(editKey));
     try {
-      const res = await undoMinMonthsFn({
+      const { undoMinMonths } = await import("@/server/plan-matrix.functions");
+      const res = await undoMinMonths({
         data: {
           plan_id: planId,
           item_key: entry.itemKey,
           kind: entry.kind,
-          restore_value: entry.oldValue,
-          expected_current: entry.newValue,
+          undo_to_value: entry.oldValue,
+          expected_current_value: entry.newValue,
         },
       });
 
       if (res.conflict) {
-        toast.warning(`Undo gagal: ${itemLabel} [${planName}]`, {
-          description: res.message ?? "Nilai telah berubah lagi.",
-        });
+        toast.warning(`Undo gagal: Nilai "${itemLabel}" sudah berubah lagi.`);
+        setUndoStack((s) => { const n = { ...s }; delete n[editKey]; return n; });
         await load();
         return;
       }
 
-      if (res.changed) {
-        toast.success(`Undo: ${itemLabel} [${planName}]: ${entry.newValue} → ${entry.oldValue}`, {
-          description: "Dicatat ke audit log",
-        });
-        // Remove from undo stack
+      if (res.success) {
+        toast.success(`Undo berhasil: "${itemLabel}" kembali ke ${entry.oldValue}`);
         setUndoStack((s) => { const n = { ...s }; delete n[editKey]; return n; });
+        await load();
+      } else {
+        toast.error(`Undo gagal: ${res.error}`);
       }
-      await load();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal undo";
-      toast.error(`[${planName} / ${itemLabel}] ${msg}`);
+    } catch (e) {
+      toast.error(`[Undo Error] ${(e as Error).message}`);
     } finally {
       setUndoing((s) => { const n = new Set(s); n.delete(editKey); return n; });
     }
   };
 
-  // ── Export audit logs ──
+  // ── Export ──
   const handleExport = async () => {
     setExporting(true);
     try {
-      const rows = await fetchAuditFn({
-        data: { plan_id: planId, from_date: exportFrom, to_date: exportTo },
+      const { fetchMatrixAuditLogs } = await import("@/server/plan-matrix.functions");
+      const res = await fetchAuditFn({
+        data: { planId, from: exportFrom, to: exportTo },
       });
 
-      if (!rows || rows.length === 0) {
-        toast.info("Tidak ada log untuk periode ini");
-        setExporting(false);
+      if (!res.success || !res.rows) {
+        toast.error(`Gagal mengambil data audit: ${res.error}`);
+        return;
+      }
+
+      if (res.rows.length === 0) {
+        toast.info("Tidak ada data audit untuk periode ini.");
         return;
       }
 
       if (exportFormat === "csv") {
-        downloadCSV(`audit-matrix-${planName}-${exportFrom}-${exportTo}.csv`, rows);
-        toast.success(`${rows.length} baris diekspor ke CSV`);
+        downloadCSV(res.rows, `audit-matrix-${planName}-${exportFrom}-to-${exportTo}.csv`);
+        toast.success("CSV berhasil diunduh");
       } else {
-        // PDF: generate printable HTML and trigger print
-        const html = buildPdfHtml(rows, planName, exportFrom, exportTo);
-        const w = window.open("", "_blank");
-        if (w) {
-          w.document.write(html);
-          w.document.close();
-          w.onload = () => { w.print(); };
+        const html = buildPdfHtml(res.rows, planName, exportFrom, exportTo);
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+          win.print();
         }
-        toast.success(`${rows.length} baris disiapkan untuk PDF/print`);
       }
       setExportOpen(false);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Gagal ekspor");
+    } catch (e) {
+      toast.error(`Export error: ${(e as Error).message}`);
     } finally {
       setExporting(false);
     }
   };
 
-  if (loading) return <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-
-  const grouped = features.reduce<Record<string, Feature[]>>((acc, f) => { (acc[f.category] ??= []).push(f); return acc; }, {});
-
-  const isDirty = (editKey: string, currentVal: number) => {
-    const raw = monthEdits[editKey];
-    return raw !== undefined && Number(raw) !== currentVal;
-  };
-
-  const canSave = (editKey: string, currentVal: number) =>
-    isDirty(editKey, currentVal) && !monthErrors[editKey] && !savingStatus[editKey];
+  if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
   return (
-    <TooltipProvider>
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
-            <Link to="/admin/plans"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
-            <h1 className="text-2xl font-bold">Matrix: {planName}</h1>
+    <div className="mx-auto max-w-5xl p-4 lg:p-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/admin/plans" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-5 w-5" /></Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Matrix Fitur & Tema</h1>
+            <p className="text-sm text-muted-foreground">Plan: <span className="font-semibold text-foreground">{planName}</span></p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
           <Dialog open={exportOpen} onOpenChange={setExportOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1.5" />Ekspor Audit</Button>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" /> Export Audit
+              </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>Ekspor Audit Log Matrix</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Dari</Label><Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} /></div>
-                  <div><Label>Sampai</Label><Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} /></div>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Export Audit Log Matrix</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Dari Tanggal</Label>
+                    <Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sampai Tanggal</Label>
+                    <Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} />
+                  </div>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label>Format</Label>
-                  <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as "csv" | "pdf")}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select value={exportFormat} onValueChange={(v: any) => setExportFormat(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="csv">CSV</SelectItem>
-                      <SelectItem value="pdf">PDF (Print)</SelectItem>
+                      <SelectItem value="csv">CSV (Excel)</SelectItem>
+                      <SelectItem value="pdf">PDF (Print-ready)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={handleExport} disabled={exporting} className="w-full">
-                  {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <FileText className="h-4 w-4 mr-1.5" />}
-                  Ekspor
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setExportOpen(false)}>Batal</Button>
+                <Button onClick={handleExport} disabled={exporting} className="gap-2">
+                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : exportFormat === "csv" ? <FileText className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                  Generate {exportFormat.toUpperCase()}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
+          <Button variant="ghost" size="sm" onClick={load}><Loader2 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></Button>
         </div>
+      </div>
 
-        <Tabs defaultValue="features">
-          <TabsList>
-            <TabsTrigger value="features">Fitur</TabsTrigger>
-            <TabsTrigger value="themes">Tema</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="features" className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="features">Fitur Utama</TabsTrigger>
+          <TabsTrigger value="themes">Tema Tampilan</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="features" className="space-y-4 mt-4">
-            {Object.entries(grouped).map(([cat, items]) => (
-              <Card key={cat} className="p-4">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-3">{cat}</h3>
-                <div className="space-y-2">
-                  {items.map((f) => (
-                    <MatrixRow
-                      key={f.key}
-                      itemKey={f.key}
-                      itemName={f.name}
-                      kind="feature"
-                      enabled={isFeatureEnabled(f.key)}
-                      isBusy={busyKeys.has(f.key)}
-                      currentVal={getFeatureMinMonths(f.key)}
-                      editKey={`f:${f.key}`}
-                      editValue={monthEdits[`f:${f.key}`]}
-                      inlineErr={monthErrors[`f:${f.key}`]}
-                      status={savingStatus[`f:${f.key}`] ?? null}
-                      undoEntry={undoStack[`f:${f.key}`] ?? null}
-                      isUndoing={undoing.has(`f:${f.key}`)}
-                      isDirty={isDirty(`f:${f.key}`, getFeatureMinMonths(f.key))}
-                      canSave={canSave(`f:${f.key}`, getFeatureMinMonths(f.key))}
-                      onToggle={(v) => toggleFeature(f.key, v)}
-                      onMonthChange={(raw) => handleMonthChange(`f:${f.key}`, raw)}
-                      onSave={() => saveMinMonths(`f:${f.key}`, f.key, "feature")}
-                      onUndo={() => handleUndo(`f:${f.key}`)}
-                    />
-                  ))}
-                </div>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="themes" className="mt-4">
-            <Card className="p-4">
-              <div className="space-y-2">
-                {themes.map((t) => (
-                  <MatrixRow
-                    key={t.key}
-                    itemKey={t.key}
-                    itemName={t.name}
-                    kind="theme"
-                    tierHint={t.tier_hint}
-                    enabled={isThemeEnabled(t.key)}
-                    isBusy={busyKeys.has(t.key)}
-                    currentVal={getThemeMinMonths(t.key)}
-                    editKey={`t:${t.key}`}
-                    editValue={monthEdits[`t:${t.key}`]}
-                    inlineErr={monthErrors[`t:${t.key}`]}
-                    status={savingStatus[`t:${t.key}`] ?? null}
-                    undoEntry={undoStack[`t:${t.key}`] ?? null}
-                    isUndoing={undoing.has(`t:${t.key}`)}
-                    isDirty={isDirty(`t:${t.key}`, getThemeMinMonths(t.key))}
-                    canSave={canSave(`t:${t.key}`, getThemeMinMonths(t.key))}
-                    onToggle={(v) => toggleTheme(t.key, v)}
-                    onMonthChange={(raw) => handleMonthChange(`t:${t.key}`, raw)}
-                    onSave={() => saveMinMonths(`t:${t.key}`, t.key, "theme")}
-                    onUndo={() => handleUndo(`t:${t.key}`)}
-                  />
+        <TabsContent value="features" className="space-y-4">
+          {["core", "advanced", "integration", "addon"].map((cat) => (
+            <Card key={cat} className="overflow-hidden">
+              <div className="bg-muted/50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{cat}</div>
+              <div className="divide-y divide-border">
+                {features.filter((f) => f.category === cat).map((f) => (
+                  <div key={f.key} className="flex items-center justify-between p-4 transition-colors hover:bg-muted/20">
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-medium">{f.name}</div>
+                      <div className="font-mono text-[10px] text-muted-foreground">{f.key}</div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <MinMonthsEditor
+                        editKey={`f-${f.key}`}
+                        itemKey={f.key}
+                        kind="feature"
+                        currentVal={getFeatureMinMonths(f.key)}
+                        editValue={monthEdits[`f-${f.key}`]}
+                        inlineErr={monthErrors[`f-${f.key}`]}
+                        status={savingStatus[`f-${f.key}`]}
+                        undoEntry={undoStack[`f-${f.key}`]}
+                        isUndoing={undoing.has(`f-${f.key}`)}
+                        onEdit={handleMonthChange}
+                        onSave={() => saveMinMonths(`f-${f.key}`, f.key, "feature")}
+                        onUndo={() => undoChange(`f-${f.key}`)}
+                        disabled={!isFeatureEnabled(f.key)}
+                      />
+                      <Switch
+                        checked={isFeatureEnabled(f.key)}
+                        onCheckedChange={(v) => toggleFeature(f.key, v)}
+                        disabled={busyKeys.has(f.key)}
+                      />
+                    </div>
+                  </div>
                 ))}
               </div>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </TooltipProvider>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="themes" className="space-y-4">
+          <Card className="overflow-hidden">
+            <div className="divide-y divide-border">
+              {themes.map((t) => (
+                <div key={t.key} className="flex items-center justify-between p-4 transition-colors hover:bg-muted/20">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{t.name}</span>
+                      {t.tier_hint && <Badge variant="outline" className="h-4 px-1 text-[9px] uppercase">{t.tier_hint}</Badge>}
+                    </div>
+                    <div className="font-mono text-[10px] text-muted-foreground">{t.key}</div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <MinMonthsEditor
+                      editKey={`t-${t.key}`}
+                      itemKey={t.key}
+                      kind="theme"
+                      currentVal={getThemeMinMonths(t.key)}
+                      editValue={monthEdits[`t-${t.key}`]}
+                      inlineErr={monthErrors[`t-${t.key}`]}
+                      status={savingStatus[`t-${t.key}`]}
+                      undoEntry={undoStack[`t-${t.key}`]}
+                      isUndoing={undoing.has(`t-${t.key}`)}
+                      onEdit={handleMonthChange}
+                      onSave={() => saveMinMonths(`t-${t.key}`, t.key, "theme")}
+                      onUndo={() => undoChange(`t-${t.key}`)}
+                      disabled={!isThemeEnabled(t.key)}
+                    />
+                    <Switch
+                      checked={isThemeEnabled(t.key)}
+                      onCheckedChange={(v) => toggleTheme(t.key, v)}
+                      disabled={busyKeys.has(t.key)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
-// ── Extracted Row Component ──
-function MatrixRow({
-  itemKey, itemName, kind, tierHint, enabled, isBusy, currentVal,
-  editKey, editValue, inlineErr, status, undoEntry, isUndoing,
-  isDirty, canSave,
-  onToggle, onMonthChange, onSave, onUndo,
+// ── Sub-component: MinMonthsEditor ──
+function MinMonthsEditor({
+  editKey, itemKey, kind, currentVal, editValue, inlineErr, status, undoEntry, isUndoing,
+  onEdit, onSave, onUndo, disabled
 }: {
-  itemKey: string; itemName: string; kind: "feature" | "theme"; tierHint?: string | null;
-  enabled: boolean; isBusy: boolean; currentVal: number;
-  editKey: string; editValue: string | undefined; inlineErr: string | undefined;
-  status: SavingStatus; undoEntry: UndoEntry | null; isUndoing: boolean;
-  isDirty: boolean; canSave: boolean;
-  onToggle: (v: boolean) => void; onMonthChange: (raw: string) => void;
-  onSave: () => void; onUndo: () => void;
+  editKey: string; itemKey: string; kind: "feature" | "theme";
+  currentVal: number; editValue?: string; inlineErr?: string;
+  status: SavingStatus; undoEntry?: UndoEntry; isUndoing: boolean;
+  onEdit: (k: string, v: string) => void; onSave: () => void; onUndo: () => void;
+  disabled: boolean;
 }) {
-  const isSaving = status !== null;
+  const isSaving = !!status;
+  const isDirty = editValue !== undefined && editValue !== String(currentVal);
+  const canSave = isDirty && !inlineErr && !isSaving;
 
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5 border-b border-border/50 last:border-0">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <Switch checked={enabled} disabled={isBusy} onCheckedChange={onToggle} />
-        {isBusy && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
-        <span className="text-sm font-medium truncate">{itemName}</span>
-        <span className="text-xs text-muted-foreground font-mono shrink-0">{itemKey}</span>
-        {kind === "theme" && tierHint && (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{tierHint}</span>
-        )}
+    <div className={`flex items-center gap-2 ${disabled ? "opacity-30 grayscale pointer-events-none" : ""}`}>
+      <div className="flex flex-col items-end">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase">Min Bulan</span>
+        <div className="text-xs font-bold tabular-nums">{currentVal}</div>
       </div>
-      {enabled && (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-xs text-muted-foreground">Min bulan:</span>
-          <div className="flex flex-col">
+
+      {!disabled && (
+        <div className="flex items-center gap-1.5 rounded-md border bg-muted/30 p-1">
+          <div className="relative flex flex-col">
             <Input
-              type="number"
-              className={`w-16 h-7 text-xs ${inlineErr ? "border-destructive" : ""}`}
-              value={editValue ?? String(currentVal)}
-              onChange={(e) => onMonthChange(e.target.value)}
+              className={`h-7 w-14 px-1.5 text-center text-xs font-mono ${inlineErr ? "border-destructive focus-visible:ring-destructive" : ""}`}
+              value={editValue ?? currentVal}
+              onChange={(e) => onEdit(editKey, e.target.value)}
               onKeyDown={(e) => { if (e.key === "." || e.key === ",") e.preventDefault(); }}
               min={0} max={120} step={1}
               disabled={isSaving}
@@ -507,56 +513,60 @@ function MatrixRow({
           </div>
 
           {/* Save button with status indicator */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant={isDirty && !inlineErr ? "default" : "ghost"}
-                className="h-7 w-7"
-                disabled={!canSave}
-                onClick={onSave}
-              >
-                {isSaving ? (
-                  <span className="flex items-center gap-0.5">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    {status?.state === "retrying" && (
-                      <span className="text-[9px] font-mono">{status.attempt}</span>
-                    )}
-                  </span>
-                ) : (
-                  <Save className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              {isSaving
-                ? status?.state === "retrying"
-                  ? `Retry ${status.attempt}/2…`
-                  : "Menyimpan…"
-                : isDirty
-                  ? `Simpan: ${currentVal} → ${editValue}`
-                  : "Tidak ada perubahan"}
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Undo button */}
-          {undoEntry && (
+          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
-                  variant="outline"
+                  variant={isDirty && !inlineErr ? "default" : "ghost"}
                   className="h-7 w-7"
-                  disabled={isUndoing}
-                  onClick={onUndo}
+                  disabled={!canSave}
+                  onClick={onSave}
                 >
-                  {isUndoing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Undo2 className="h-3.5 w-3.5" />}
+                  {isSaving ? (
+                    <span className="flex items-center gap-0.5">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      {status?.state === "retrying" && (
+                        <span className="text-[9px] font-mono">{status.attempt}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
-                Undo: {undoEntry.newValue} → {undoEntry.oldValue}
+                {isSaving
+                  ? status?.state === "retrying"
+                    ? `Retry ${status.attempt}/2…`
+                    : "Menyimpan…"
+                  : isDirty
+                    ? `Simpan: ${currentVal} → ${editValue}`
+                    : "Tidak ada perubahan"}
               </TooltipContent>
             </Tooltip>
+          </TooltipProvider>
+
+          {/* Undo button */}
+          {undoEntry && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-7 w-7"
+                    disabled={isUndoing}
+                    onClick={onUndo}
+                  >
+                    {isUndoing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Undo2 className="h-3.5 w-3.5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Undo: {undoEntry.newValue} → {undoEntry.oldValue}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       )}
