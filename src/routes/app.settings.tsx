@@ -90,6 +90,8 @@ function SettingsPage() {
           tax_percent: Number(data.tax_percent ?? 0),
           service_charge_percent: Number(data.service_charge_percent ?? 0),
           tax_inclusive: Boolean(data.tax_inclusive ?? false),
+          receipt_header: data.receipt_header ?? null,
+          receipt_footer: data.receipt_footer ?? null,
         } as ShopRow);
       }
       setLoading(false);
