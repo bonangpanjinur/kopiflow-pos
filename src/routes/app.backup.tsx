@@ -7,14 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Database, Download, Loader2, Trash2, RefreshCw, Calendar, ShieldCheck } from "lucide-react";
-import {
-  requestShopBackup,
-  listShopBackups,
-  getBackupDownloadUrl,
-  deleteBackup,
-  upsertBackupSchedule,
-  getBackupSchedule,
-} from "@/server/backup.functions.server";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
@@ -50,6 +42,7 @@ function BackupPage() {
 
   const reload = async () => {
     try {
+      const { listShopBackups, getBackupSchedule } = await import("@/server/backup.functions.server");
       const list = await listShopBackups();
       setItems(Array.isArray(list) ? (list as Backup[]) : []);
       const sched = await getBackupSchedule();
@@ -76,6 +69,7 @@ function BackupPage() {
     if (!shopId) return;
     setBusy(true);
     try {
+      const { requestShopBackup } = await import("@/server/backup.functions.server");
       const res = await requestShopBackup({ data: { shopId } });
       toast.success(`Backup berhasil — ${res.tableCount} tabel, ${formatBytes(res.sizeBytes)}`);
       await reload();
@@ -88,6 +82,7 @@ function BackupPage() {
 
   const download = async (id: string) => {
     try {
+      const { getBackupDownloadUrl } = await import("@/server/backup.functions.server");
       const { url } = await getBackupDownloadUrl({ data: { backupId: id } });
       window.open(url, "_blank");
     } catch (e) {
@@ -98,6 +93,7 @@ function BackupPage() {
   const remove = async (id: string) => {
     if (!confirm("Hapus backup ini? Tindakan tidak bisa dibatalkan.")) return;
     try {
+      const { deleteBackup } = await import("@/server/backup.functions.server");
       await deleteBackup({ data: { backupId: id } });
       toast.success("Backup dihapus");
       await reload();
@@ -108,6 +104,7 @@ function BackupPage() {
 
   const saveSchedule = async () => {
     try {
+      const { upsertBackupSchedule } = await import("@/server/backup.functions.server");
       await upsertBackupSchedule({ data: { frequency: freq, retentionDays: retention } });
       toast.success("Jadwal backup tersimpan");
       await reload();

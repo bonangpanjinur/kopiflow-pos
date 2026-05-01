@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Globe, Lock, Loader2, CheckCircle2, AlertTriangle, Copy, Trash2 } from "lucide-react";
-import { requestCustomDomain, verifyCustomDomain, removeCustomDomain } from "@/server/domain.functions.server";
 
 export const Route = createFileRoute("/app/domain")({
   component: DomainPage,
@@ -64,6 +63,7 @@ function DomainPage() {
     e.preventDefault();
     setBusy(true);
     try {
+      const { requestCustomDomain } = await import("@/server/domain.functions.server");
       await requestCustomDomain({ data: { domain: domainInput.trim().toLowerCase() } });
       toast.success("Domain disimpan. Atur DNS sesuai instruksi lalu verifikasi.");
       setDomainInput("");
@@ -76,6 +76,7 @@ function DomainPage() {
   const onVerify = async () => {
     setBusy(true);
     try {
+      const { verifyCustomDomain } = await import("@/server/domain.functions.server");
       const r = await verifyCustomDomain();
       setLastCheck({ verified: r.verified, cnameOk: r.cnameOk, sslOk: r.sslOk, sslError: r.sslError, txtValues: r.txtValues });
       if (r.cnameTarget) setCnameTarget(r.cnameTarget);
@@ -95,6 +96,7 @@ function DomainPage() {
     if (!confirm("Hapus custom domain?")) return;
     setBusy(true);
     try {
+      const { removeCustomDomain } = await import("@/server/domain.functions.server");
       await removeCustomDomain();
       toast.success("Domain dihapus");
       await reload();

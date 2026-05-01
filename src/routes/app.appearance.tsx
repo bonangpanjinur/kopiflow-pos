@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEntitlements } from "@/lib/use-entitlements";
-import { setShopTheme } from "@/server/entitlements.functions.server";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, Lock, Palette } from "lucide-react";
@@ -16,6 +15,7 @@ function AppearancePage() {
   const apply = async (key: string) => {
     setBusy(key);
     try {
+      const { setShopTheme } = await import("@/server/entitlements.functions.server");
       await setShopTheme({ data: { themeKey: key } });
       toast.success("Tema diaktifkan");
       await reload();

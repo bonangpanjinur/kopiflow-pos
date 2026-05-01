@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import { Loader2, Eye } from "lucide-react";
-import { approveInvoice, rejectInvoice, getProofSignedUrl } from "@/server/billing.functions.server";
 
 export const Route = createFileRoute("/admin/invoices")({
   component: AdminInvoices,
@@ -35,19 +34,30 @@ function AdminInvoices() {
 
   const onApprove = async (id: string) => {
     setBusy(id);
-    try { await approveInvoice({ data: { invoiceId: id } }); toast.success("Tagihan disetujui & paket diaktifkan"); await reload(); }
+    try {
+      const { approveInvoice } = await import("@/server/billing.functions.server");
+      await approveInvoice({ data: { invoiceId: id } });
+      toast.success("Tagihan disetujui & paket diaktifkan");
+      await reload();
+    }
     catch (e) { toast.error((e as Error).message); }
     finally { setBusy(null); }
   };
   const onReject = async (id: string) => {
     const reason = prompt("Alasan penolakan?") ?? undefined;
     setBusy(id);
-    try { await rejectInvoice({ data: { invoiceId: id, reason } }); toast.success("Tagihan ditolak"); await reload(); }
+    try {
+      const { rejectInvoice } = await import("@/server/billing.functions.server");
+      await rejectInvoice({ data: { invoiceId: id, reason } });
+      toast.success("Tagihan ditolak");
+      await reload();
+    }
     catch (e) { toast.error((e as Error).message); }
     finally { setBusy(null); }
   };
   const onViewProof = async (id: string) => {
     try {
+      const { getProofSignedUrl } = await import("@/server/billing.functions.server");
       const { url } = await getProofSignedUrl({ data: { invoiceId: id } });
       if (url) window.open(url, "_blank"); else toast.error("Bukti tidak tersedia");
     } catch (e) { toast.error((e as Error).message); }

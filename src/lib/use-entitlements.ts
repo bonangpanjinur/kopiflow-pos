@@ -1,5 +1,36 @@
 import { useEffect, useState, useCallback } from "react";
-import { getEntitlements, type Entitlements } from "@/server/entitlements.functions.server";
+
+export type EntitlementFeature = {
+  key: string;
+  name: string;
+  description: string | null;
+  category: string;
+  requires_min_months: number;
+  limit_value: number | null;
+  allowed: boolean;
+  reason: string | null;
+};
+
+export type EntitlementTheme = {
+  key: string;
+  name: string;
+  description: string | null;
+  preview_image_url: string | null;
+  component_id: string;
+  requires_min_months: number;
+  allowed: boolean;
+  reason: string | null;
+};
+
+export type Entitlements = {
+  plan_code: string;
+  plan_expires_at: string | null;
+  plan_started_at: string | null;
+  months_active: number;
+  active_theme_key: string;
+  features: EntitlementFeature[];
+  themes: EntitlementTheme[];
+};
 
 export function useEntitlements() {
   const [data, setData] = useState<Entitlements | null>(null);
@@ -9,6 +40,7 @@ export function useEntitlements() {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
+      const { getEntitlements } = await import("@/server/entitlements.functions.server");
       const r = await getEntitlements();
       // Defensive: ensure features & themes are arrays even if RPC returns null
       const safe: Entitlements = {

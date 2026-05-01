@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { listMyNotifications, markNotification, dismissAllNotifications } from "@/server/notifications.functions.server";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,6 +31,7 @@ export function OwnerReminderBanner() {
 
   const load = async () => {
     try {
+      const { listMyNotifications } = await import("@/server/notifications.functions.server");
       const rows = await listMyNotifications();
       // Defensive: server fn proxy may wrap response or return null/object on error
       const arr = Array.isArray(rows)
@@ -67,6 +67,7 @@ export function OwnerReminderBanner() {
   const dismissOne = async (id: string) => {
     setItems((prev) => prev.filter((n) => n.id !== id));
     try {
+      const { markNotification } = await import("@/server/notifications.functions.server");
       await markNotification({ data: { id, action: "dismiss" } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Gagal");
@@ -77,6 +78,7 @@ export function OwnerReminderBanner() {
   const dismissAll = async () => {
     setItems([]);
     try {
+      const { dismissAllNotifications } = await import("@/server/notifications.functions.server");
       await dismissAllNotifications();
       toast.success("Semua notifikasi ditutup");
     } catch (e) {
