@@ -152,6 +152,7 @@ function POSPage() {
   const [parkOpen, setParkOpen] = useState(false);
   const [parkLabel, setParkLabel] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [modPickerItem, setModPickerItem] = useState<MenuItem | null>(null);
 
   const cart = carts[activeIdx] ?? carts[0];
   const total = useMemo(() => (cart ? cartTotal(cart.items) : 0), [cart]);
