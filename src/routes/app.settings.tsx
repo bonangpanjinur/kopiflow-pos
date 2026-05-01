@@ -59,6 +59,8 @@ type ShopRow = {
   tax_percent: number;
   service_charge_percent: number;
   tax_inclusive: boolean;
+  receipt_header: string | null;
+  receipt_footer: string | null;
 };
 
 function SettingsPage() {
