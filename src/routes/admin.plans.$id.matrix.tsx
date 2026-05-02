@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { updateMinMonths, undoMinMonths, fetchMatrixAuditLogs } from "@/server/plan-matrix.functions";
+// import { updateMinMonths, undoMinMonths, fetchMatrixAuditLogs } from "@/server/plan-matrix.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { downloadCSV } from "@/lib/export";
 
@@ -67,6 +67,16 @@ function PlanMatrix() {
   const [undoStack, setUndoStack] = useState<Record<string, UndoEntry>>({});
   const [undoing, setUndoing] = useState<Set<string>>(new Set());
 
+  const [fns, setFns] = useState<{
+    updateMinMonths: typeof import("@/server/plan-matrix.functions").updateMinMonths;
+    undoMinMonths: typeof import("@/server/plan-matrix.functions").undoMinMonths;
+    fetchMatrixAuditLogs: typeof import("@/server/plan-matrix.functions").fetchMatrixAuditLogs;
+  } | null>(null);
+
+  useEffect(() => {
+    import("@/server/plan-matrix.functions").then(setFns);
+  }, []);
+
   // Export dialog
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFrom, setExportFrom] = useState(() => {
@@ -77,9 +87,9 @@ function PlanMatrix() {
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf">("csv");
   const [exporting, setExporting] = useState(false);
 
-  const updateMinMonthsFn = useServerFn(updateMinMonths);
-  const undoMinMonthsFn = useServerFn(undoMinMonths);
-  const fetchAuditFn = useServerFn(fetchMatrixAuditLogs);
+  const updateMinMonthsFn = useServerFn(fns?.updateMinMonths || (async () => ({} as any)));
+  const undoMinMonthsFn = useServerFn(fns?.undoMinMonths || (async () => ({} as any)));
+  const fetchAuditFn = useServerFn(fns?.fetchMatrixAuditLogs || (async () => ({} as any)));
 
   // Track load timestamp for staleness detection
   const loadedAt = useRef(Date.now());
