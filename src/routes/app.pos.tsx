@@ -156,7 +156,7 @@ function POSPage() {
     if (!outlet || !user) return;
 
     try {
-      const { data: order, error: orderErr } = await supabase
+      const { data: order, error: orderErr } = await (supabase as any)
         .from("orders")
         .insert({
           outlet_id: outlet.id,
@@ -164,7 +164,7 @@ function POSPage() {
           total: cartTotal(cart.items),
           subtotal: cartTotal(cart.items),
           status: "completed",
-          payment_method: method as any,
+          payment_method: method,
           payment_status: "paid",
           cashier_id: user.id,
           channel: "pos",
