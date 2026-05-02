@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { toast } from "sonner";
 
-export function PWAUpdater() {
+function PWAUpdaterInner() {
   const {
     offlineReady: [offlineReady, setOfflineReady],
-    needUpdate: [needUpdate, setNeedUpdate],
+    needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
@@ -24,7 +24,7 @@ export function PWAUpdater() {
   }, [offlineReady, setOfflineReady]);
 
   useEffect(() => {
-    if (needUpdate) {
+    if (needRefresh) {
       toast("Versi baru tersedia!", {
         description: "Klik tombol untuk memperbarui aplikasi.",
         action: {
@@ -33,8 +33,16 @@ export function PWAUpdater() {
         },
         duration: Infinity,
       });
+      setNeedRefresh(false);
     }
-  }, [needUpdate, updateServiceWorker]);
+  }, [needRefresh, setNeedRefresh, updateServiceWorker]);
 
   return null;
+}
+
+export function PWAUpdater() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return <PWAUpdaterInner />;
 }
