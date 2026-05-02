@@ -1,196 +1,120 @@
+## Analisis Error & Status Implementasi
 
-# Rencana Pengembangan Lengkap — Semua Role
+### 🔴 Error Aktif (Blocking — preview crash)
 
-Berikut audit menyeluruh dari kondisi project saat ini dan rencana perbaikan/penambahan fitur.
+**1. PWAUpdater crash (SSR 500 error)** — Halaman tidak bisa dirender
+- File: `src/components/PWAUpdater.tsx:8`
+- Error: `Cannot destructure property 'Symbol(Symbol.iterator)' of useRegisterSW(...) as it is undefined`
+- Penyebab:
+  - Hook `useRegisterSW` dari `virtual:pwa-register/react` dipanggil saat SSR di Cloudflare Worker, padahal hook ini hanya valid di browser.
+  - Properti `needUpdate` salah — yang benar `needRefresh` (API `vite-plugin-pwa`).
+- Dampak: Komponen dipasang di `__root.tsx` line 133 → semua route gagal SSR.
 
----
+**2. POS broken — tipe `CartItem` tidak konsisten** (TypeScript hard error)
+- `src/lib/cart.ts` mendefinisikan `CartItem` dengan field `menu_item_id`, `unit_price`, `options: SelectedOption[]` (required), dan `cartItemKey` menerima 1 argumen object.
+- `src/routes/app.pos.tsx` memakai field lama `id`, `price`, dan memanggil `cartItemKey(it.id, options)` (2 argumen).
+- `CartPanel.tsx` memakai `lineUnitPrice(it) * it.quantity` (oke) tapi POS push object `{ id, price, ... }` yang tidak match interface.
+- Dampak: type error + runtime mismatch (subtotal NaN, dedup tidak bekerja).
 
-## A. ROLE: OWNER (Dashboard /app)
-
-### Sudah Ada (30+ modul)
-Dashboard, POS, Orders, Online Orders, Menu (+ modifier), Kategori, Inventori, Supplier, Purchase Orders, Resep/HPP, Pegawai, Jadwal, Absensi, Delivery, Kurir, Pengantaran, Shift Kasir, Laporan, Pelanggan, Promo, Loyalty, Billing, Domain Kustom, Tampilan Toko, Backup Data, Pengaturan, Multi-Outlet.
-
-### Perlu Diperbaiki / Ditingkatkan
-
-1. **Dashboard (/app)** — Hanya menampilkan ringkasan hari ini. Perlu:
-   - Grafik tren penjualan 7/30 hari
-   - Perbandingan periode (minggu ini vs minggu lalu)
-   - Widget goal/target harian
-
-2. **POS (1500+ baris)** — File sangat besar, perlu:
-   - Refactor ke komponen terpisah (cart panel, payment dialog, menu grid)
-   - Keyboard shortcut (F1-F12 untuk kategori, Ctrl+P bayar)
-   - Mode offline/cache menu lokal
-
-3. **Laporan** — Ada chart dasar, perlu:
-   - Export ke Excel (.xlsx), bukan hanya CSV
-   - Laporan per pegawai / per shift
-   - Laporan HPP vs profit margin
-   - Filter per outlet
-
-4. **Inventori** — Sudah lengkap, perlu:
-   - Fitur stock opname (stock count/adjustment batch)
-   - Alert reorder point otomatis (notifikasi)
-   - Riwayat harga beli per ingredient
-
-5. **Pegawai** — Perlu:
-   - Role-based permission per modul (kasir hanya akses POS, manajer akses laporan)
-   - Reset password oleh owner
-   - Activity log per pegawai
-
-6. **Promo** — Perlu:
-   - Promo otomatis (auto-apply berdasarkan kondisi cart)
-   - Promo bundle (beli A+B diskon X%)
-   - Statistik penggunaan promo
-
-7. **Loyalty** — Perlu:
-   - Tier/level pelanggan (Bronze, Silver, Gold)
-   - Reward catalog (tukar poin dengan item)
-   - Expiry poin
-
-8. **Online Orders** — Perlu:
-   - Notifikasi realtime (push/sound) saat order masuk
-   - Estimasi waktu penyiapan
-   - Auto-print ke kitchen/bar
-
-9. **Settings** — Perlu:
-   - Pengaturan pajak (PPN, service charge)
-   - Pengaturan struk (header, footer, logo)
-   - Pengaturan jam operasional
-
-10. **Billing** — Perlu:
-    - Payment gateway integration (Midtrans/Xendit) untuk bayar plan
-    - Invoice PDF download
-    - Auto-renewal reminder
+**3. tailwind.config.ts tidak ditemukan** (warning, non-blocking)
+- Project pakai Tailwind v4 via `src/styles.css`, tapi tooling internal masih cari `tailwind.config.ts`. Aman diabaikan kecuali muncul lagi sebagai blocker.
 
 ---
 
-## B. ROLE: STAFF / KASIR
+### 🟡 Yang Belum Selesai (dari plan P0–P3)
 
-### Sudah Ada
-Login via invitation, akses POS, shift kasir, absensi, pengantaran kurir.
+**Sudah selesai sebagian:**
+- ✅ Staff RBAC (table + hook + filter sidebar)
+- ✅ Admin sidebar mobile (Sheet)
+- ✅ Dashboard analytics 7/30 hari
+- ✅ Receipt header/footer
+- ✅ Plan Matrix advanced (concurrency, undo, audit, export)
 
-### Perlu Ditambahkan
-
-11. **Halaman Staff Dedicated** — Staff sekarang masuk ke dashboard owner penuh. Perlu:
-    - Layout terpisah dengan menu terbatas sesuai permission
-    - Hanya tampilkan modul yang diizinkan owner
-
-12. **Kitchen Display System (KDS)** — Belum ada:
-    - Tampilan layar dapur real-time
-    - Status per item (preparing, ready)
-    - Notifikasi sound saat order baru
-
-13. **Absensi** — Perlu:
-    - Clock-in/clock-out dengan foto selfie atau GPS
-    - Laporan keterlambatan
-    - Integrasi dengan jadwal shift
-
----
-
-## C. ROLE: CUSTOMER (Storefront /s/$slug)
-
-### Sudah Ada
-Homepage toko, menu browsing, detail item + modifier, cart, checkout (pickup/delivery), login/register pelanggan, riwayat pesanan, profil, payment QRIS, order tracking.
-
-### Perlu Diperbaiki / Ditambahkan
-
-14. **Storefront UX** — Perlu:
-    - Pencarian menu (search bar)
-    - Filter berdasarkan kategori
-    - Sorting (harga, populer, terbaru)
-
-15. **Customer Account** — Perlu:
-    - Halaman loyalty/poin saya
-    - Daftar favorit (save item)
-    - Alamat tersimpan (multi-address management)
-
-16. **Checkout** — Perlu:
-    - Estimasi ongkir real-time berdasarkan zona
-    - Multiple payment method (transfer bank, e-wallet link)
-    - Order scheduling (pesan untuk nanti)
-
-17. **Review & Rating** — Belum ada:
-    - Rating per menu item setelah order selesai
-    - Tampilkan rata-rata rating di halaman menu
-
-18. **Push Notification** — Belum ada:
-    - Notifikasi status pesanan (dikonfirmasi, disiapkan, siap pickup, diantar)
-    - Promo notification
-
-19. **PWA Support** — Belum ada:
-    - Manifest + service worker untuk install ke home screen
-    - Offline fallback page
+**Belum tersentuh / setengah jadi:**
+| # | Item | Status |
+|---|------|--------|
+| P0 | Security/RLS audit menyeluruh untuk tabel baru (`staff_permissions`, audit logs) | belum |
+| P0 | Mobile audit untuk halaman owner (POS, Reports, Inventori) | belum |
+| P1 | Notifikasi realtime order masuk (sound + toast) | belum |
+| P1 | Export laporan ke Excel (.xlsx) | belum (masih CSV) |
+| P1 | Tax/PPN & service charge settings | belum |
+| P2 | KDS (`app.kds.tsx` ada di routes tapi perlu verifikasi konten realtime) | perlu cek |
+| P2 | Refactor POS — komponen baru ada (`MenuGrid`, `CartPanel`, `PaymentDialog`) tapi **integrasi rusak** karena tipe `CartItem` mismatch | rusak |
+| P2 | Stock opname | belum |
+| P2 | Customer review/rating | belum |
+| P3 | PWA — sudah dipasang tapi **crash** | rusak |
+| P3 | Push notification (`PushNotificationManager.tsx` ada, perlu verifikasi) | perlu cek |
 
 ---
 
-## D. ROLE: SUPER ADMIN (/admin)
+## Rencana Perbaikan (Urutan Eksekusi)
 
-### Sudah Ada
-Dashboard, Daftar Toko, Detail Toko, Invoice, Plan management, Plan Matrix (+ concurrency, undo, audit, export), Katalog Fitur/Tema, Broadcast, Audit Log, Domain, Aktivitas, Pengaturan.
+### Fase 1 — Hentikan Pendarahan (BLOCKER, harus dulu)
 
-### Perlu Diperbaiki / Ditambahkan
+**1.1 Perbaiki `PWAUpdater.tsx`**
+- Ganti `needUpdate` → `needRefresh` (sesuai API `vite-plugin-pwa`).
+- Bungkus `useRegisterSW` agar hanya jalan di client: lazy-load dengan `useEffect` + dynamic import, atau render `null` saat SSR (`if (typeof window === 'undefined') return null` sebelum hook — tidak boleh, hook harus konsisten; gunakan client-only wrapper via `useState(false)` + `useEffect` set true, dan render hook hanya saat mounted).
+- Pola yang dipakai: komponen `PWAUpdaterInner` yang berisi hook, dirender dari `PWAUpdater` hanya setelah `mounted = true`.
 
-20. **Dashboard Admin** — Perlu:
-    - Grafik pertumbuhan toko/user per bulan
-    - Revenue chart (MRR, churn rate)
-    - Alert toko yang hampir expired
+**1.2 Selaraskan `CartItem` di POS**
+- Pilih satu sumber kebenaran: ikuti `src/lib/cart.ts` (`menu_item_id`, `unit_price`, `options` required, `note` optional).
+- Update `src/routes/app.pos.tsx`:
+  - `addToCart`: push `{ menu_item_id: it.id, name, unit_price: it.price, quantity: 1, options: options ?? [], note: "" }`.
+  - `cartItemKey(...)` panggilan ganti ke object signature: `cartItemKey({ menu_item_id, options })`.
+  - `handleCheckout`: gunakan `lineUnitPrice(it)` untuk `unit_price` dan `subtotal` order_items, dan map `it.menu_item_id`.
+- Verifikasi `CartPanel.tsx` (sudah pakai `menu_item_id` & `lineUnitPrice` dengan benar — no change needed).
 
-21. **Shop Detail** — Perlu:
-    - Impersonate/login as owner (untuk troubleshoot)
-    - Force upgrade/downgrade plan
-    - Suspend/ban toko
+**1.3 Verifikasi build hijau**
+- Setelah 1.1 & 1.2, cek dev-server log bersih dan halaman `/` render.
 
-22. **Broadcast** — Perlu:
-    - Targeting (berdasarkan plan, wilayah, status)
-    - Schedule broadcast
-    - Template pesan
+### Fase 2 — Lengkapi P0 (Keamanan & Mobile)
 
-23. **Audit Log** — Perlu:
-    - Filter berdasarkan user/shop/event type
-    - Detail view per event (JSON payload)
-    - Retention policy
+**2.1 RLS audit**
+- Jalankan `supabase--linter` + review manual policy untuk: `staff_permissions`, `system_audit`, `plan_matrix_*`.
+- Pastikan staff hanya bisa SELECT permission dirinya sendiri; super admin saja yang INSERT/UPDATE.
 
----
+**2.2 Mobile audit halaman owner**
+- POS: enable cart sebagai Sheet drawer di < md viewport (saat ini `hidden md:block` → cart hilang di mobile).
+- Reports & Inventori: cek tabel scroll horizontal, tombol aksi tetap reachable.
 
-## E. CROSS-CUTTING (Semua Role)
+### Fase 3 — P1 Tinggi (Revenue impact)
 
-24. **Keamanan**
-    - Review RLS policies untuk semua tabel baru
-    - Rate limiting pada auth endpoints
-    - Input sanitization (XSS prevention)
-    - CSRF protection pada server functions
+**3.1 Notifikasi realtime order masuk** — Subscribe `postgres_changes` di `app.online-orders.tsx` + sound (HTML5 Audio) + toast.
+**3.2 Export Excel** — Tambah util `exportXLSX` pakai library ringan (`xlsx` atau buat sendiri via SheetJS-lite); pasang di `app.reports.tsx`.
+**3.3 Tax/Service charge settings** — Migration kolom `tax_percent`, `service_charge_percent` di `coffee_shops`; UI di `app.settings.tsx`; terapkan di POS checkout & receipt.
 
-25. **Responsive / Mobile**
-    - Audit semua halaman admin dan owner di mobile viewport
-    - Sidebar admin belum responsive (hanya `hidden lg:flex`)
-    - POS perlu mode mobile yang nyaman
+### Fase 4 — P2 (Operasional)
 
-26. **Error Handling**
-    - Beberapa halaman tidak punya error boundary spesifik
-    - Fallback UI saat Supabase unreachable
-    - Loading skeleton vs spinner consistency
+**4.1 Cek isi `app.kds.tsx`** dulu, lalu lengkapi realtime + sound jika kosong.
+**4.2 Stock opname** — Halaman baru `app.stock-opname.tsx` + table `stock_count_sessions`.
+**4.3 Customer review** — Table `menu_reviews` + UI rating di order history customer + agregat di menu detail.
 
-27. **Performance**
-    - POS file 1500 baris — perlu code-splitting
-    - Lazy load halaman admin
-    - Image optimization (storefront logo, menu photos)
+### Fase 5 — P3 (Growth)
 
-28. **Testing**
-    - Belum ada unit test atau integration test
-    - Minimal E2E test untuk flow kritis (signup → onboarding → POS → checkout)
+**5.1 Verifikasi `PushNotificationManager`** dan integrasi Web Push.
+**5.2 Loyalty tier, auto-promo, payment gateway** — sesuai plan.
 
 ---
 
-## Prioritas Implementasi
+## Catatan Teknis
 
-| Prioritas | Item | Alasan |
-|-----------|------|--------|
-| **P0 - Kritis** | #11 Staff permission, #25 Mobile responsive, #24 Security review | Keamanan & usabilitas dasar |
-| **P1 - Tinggi** | #8 Realtime order notif, #3 Laporan export, #14 Search menu, #9 Tax/receipt settings | Revenue-impacting |
-| **P2 - Sedang** | #12 KDS, #2 POS refactor, #4 Stock opname, #17 Review, #16 Checkout enhancements | Operational efficiency |
-| **P3 - Nice to have** | #19 PWA, #18 Push notif, #6 Auto-promo, #7 Loyalty tiers, #10 Payment gateway | Growth features |
+- Hook `useRegisterSW` MUST hanya dipanggil di client. Pola aman:
+  ```tsx
+  export function PWAUpdater() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
+    return <PWAUpdaterInner />;
+  }
+  ```
+- API `vite-plugin-pwa` (sesuai `virtual:pwa-register/react`):
+  - `offlineReady: [boolean, setter]`
+  - `needRefresh: [boolean, setter]` ← **bukan** `needUpdate`
+  - `updateServiceWorker(reloadPage?)`
+- `cartItemKey` di `src/lib/cart.ts` menerima 1 argumen object, bukan 2 argumen positional.
 
----
+## Yang Akan Dieksekusi Setelah Approval
 
-Mau mulai dari prioritas mana? Atau ada fitur spesifik yang ingin didahulukan?
+Fokus pertama hanya **Fase 1 (1.1 + 1.2 + 1.3)** — itu yang paling kritis karena saat ini preview blank/error. Setelah konfirmasi preview hijau, lanjut Fase 2 dst sesuai prioritas.
+
+Mau saya langsung kerjakan **Fase 1 saja** dulu, atau **Fase 1 + Fase 2** sekaligus?

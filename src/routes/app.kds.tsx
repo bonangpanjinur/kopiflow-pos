@@ -120,7 +120,7 @@ function KDSPage() {
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase
       .from("orders")
-      .update({ status })
+      .update({ status: status as any })
       .eq("id", id);
     
     if (error) {

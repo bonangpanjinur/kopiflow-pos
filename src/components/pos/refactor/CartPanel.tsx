@@ -57,9 +57,9 @@ export function CartPanel({
               <div className="flex justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium leading-tight">{it.name}</div>
-                  {it.options.length > 0 && (
+                  {(it.options ?? []).length > 0 && (
                     <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      {it.options.map((o) => o.name).join(", ")}
+                      {(it.options ?? []).map((o) => o.option_name).join(", ")}
                     </div>
                   )}
                   {it.note && (

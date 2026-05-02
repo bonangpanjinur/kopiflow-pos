@@ -265,7 +265,7 @@ function InventoryPage() {
     if (delta === 0) { toast.info("Tidak ada selisih"); setOpnameOpen(false); return; }
     setOpnameSaving(true);
 
-    const { data: opname, error: opErr } = await supabase.from("stock_opnames").insert({
+    const { data: opname, error: opErr } = await (supabase as any).from("stock_opnames").insert({
       shop_id: shop.id,
       notes: opnameNote.trim() || "Opname tunggal",
       status: "completed",
@@ -273,7 +273,7 @@ function InventoryPage() {
 
     if (opErr) { toast.error(opErr.message); setOpnameSaving(false); return; }
 
-    await supabase.from("stock_opname_items").insert({
+    await (supabase as any).from("stock_opname_items").insert({
       stock_opname_id: opname.id,
       ingredient_id: opnameTarget.id,
       system_stock: opnameTarget.current_stock,
@@ -350,7 +350,7 @@ function InventoryPage() {
     if (movements.length === 0) { toast.info("Tidak ada selisih untuk disimpan"); return; }
     setBulkSaving(true);
 
-    const { data: opname, error: opErr } = await supabase.from("stock_opnames").insert({
+    const { data: opname, error: opErr } = await (supabase as any).from("stock_opnames").insert({
       shop_id: shop.id,
       notes: bulkNote.trim() || `Opname massal ${today}`,
       status: "completed",
@@ -358,7 +358,7 @@ function InventoryPage() {
 
     if (opErr) { toast.error(opErr.message); setBulkSaving(false); return; }
 
-    await supabase.from("stock_opname_items").insert(
+    await (supabase as any).from("stock_opname_items").insert(
       opnameItems.map(oi => ({ ...oi, stock_opname_id: opname.id }))
     );
 
@@ -375,7 +375,7 @@ function InventoryPage() {
     if (!shop) return;
     setHistoryLoading(true);
     setHistoryOpen(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("stock_opnames")
       .select("*, stock_opname_items(*, ingredients(name, unit))")
       .eq("shop_id", shop.id)
