@@ -130,16 +130,18 @@ function POSPage() {
   const addToCart = (it: MenuItem, options: any[] = []) => {
     updateCart((c) => {
       const items = [...c.items];
-      const key = cartItemKey(it.id, options);
-      const existing = items.findIndex((x) => cartItemKey(x.id, x.options) === key);
+      const key = cartItemKey({ menu_item_id: it.id, options });
+      const existing = items.findIndex(
+        (x) => cartItemKey({ menu_item_id: x.menu_item_id, options: x.options }) === key,
+      );
 
       if (existing >= 0) {
         items[existing].quantity += 1;
       } else {
         items.push({
-          id: it.id,
+          menu_item_id: it.id,
           name: it.name,
-          price: it.price,
+          unit_price: it.price,
           quantity: 1,
           options,
           note: "",
@@ -150,9 +152,9 @@ function POSPage() {
     toast.success(`${it.name} ditambahkan`);
   };
 
-  const handleCheckout = async (method: string, amount: number) => {
+  const handleCheckout = async (method: string, _amount: number) => {
     if (!outlet || !user) return;
-    
+
     try {
       const { data: order, error: orderErr } = await supabase
         .from("orders")
@@ -160,10 +162,11 @@ function POSPage() {
           outlet_id: outlet.id,
           shop_id: shop!.id,
           total: cartTotal(cart.items),
+          subtotal: cartTotal(cart.items),
           status: "completed",
-          payment_method: method,
+          payment_method: method as any,
           payment_status: "paid",
-          created_by: user.id,
+          cashier_id: user.id,
           channel: "pos",
         })
         .select()
@@ -173,12 +176,12 @@ function POSPage() {
 
       const orderItems = cart.items.map((it) => ({
         order_id: order.id,
-        menu_item_id: it.id,
+        menu_item_id: it.menu_item_id,
         name: it.name,
         quantity: it.quantity,
-        unit_price: it.price,
-        subtotal: it.price * it.quantity,
-        options: it.options,
+        unit_price: lineUnitPrice(it),
+        subtotal: lineUnitPrice(it) * it.quantity,
+        note: it.note ?? null,
       }));
 
       const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
