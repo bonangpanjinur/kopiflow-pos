@@ -1517,6 +1517,57 @@ export type Database = {
         }
         Relationships: []
       }
+      parked_carts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          items: Json
+          label: string
+          note: string | null
+          outlet_id: string
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          label?: string
+          note?: string | null
+          outlet_id: string
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          label?: string
+          note?: string | null
+          outlet_id?: string
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parked_carts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parked_carts_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "coffee_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_features: {
         Row: {
           created_at: string
@@ -2628,6 +2679,10 @@ export type Database = {
       set_shop_theme: {
         Args: { _shop_id: string; _theme_key: string }
         Returns: undefined
+      }
+      user_belongs_to_shop: {
+        Args: { _shop_id: string; _user_id: string }
+        Returns: boolean
       }
       validate_promo: {
         Args: {
