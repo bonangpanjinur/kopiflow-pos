@@ -35,6 +35,7 @@ import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppOnlineOrdersRouteImport } from './routes/app.online-orders'
 import { Route as AppMenuRouteImport } from './routes/app.menu'
 import { Route as AppLoyaltyRouteImport } from './routes/app.loyalty'
+import { Route as AppKdsRouteImport } from './routes/app.kds'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppEmployeesRouteImport } from './routes/app.employees'
 import { Route as AppDomainRouteImport } from './routes/app.domain'
@@ -198,6 +199,11 @@ const AppMenuRoute = AppMenuRouteImport.update({
 const AppLoyaltyRoute = AppLoyaltyRouteImport.update({
   id: '/loyalty',
   path: '/loyalty',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppKdsRoute = AppKdsRouteImport.update({
+  id: '/kds',
+  path: '/kds',
   getParentRoute: () => AppRoute,
 } as any)
 const AppInventoryRoute = AppInventoryRouteImport.update({
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/kds': typeof AppKdsRoute
   '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
@@ -462,6 +469,7 @@ export interface FileRoutesByTo {
   '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/kds': typeof AppKdsRoute
   '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
@@ -524,6 +532,7 @@ export interface FileRoutesById {
   '/app/domain': typeof AppDomainRoute
   '/app/employees': typeof AppEmployeesRoute
   '/app/inventory': typeof AppInventoryRoute
+  '/app/kds': typeof AppKdsRoute
   '/app/loyalty': typeof AppLoyaltyRoute
   '/app/menu': typeof AppMenuRoute
   '/app/online-orders': typeof AppOnlineOrdersRoute
@@ -588,6 +597,7 @@ export interface FileRouteTypes {
     | '/app/domain'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/kds'
     | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
@@ -648,6 +658,7 @@ export interface FileRouteTypes {
     | '/app/domain'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/kds'
     | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
@@ -709,6 +720,7 @@ export interface FileRouteTypes {
     | '/app/domain'
     | '/app/employees'
     | '/app/inventory'
+    | '/app/kds'
     | '/app/loyalty'
     | '/app/menu'
     | '/app/online-orders'
@@ -940,6 +952,13 @@ declare module '@tanstack/react-router' {
       path: '/loyalty'
       fullPath: '/app/loyalty'
       preLoaderRoute: typeof AppLoyaltyRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/kds': {
+      id: '/app/kds'
+      path: '/kds'
+      fullPath: '/app/kds'
+      preLoaderRoute: typeof AppKdsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/inventory': {
@@ -1259,6 +1278,7 @@ interface AppRouteChildren {
   AppDomainRoute: typeof AppDomainRoute
   AppEmployeesRoute: typeof AppEmployeesRoute
   AppInventoryRoute: typeof AppInventoryRoute
+  AppKdsRoute: typeof AppKdsRoute
   AppLoyaltyRoute: typeof AppLoyaltyRoute
   AppMenuRoute: typeof AppMenuRoute
   AppOnlineOrdersRoute: typeof AppOnlineOrdersRoute
@@ -1288,6 +1308,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDomainRoute: AppDomainRoute,
   AppEmployeesRoute: AppEmployeesRoute,
   AppInventoryRoute: AppInventoryRoute,
+  AppKdsRoute: AppKdsRoute,
   AppLoyaltyRoute: AppLoyaltyRoute,
   AppMenuRoute: AppMenuRoute,
   AppOnlineOrdersRoute: AppOnlineOrdersRoute,
