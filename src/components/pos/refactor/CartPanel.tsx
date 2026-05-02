@@ -32,14 +32,19 @@ export function CartPanel({
     <div className="flex h-full flex-col bg-background">
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b px-4">
-        <div className="flex items-center gap-2 font-semibold">
-          <ShoppingBag className="h-4 w-4" />
+        <div className="flex items-center gap-2 font-semibold min-w-0">
+          <ShoppingBag className="h-4 w-4 shrink-0" />
           <span className="truncate">{label}</span>
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary shrink-0">
             {count}
           </span>
+          {isParked && (
+            <span className="rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-[10px] font-medium shrink-0">
+              Tersimpan
+            </span>
+          )}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onClear}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={onClear} disabled={items.length === 0}>
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
@@ -96,8 +101,9 @@ export function CartPanel({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-7 w-7 text-muted-foreground md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                   onClick={() => onRemove(idx)}
+                  aria-label="Hapus item"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
