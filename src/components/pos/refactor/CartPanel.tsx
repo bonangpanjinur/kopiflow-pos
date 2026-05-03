@@ -27,8 +27,12 @@ export function CartPanel({
   onClear,
   isParked,
   label,
+  serviceCharge = 0,
+  tax = 0,
+  grandTotal,
 }: CartPanelProps) {
-  const total = cartTotal(items);
+  const subtotal = cartTotal(items);
+  const total = grandTotal ?? subtotal + serviceCharge + tax;
   const count = cartCount(items);
 
   return (
