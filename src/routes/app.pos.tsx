@@ -442,6 +442,9 @@ function POSPage() {
       items={cart.items}
       label={cart.label}
       isParked={!!cart.parkedId}
+      serviceCharge={charges.service_charge}
+      tax={charges.tax}
+      grandTotal={charges.total}
       onUpdateQty={(idx, delta) => {
         updateCart((c) => {
           const items = [...c.items];
