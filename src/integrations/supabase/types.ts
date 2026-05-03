@@ -1181,6 +1181,45 @@ export type Database = {
           },
         ]
       }
+      menu_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          is_visible: boolean
+          menu_item_id: string
+          order_id: string
+          rating: number
+          shop_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          menu_item_id: string
+          order_id: string
+          rating: number
+          shop_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          menu_item_id?: string
+          order_id?: string
+          rating?: number
+          shop_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       open_bills: {
         Row: {
           created_at: string
@@ -2282,6 +2321,77 @@ export type Database = {
           shop_id?: string
           type?: Database["public"]["Enums"]["stock_movement_type"]
           unit_cost?: number | null
+        }
+        Relationships: []
+      }
+      stock_opname_items: {
+        Row: {
+          actual_stock: number
+          adjustment: number
+          created_at: string
+          id: string
+          ingredient_id: string
+          notes: string | null
+          stock_opname_id: string
+          system_stock: number
+        }
+        Insert: {
+          actual_stock?: number
+          adjustment?: number
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          notes?: string | null
+          stock_opname_id: string
+          system_stock?: number
+        }
+        Update: {
+          actual_stock?: number
+          adjustment?: number
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          notes?: string | null
+          stock_opname_id?: string
+          system_stock?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_opname_items_stock_opname_id_fkey"
+            columns: ["stock_opname_id"]
+            isOneToOne: false
+            referencedRelation: "stock_opnames"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_opnames: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          shop_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          shop_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          shop_id?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
