@@ -1,5 +1,10 @@
 ## Status Implementasi (update)
 
+### ✅ Fase 4 selesai
+- KDS sudah realtime + sound (`app.kds.tsx` verified — subscribe `postgres_changes` + audio + toast).
+- Stock Opname: tabel `stock_opnames` + `stock_opname_items` + RLS (owner full, staff read-only). UI `app.inventory.tsx` sudah pakai tabel ini.
+- Customer Review: tabel `menu_reviews` (rating 1-5, comment, unique per order+item+user). UI `ReviewDialog` di order history (`s.$slug.orders.tsx`) untuk completed orders + agregat rating/avg + ulasan terbaru di menu detail (`s.$slug.menu.$menuId.tsx`).
+
 ### ✅ Fase 3 selesai
 - Notifikasi realtime order masuk: `app.online-orders.tsx` subscribe `postgres_changes` + `notifyOrder` (sound + browser notif).
 - Export Excel: `lib/export.ts` `downloadXLSX` (xlsx) + tombol di `app.reports.tsx`.

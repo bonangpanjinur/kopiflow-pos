@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Plus, Minus, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Minus, Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -126,6 +126,7 @@ function MenuDetail() {
   const [optionGroups, setOptionGroups] = useState<OptionGroup[]>([]);
   const [selections, setSelections] = useState<Record<string, string[]>>({});
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [reviewStats, setReviewStats] = useState<{ avg: number; count: number; recent: { rating: number; comment: string | null; created_at: string }[] }>({ avg: 0, count: 0, recent: [] });
 
   useEffect(() => {
     supabase
@@ -137,6 +138,29 @@ function MenuDetail() {
       .then(({ data }) => {
         setItem(data as typeof item);
         if (data) loadOptions(data.id, data.shop_id);
+      });
+
+    (supabase as any)
+      .from("menu_reviews")
+      .select("rating, comment, created_at")
+      .eq("menu_item_id", menuId)
+      .eq("is_visible", true)
+      .order("created_at", { ascending: false })
+      .limit(5)
+      .then(({ data }: any) => {
+        const list = (data ?? []) as { rating: number; comment: string | null; created_at: string }[];
+        if (list.length === 0) return;
+        // get full count + avg via separate aggregate query
+        (supabase as any)
+          .from("menu_reviews")
+          .select("rating", { count: "exact" })
+          .eq("menu_item_id", menuId)
+          .eq("is_visible", true)
+          .then(({ data: all, count }: any) => {
+            const ratings = (all ?? []).map((r: any) => r.rating);
+            const avg = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+            setReviewStats({ avg, count: count ?? ratings.length, recent: list });
+          });
       });
   }, [menuId]);
 
@@ -244,10 +268,41 @@ function MenuDetail() {
       <div>
         <h1 className="text-xl font-semibold">{item.name}</h1>
         <p className="mt-1 text-lg font-semibold text-primary">{formatIDR(effectivePrice)}</p>
+        {reviewStats.count > 0 && (
+          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            <span className="font-medium text-foreground">{reviewStats.avg.toFixed(1)}</span>
+            <span>({reviewStats.count} ulasan)</span>
+          </div>
+        )}
         {item.description && (
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
         )}
       </div>
+
+      {reviewStats.recent.length > 0 && (
+        <div className="rounded-lg border border-border p-3">
+          <p className="mb-2 text-sm font-semibold">Ulasan terbaru</p>
+          <div className="space-y-2">
+            {reviewStats.recent.map((r, idx) => (
+              <div key={idx} className="border-b border-border pb-2 last:border-0 last:pb-0">
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`h-3 w-3 ${n <= r.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`}
+                    />
+                  ))}
+                  <span className="ml-1 text-[10px] text-muted-foreground">
+                    {new Date(r.created_at).toLocaleDateString("id-ID")}
+                  </span>
+                </div>
+                {r.comment && <p className="mt-1 text-xs text-muted-foreground">{r.comment}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Option groups */}
       {loadingOptions ? (

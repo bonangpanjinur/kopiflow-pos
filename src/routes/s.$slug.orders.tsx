@@ -6,7 +6,8 @@ import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { addToCart } from "@/lib/customer-cart";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, RotateCw } from "lucide-react";
+import { ChevronDown, ChevronUp, RotateCw, Star } from "lucide-react";
+import { ReviewDialog } from "@/components/customer/ReviewDialog";
 
 export const Route = createFileRoute("/s/$slug/orders")({
   component: MyOrders,
@@ -53,6 +54,8 @@ function MyOrders() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [itemsCache, setItemsCache] = useState<Record<string, OrderItem[]>>({});
   const [prevStatus, setPrevStatus] = useState<Record<string, string>>({});
+  const [reviewOrder, setReviewOrder] = useState<{ id: string; items: OrderItem[] } | null>(null);
+  const [shopId, setShopId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -67,6 +70,7 @@ function MyOrders() {
         .eq("slug", slug)
         .maybeSingle();
       if (!shop || cancelled) return;
+      setShopId(shop.id);
       const { data } = await supabase
         .from("orders")
         .select("id,order_no,created_at,status,fulfillment,total,delivery_address,payment_status,payment_method")
@@ -260,10 +264,43 @@ function MyOrders() {
               >
                 <RotateCw className="h-3 w-3" /> Pesan lagi
               </button>
+              {o.status === "completed" && (
+                <button
+                  onClick={async () => {
+                    await loadItems(o.id);
+                    const list = (itemsCache[o.id] ?? []) as OrderItem[];
+                    let resolved = list;
+                    if (resolved.length === 0) {
+                      const { data } = await supabase
+                        .from("order_items")
+                        .select("id,menu_item_id,name,quantity,unit_price,subtotal,note")
+                        .eq("order_id", o.id);
+                      resolved = (data ?? []) as OrderItem[];
+                      setItemsCache((p) => ({ ...p, [o.id]: resolved }));
+                    }
+                    setReviewOrder({ id: o.id, items: resolved });
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+                >
+                  <Star className="h-3 w-3" /> Beri ulasan
+                </button>
+              )}
             </div>
           </div>
         );
       })}
+      {reviewOrder && shopId && user && (
+        <ReviewDialog
+          open={!!reviewOrder}
+          onOpenChange={(v) => !v && setReviewOrder(null)}
+          orderId={reviewOrder.id}
+          shopId={shopId}
+          userId={user.id}
+          items={reviewOrder.items
+            .filter((it) => it.menu_item_id)
+            .map((it) => ({ menu_item_id: it.menu_item_id!, name: it.name }))}
+        />
+      )}
     </div>
   );
 }
