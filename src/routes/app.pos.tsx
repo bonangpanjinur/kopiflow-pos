@@ -546,7 +546,10 @@ function POSPage() {
       <PaymentDialog
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
-        total={cartTotal(cart.items)}
+        subtotal={charges.subtotal}
+        serviceCharge={charges.service_charge}
+        tax={charges.tax}
+        total={charges.total}
         onConfirm={handleCheckout}
       />
 
