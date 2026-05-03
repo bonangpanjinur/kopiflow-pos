@@ -54,6 +54,8 @@ function MyOrders() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [itemsCache, setItemsCache] = useState<Record<string, OrderItem[]>>({});
   const [prevStatus, setPrevStatus] = useState<Record<string, string>>({});
+  const [reviewOrder, setReviewOrder] = useState<{ id: string; items: OrderItem[] } | null>(null);
+  const [shopId, setShopId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
