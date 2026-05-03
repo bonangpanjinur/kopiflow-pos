@@ -517,7 +517,7 @@ function POSPage() {
               <ShoppingBag className="h-5 w-5" />
               <span className="font-semibold">{totalItems}</span>
               {totalItems > 0 && (
-                <span className="text-xs opacity-90">{formatIDR(cartTotal(cart.items))}</span>
+                <span className="text-xs opacity-90">{formatIDR(charges.total)}</span>
               )}
             </Button>
           </SheetTrigger>
