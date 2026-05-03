@@ -6,7 +6,8 @@ import { formatIDR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { addToCart } from "@/lib/customer-cart";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, RotateCw } from "lucide-react";
+import { ChevronDown, ChevronUp, RotateCw, Star } from "lucide-react";
+import { ReviewDialog } from "@/components/customer/ReviewDialog";
 
 export const Route = createFileRoute("/s/$slug/orders")({
   component: MyOrders,
