@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal, cartItemKey, lineUnitPrice } from "@/lib/cart";
+import { computeCharges } from "@/lib/pricing";
 import { ModifierPicker } from "@/components/modifier-picker";
 import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
 
@@ -350,6 +351,12 @@ function POSPage() {
     }
   };
 
+  const charges = computeCharges(cartTotal(cart.items), {
+    tax_percent: shop?.tax_percent ?? 0,
+    service_charge_percent: shop?.service_charge_percent ?? 0,
+    tax_inclusive: shop?.tax_inclusive ?? false,
+  });
+
   const handleCheckout = async (method: string, _amount: number) => {
     if (!outlet || !user) return;
 
@@ -359,8 +366,10 @@ function POSPage() {
         .insert({
           outlet_id: outlet.id,
           shop_id: shop!.id,
-          total: cartTotal(cart.items),
-          subtotal: cartTotal(cart.items),
+          subtotal: charges.subtotal,
+          service_charge: charges.service_charge,
+          tax: charges.tax,
+          total: charges.total,
           status: "completed",
           payment_method: method,
           payment_status: "paid",
@@ -433,6 +442,9 @@ function POSPage() {
       items={cart.items}
       label={cart.label}
       isParked={!!cart.parkedId}
+      serviceCharge={charges.service_charge}
+      tax={charges.tax}
+      grandTotal={charges.total}
       onUpdateQty={(idx, delta) => {
         updateCart((c) => {
           const items = [...c.items];
@@ -505,7 +517,7 @@ function POSPage() {
               <ShoppingBag className="h-5 w-5" />
               <span className="font-semibold">{totalItems}</span>
               {totalItems > 0 && (
-                <span className="text-xs opacity-90">{formatIDR(cartTotal(cart.items))}</span>
+                <span className="text-xs opacity-90">{formatIDR(charges.total)}</span>
               )}
             </Button>
           </SheetTrigger>
@@ -534,7 +546,10 @@ function POSPage() {
       <PaymentDialog
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
-        total={cartTotal(cart.items)}
+        subtotal={charges.subtotal}
+        serviceCharge={charges.service_charge}
+        tax={charges.tax}
+        total={charges.total}
         onConfirm={handleCheckout}
       />
 

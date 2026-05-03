@@ -16,10 +16,21 @@ interface PaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   total: number;
+  subtotal?: number;
+  serviceCharge?: number;
+  tax?: number;
   onConfirm: (method: string, amount: number) => Promise<void>;
 }
 
-export function PaymentDialog({ open, onOpenChange, total, onConfirm }: PaymentDialogProps) {
+export function PaymentDialog({
+  open,
+  onOpenChange,
+  total,
+  subtotal,
+  serviceCharge = 0,
+  tax = 0,
+  onConfirm,
+}: PaymentDialogProps) {
   const [method, setMethod] = useState<"cash" | "qris">("cash");
   const [cashAmount, setCashAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,7 +69,18 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm }: PaymentD
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="text-center">
+          <div className="text-center space-y-1">
+            {(serviceCharge > 0 || tax > 0) && subtotal !== undefined && (
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <div className="flex justify-between"><span>Subtotal</span><span>{formatIDR(subtotal)}</span></div>
+                {serviceCharge > 0 && (
+                  <div className="flex justify-between"><span>Service</span><span>{formatIDR(serviceCharge)}</span></div>
+                )}
+                {tax > 0 && (
+                  <div className="flex justify-between"><span>Pajak</span><span>{formatIDR(tax)}</span></div>
+                )}
+              </div>
+            )}
             <div className="text-sm text-muted-foreground">Total Tagihan</div>
             <div className="text-3xl font-bold text-primary">{formatIDR(total)}</div>
           </div>
