@@ -2,7 +2,17 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Shop = { id: string; name: string; slug: string; logo_url: string | null; address: string | null; phone: string | null };
+export type Shop = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  address: string | null;
+  phone: string | null;
+  tax_percent: number;
+  service_charge_percent: number;
+  tax_inclusive: boolean;
+};
 export type Outlet = { id: string; name: string };
 
 export function useCurrentShop() {
