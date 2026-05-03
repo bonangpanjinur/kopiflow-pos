@@ -126,6 +126,7 @@ function MenuDetail() {
   const [optionGroups, setOptionGroups] = useState<OptionGroup[]>([]);
   const [selections, setSelections] = useState<Record<string, string[]>>({});
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [reviewStats, setReviewStats] = useState<{ avg: number; count: number; recent: { rating: number; comment: string | null; created_at: string }[] }>({ avg: 0, count: 0, recent: [] });
 
   useEffect(() => {
     supabase
@@ -137,6 +138,29 @@ function MenuDetail() {
       .then(({ data }) => {
         setItem(data as typeof item);
         if (data) loadOptions(data.id, data.shop_id);
+      });
+
+    (supabase as any)
+      .from("menu_reviews")
+      .select("rating, comment, created_at")
+      .eq("menu_item_id", menuId)
+      .eq("is_visible", true)
+      .order("created_at", { ascending: false })
+      .limit(5)
+      .then(({ data }: any) => {
+        const list = (data ?? []) as { rating: number; comment: string | null; created_at: string }[];
+        if (list.length === 0) return;
+        // get full count + avg via separate aggregate query
+        (supabase as any)
+          .from("menu_reviews")
+          .select("rating", { count: "exact" })
+          .eq("menu_item_id", menuId)
+          .eq("is_visible", true)
+          .then(({ data: all, count }: any) => {
+            const ratings = (all ?? []).map((r: any) => r.rating);
+            const avg = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+            setReviewStats({ avg, count: count ?? ratings.length, recent: list });
+          });
       });
   }, [menuId]);
 
