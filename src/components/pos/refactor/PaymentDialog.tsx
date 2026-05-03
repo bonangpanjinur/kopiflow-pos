@@ -16,10 +16,21 @@ interface PaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   total: number;
+  subtotal?: number;
+  serviceCharge?: number;
+  tax?: number;
   onConfirm: (method: string, amount: number) => Promise<void>;
 }
 
-export function PaymentDialog({ open, onOpenChange, total, onConfirm }: PaymentDialogProps) {
+export function PaymentDialog({
+  open,
+  onOpenChange,
+  total,
+  subtotal,
+  serviceCharge = 0,
+  tax = 0,
+  onConfirm,
+}: PaymentDialogProps) {
   const [method, setMethod] = useState<"cash" | "qris">("cash");
   const [cashAmount, setCashAmount] = useState("");
   const [loading, setLoading] = useState(false);
