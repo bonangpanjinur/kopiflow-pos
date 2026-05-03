@@ -1,6 +1,11 @@
-## Analisis Error & Status Implementasi
+## Status Implementasi (update)
 
-### 🔴 Error Aktif (Blocking — preview crash)
+### ✅ Fase 3 selesai
+- Notifikasi realtime order masuk: `app.online-orders.tsx` subscribe `postgres_changes` + `notifyOrder` (sound + browser notif).
+- Export Excel: `lib/export.ts` `downloadXLSX` (xlsx) + tombol di `app.reports.tsx`.
+- Tax & Service Charge: `lib/pricing.ts` `computeCharges` (mendukung `tax_inclusive`); diintegrasikan di POS (`useCurrentShop` membawa `tax_percent/service_charge_percent/tax_inclusive`), `CartPanel` & `PaymentDialog` menampilkan breakdown, `handleCheckout` menyimpan `subtotal/service_charge/tax/total` ke `orders`.
+
+### Sisa
 
 **1. PWAUpdater crash (SSR 500 error)** — Halaman tidak bisa dirender
 - File: `src/components/PWAUpdater.tsx:8`
