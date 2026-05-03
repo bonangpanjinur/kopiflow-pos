@@ -27,12 +27,21 @@ export function useCurrentShop() {
       setLoading(true);
       const { data: s } = await supabase
         .from("coffee_shops")
-        .select("id, name, slug, logo_url, address, phone")
+        .select("id, name, slug, logo_url, address, phone, tax_percent, service_charge_percent, tax_inclusive")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
-      setShop(s ?? null);
+      setShop(
+        s
+          ? {
+              ...s,
+              tax_percent: Number(s.tax_percent ?? 0),
+              service_charge_percent: Number(s.service_charge_percent ?? 0),
+              tax_inclusive: !!s.tax_inclusive,
+            }
+          : null,
+      );
       if (s) {
         const { data: o } = await supabase
           .from("outlets")
