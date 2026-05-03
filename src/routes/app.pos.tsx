@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { formatIDR } from "@/lib/format";
 import type { CartItem } from "@/lib/cart";
 import { cartCount, cartTotal, cartItemKey, lineUnitPrice } from "@/lib/cart";
+import { computeCharges } from "@/lib/pricing";
 import { ModifierPicker } from "@/components/modifier-picker";
 import { getActiveShift, openShift, type CashShift } from "@/lib/shift";
 
