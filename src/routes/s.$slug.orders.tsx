@@ -70,6 +70,7 @@ function MyOrders() {
         .eq("slug", slug)
         .maybeSingle();
       if (!shop || cancelled) return;
+      setShopId(shop.id);
       const { data } = await supabase
         .from("orders")
         .select("id,order_no,created_at,status,fulfillment,total,delivery_address,payment_status,payment_method")
