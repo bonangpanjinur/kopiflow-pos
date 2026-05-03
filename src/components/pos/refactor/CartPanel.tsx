@@ -13,6 +13,9 @@ interface CartPanelProps {
   onClear: () => void;
   isParked: boolean;
   label: string;
+  serviceCharge?: number;
+  tax?: number;
+  grandTotal?: number;
 }
 
 export function CartPanel({
