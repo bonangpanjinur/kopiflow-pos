@@ -351,6 +351,12 @@ function POSPage() {
     }
   };
 
+  const charges = computeCharges(cartTotal(cart.items), {
+    tax_percent: shop?.tax_percent ?? 0,
+    service_charge_percent: shop?.service_charge_percent ?? 0,
+    tax_inclusive: shop?.tax_inclusive ?? false,
+  });
+
   const handleCheckout = async (method: string, _amount: number) => {
     if (!outlet || !user) return;
 
@@ -360,8 +366,10 @@ function POSPage() {
         .insert({
           outlet_id: outlet.id,
           shop_id: shop!.id,
-          total: cartTotal(cart.items),
-          subtotal: cartTotal(cart.items),
+          subtotal: charges.subtotal,
+          service_charge: charges.service_charge,
+          tax: charges.tax,
+          total: charges.total,
           status: "completed",
           payment_method: method,
           payment_status: "paid",
