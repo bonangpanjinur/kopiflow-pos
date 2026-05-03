@@ -125,8 +125,20 @@ export function CartPanel({
         <div className="space-y-1.5">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatIDR(total)}</span>
+            <span>{formatIDR(subtotal)}</span>
           </div>
+          {serviceCharge > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Service</span>
+              <span>{formatIDR(serviceCharge)}</span>
+            </div>
+          )}
+          {tax > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Pajak</span>
+              <span>{formatIDR(tax)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm font-bold border-t pt-1.5 text-lg">
             <span>Total</span>
             <span className="text-primary">{formatIDR(total)}</span>
