@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { getSupabaseAdmin } from "../../lib/supabase-admin";
+import type { Database } from "../../types/database";
 
 const router: IRouter = Router();
 
@@ -28,7 +29,7 @@ async function getCronSecret(): Promise<string | null> {
     .select("cron_secret")
     .eq("id", 1)
     .maybeSingle();
-  return (data?.cron_secret as string | null) ?? null;
+  return data?.cron_secret ?? null;
 }
 
 interface CronSummary {
@@ -57,9 +58,9 @@ async function runMaintenance(): Promise<CronSummary> {
     .insert({ job_name: "plan-maintenance", status: "running" })
     .select("id")
     .single();
-  const runId = runRow?.id as string | undefined;
+  const runId = runRow?.id;
 
-  async function updateRun(patch: Record<string, unknown>) {
+  async function updateRun(patch: Database["public"]["Tables"]["cron_runs"]["Update"] & { result?: unknown; error_message?: string | null }) {
     if (!runId) return;
     await db.from("cron_runs").update(patch).eq("id", runId);
   }
@@ -69,7 +70,7 @@ async function runMaintenance(): Promise<CronSummary> {
     const { data: expired, error: expErr } = await db.rpc("expire_overdue_plans");
     if (expErr) summary.errors.push("expire_overdue_plans: " + expErr.message);
     else {
-      const arr = (expired as Array<{ shop_id: string }> | null) ?? [];
+      const arr = expired ?? [];
       summary.expired_plans = arr.length;
       for (const row of arr) {
         await db.rpc("log_system_event", {
@@ -84,7 +85,7 @@ async function runMaintenance(): Promise<CronSummary> {
     // 2. Expire overdue invoices
     const { data: invoices, error: invErr } = await db.rpc("expire_overdue_invoices");
     if (invErr) summary.errors.push("expire_overdue_invoices: " + invErr.message);
-    else summary.expired_invoices = ((invoices as unknown[] | null) ?? []).length;
+    else summary.expired_invoices = (invoices ?? []).length;
 
     // 3. DNS domain verification checks
     const { data: shops, error: shopErr } = await db
@@ -96,12 +97,7 @@ async function runMaintenance(): Promise<CronSummary> {
     if (shopErr) {
       summary.errors.push("domain_check_fetch: " + shopErr.message);
     } else {
-      for (const s of (shops as Array<{
-        id: string;
-        custom_domain: string | null;
-        custom_domain_verified_at: string | null;
-        dns_txt_token: string | null;
-      }> | null) ?? []) {
+      for (const s of shops ?? []) {
         if (!s.custom_domain || !s.dns_txt_token) continue;
         summary.domains_checked++;
         const txts = await dohTxt(s.custom_domain);
@@ -130,7 +126,7 @@ async function runMaintenance(): Promise<CronSummary> {
     // 4. Generate owner reminders
     const { data: rem, error: remErr } = await db.rpc("generate_owner_reminders");
     if (remErr) summary.errors.push("generate_owner_reminders: " + remErr.message);
-    else summary.reminders = (rem as Record<string, number> | null) ?? {};
+    else summary.reminders = rem ?? {};
 
     await updateRun({
       status: summary.errors.length > 0 ? "error" : "success",

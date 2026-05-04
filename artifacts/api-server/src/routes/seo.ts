@@ -42,7 +42,7 @@ router.get("/sitemap.xml", async (req, res) => {
         .eq("shop_id", tenant.id)
         .eq("is_available", true)
         .limit(2000);
-      for (const it of (items as Array<{ id: string; updated_at: string | null }> | null) ?? []) {
+      for (const it of items ?? []) {
         urls.push({ loc: `${origin}/menu/${it.id}`, lastmod: it.updated_at ?? undefined });
       }
     } else {
@@ -52,7 +52,7 @@ router.get("/sitemap.xml", async (req, res) => {
         .select("slug, updated_at")
         .eq("is_active", true)
         .limit(5000);
-      for (const s of (shops as Array<{ slug: string | null; updated_at: string | null }> | null) ?? []) {
+      for (const s of shops ?? []) {
         if (s.slug) {
           urls.push({ loc: `${origin}/s/${s.slug}`, lastmod: s.updated_at ?? undefined });
         }
