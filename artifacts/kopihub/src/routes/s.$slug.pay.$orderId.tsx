@@ -83,8 +83,8 @@ function PayPage() {
 
   const upload = async (file: File) => {
     if (!order || !user) return;
-    if (!file.type.startsWith("image/")) return toast.error("File harus berupa gambar");
-    if (file.size > 5 * 1024 * 1024) return toast.error("Ukuran maksimal 5MB");
+    if (!file.type.startsWith("image/")) { toast.error("File harus berupa gambar"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Ukuran maksimal 5MB"); return; }
     setUploading(true);
     const ext = file.name.split(".").pop() ?? "jpg";
     const path = `${order.shop_id}/${order.id}/proof-${Date.now()}.${ext}`;

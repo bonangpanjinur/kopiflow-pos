@@ -86,7 +86,7 @@ export function ModifierManager({ open, onClose, menuItemId, menuItemName, shopI
       max_select: Math.max(1, Number(newGroupMax) || 1),
       sort_order: groups.length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Grup opsi ditambahkan");
     setNewGroupName("");
     setNewGroupRequired(false);
@@ -97,7 +97,7 @@ export function ModifierManager({ open, onClose, menuItemId, menuItemName, shopI
   async function deleteGroup(id: string) {
     if (!confirm("Hapus grup opsi ini beserta semua pilihannya?")) return;
     const { error } = await supabase.from("menu_item_option_groups").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Grup dihapus");
     loadData();
   }
@@ -112,7 +112,7 @@ export function ModifierManager({ open, onClose, menuItemId, menuItemName, shopI
       price_adjustment: Number(newOptPrice) || 0,
       sort_order: groupOptions.length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Pilihan ditambahkan");
     setNewOptName("");
     setNewOptPrice("0");
@@ -122,7 +122,7 @@ export function ModifierManager({ open, onClose, menuItemId, menuItemName, shopI
 
   async function deleteOption(id: string) {
     const { error } = await supabase.from("menu_item_options").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     loadData();
   }
 

@@ -56,7 +56,7 @@ function AdminShopDetail() {
   const refresh = async () => {
     setLoading(true);
     try {
-      const res = (await getShopDetail({ data: { shopId: id } })) as Detail;
+      const res = (await getShopDetail({ data: { shopId: id } })) as unknown as Detail;
       setD(res);
       setPlanMode(res.shop.plan === "pro" ? "pro" : "free");
       setPlanExpires(res.shop.plan_expires_at ? res.shop.plan_expires_at.slice(0, 10) : "");
@@ -123,7 +123,7 @@ function AdminShopDetail() {
   const doReset = async () => {
     setBusy(true);
     try {
-      const res = (await sendOwnerPasswordReset({ data: { shopId: id } })) as { email: string };
+      const res = await sendOwnerPasswordReset({ data: { shopId: id } });
       toast.success(`Link reset dikirim ke ${res.email}`);
     } catch (e) {
       toast.error((e as Error).message);

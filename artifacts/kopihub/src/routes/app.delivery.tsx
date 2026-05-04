@@ -95,7 +95,7 @@ function DeliveryPage() {
       .insert({ shop_id: shop.id, name: "Zona baru", fee: 5000, sort_order: zones.length })
       .select()
       .single();
-    if (error || !data) return toast.error("Gagal");
+    if (error || !data) { toast.error("Gagal"); return; }
     setZones([...zones, data as Zone]);
   }
 
@@ -108,7 +108,7 @@ function DeliveryPage() {
   async function deleteZone(id: string) {
     if (!confirm("Hapus zona ini?")) return;
     const { error } = await supabase.from("delivery_zones").delete().eq("id", id);
-    if (error) return toast.error("Gagal hapus");
+    if (error) { toast.error("Gagal hapus"); return; }
     setZones((zs) => zs.filter((z) => z.id !== id));
   }
 

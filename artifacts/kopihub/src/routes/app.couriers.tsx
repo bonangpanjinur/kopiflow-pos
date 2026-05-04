@@ -186,7 +186,7 @@ function CouriersPage() {
   async function remove(c: Courier) {
     if (!confirm(`Hapus kurir "${c.name}"?`)) return;
     const { error } = await supabase.from("couriers").delete().eq("id", c.id);
-    if (error) return toast.error("Gagal menghapus");
+    if (error) { toast.error("Gagal menghapus"); return; }
     toast.success("Kurir dihapus");
     setCouriers((cs) => cs.filter((x) => x.id !== c.id));
   }

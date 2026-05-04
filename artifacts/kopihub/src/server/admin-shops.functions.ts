@@ -3,7 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 export async function getShopDetail({ data }: { data: { shopId: string } }) {
   const { data: shop, error } = await supabase.from("coffee_shops").select("*").eq("id", data.shopId).maybeSingle();
   if (error) throw error;
-  return shop;
+  return shop as unknown as {
+    shop: typeof shop;
+    owner: { id: string; email: string; last_sign_in_at: string | null } | null;
+    ownerEmail: string | null;
+    ownerLastSignIn: string | null;
+  };
 }
 
 export async function setShopPlanManual({ data }: { data: { shopId: string; plan: string; expiresAt: string | null } }) {
@@ -24,12 +29,13 @@ export async function unsuspendShop({ data }: { data: { shopId: string } }) {
   return { ok: true };
 }
 
-export async function sendOwnerPasswordReset({ data }: { data: { shopId: string } }) {
+export async function sendOwnerPasswordReset({ data }: { data: { shopId: string } }): Promise<{ email: string }> {
   const { data: shop } = await supabase.from("coffee_shops").select("owner_id").eq("id", data.shopId).maybeSingle();
   if (!shop) throw new Error("shop_not_found");
-  const { data: user } = await supabase.from("profiles" as any).select("email").eq("id", (shop as any).owner_id).maybeSingle();
-  if (!user) throw new Error("user_not_found");
-  const { error } = await supabase.auth.resetPasswordForEmail((user as any).email);
+  const { data: profile } = await supabase.from("profiles" as any).select("email").eq("id", (shop as any).owner_id).maybeSingle();
+  if (!profile) throw new Error("user_not_found");
+  const email = (profile as any).email as string;
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
   if (error) throw error;
-  return { ok: true };
+  return { email };
 }

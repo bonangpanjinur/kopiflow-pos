@@ -267,8 +267,8 @@ function DetailDialog({
 
   async function handleRefund() {
     const amt = Number(refundAmount || 0);
-    if (amt <= 0) return toast.error("Jumlah refund harus > 0");
-    if (amt > Number(order.total)) return toast.error("Tidak boleh melebihi total order");
+    if (amt <= 0) { toast.error("Jumlah refund harus > 0"); return; }
+    if (amt > Number(order.total)) { toast.error("Tidak boleh melebihi total order"); return; }
     setRefunding(true);
     try {
       await refundOrder(order.id, amt, refundReason || "Refund", refundMethod);
@@ -352,7 +352,7 @@ function DetailDialog({
                   setVoiding(true);
                   const { error } = await supabase.rpc("void_order", { _order_id: order.id, _reason: reason });
                   setVoiding(false);
-                  if (error) return toast.error(error.message);
+                  if (error) { toast.error(error.message); return; }
                   toast.success("Order di-void");
                   onVoided();
                 }}

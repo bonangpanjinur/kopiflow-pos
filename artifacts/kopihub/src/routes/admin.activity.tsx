@@ -61,8 +61,8 @@ function AdminActivity() {
           eventType: eventFilter === "all" ? undefined : eventFilter,
         }}),
       ]);
-      setRuns(r as CronRun[]);
-      setAudit(a as AuditRow[]);
+      setRuns(r as unknown as CronRun[]);
+      setAudit(a as unknown as AuditRow[]);
     } finally {
       setLoading(false);
     }

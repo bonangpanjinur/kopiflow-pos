@@ -231,7 +231,7 @@ function CheckoutPage() {
     setPromoApplying(false);
     if (res.error || !res.promo_id) {
       setPromo(null);
-      return toast.error(res.error ?? "Promo tidak valid");
+      toast.error(res.error ?? "Promo tidak valid"); return;
     }
     setPromo({ id: res.promo_id, code: res.code, discount: res.discount });
     toast.success(`Promo ${res.code} dipakai`);
@@ -247,19 +247,19 @@ function CheckoutPage() {
       navigate({ to: "/s/$slug/login", params: { slug }, search: { redirect: `/s/${slug}/checkout` } });
       return;
     }
-    if (!shopId || !outletId) return toast.error("Outlet belum tersedia");
-    if (items.length === 0) return toast.error("Keranjang kosong");
-    if (!name.trim() || !phone.trim()) return toast.error("Nama dan nomor HP wajib diisi");
-    if (!validatePhone(phone)) return toast.error("Nomor HP tidak valid (contoh: 0812xxxx)");
-    if (!minOrderOk) return toast.error(`Minimum order ${formatIDR(settings!.min_order)}`);
-    if (!hoursOk) return toast.error("Di luar jam delivery");
+    if (!shopId || !outletId) { toast.error("Outlet belum tersedia"); return; }
+    if (items.length === 0) { toast.error("Keranjang kosong"); return; }
+    if (!name.trim() || !phone.trim()) { toast.error("Nama dan nomor HP wajib diisi"); return; }
+    if (!validatePhone(phone)) { toast.error("Nomor HP tidak valid (contoh: 0812xxxx)"); return; }
+    if (!minOrderOk) { toast.error(`Minimum order ${formatIDR(settings!.min_order)}`); return; }
+    if (!hoursOk) { toast.error("Di luar jam delivery"); return; }
     if (fulfillment === "delivery") {
-      if (!settings?.delivery_enabled) return toast.error("Delivery tidak tersedia");
-      if (!address.trim()) return toast.error("Alamat pengiriman wajib diisi");
-      if (settings.mode === "zone" && !zoneId) return toast.error("Pilih zona pengiriman");
+      if (!settings?.delivery_enabled) { toast.error("Delivery tidak tersedia"); return; }
+      if (!address.trim()) { toast.error("Alamat pengiriman wajib diisi"); return; }
+      if (settings.mode === "zone" && !zoneId) { toast.error("Pilih zona pengiriman"); return; }
     }
     if (fulfillment === "pickup" && !settings?.pickup_enabled) {
-      return toast.error("Pickup tidak tersedia");
+      toast.error("Pickup tidak tersedia"); return;
     }
 
     setSubmitting(true);

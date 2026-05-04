@@ -238,7 +238,7 @@ function PlanMatrix() {
         // Push to undo stack
         setUndoStack((s) => ({
           ...s,
-          [editKey]: { editKey, itemKey, kind, oldValue: res.old_value, newValue: res.new_value },
+          [editKey]: { editKey, itemKey, kind, oldValue: res.old_value ?? 0, newValue: res.new_value ?? 0 },
         }));
 
         const retryNote = (res as any).retries_used > 0 ? ` (retry ${(res as any).retries_used}×)` : "";

@@ -45,12 +45,13 @@ function BackupPage() {
     try {
       const { listShopBackups, getBackupSchedule } = await import("@/server/backup.functions");
       const list = await listShopBackups();
-      setItems(Array.isArray(list) ? (list as Backup[]) : []);
+      setItems(Array.isArray(list) ? (list as unknown as Backup[]) : []);
       const sched = await getBackupSchedule();
       if (sched) {
-        setSchedule(sched as typeof schedule);
-        setFreq(sched.frequency as typeof freq);
-        setRetention(sched.retention_days);
+        const s = sched as unknown as { frequency: string; retention_days: number; last_run_at: string | null; next_run_at: string };
+        setSchedule(s);
+        setFreq(s.frequency as typeof freq);
+        setRetention(s.retention_days);
       }
     } catch (e) {
       toast.error((e as Error).message);
@@ -72,7 +73,8 @@ function BackupPage() {
     try {
       const { requestShopBackup } = await import("@/server/backup.functions");
       const res = await requestShopBackup({ data: { shopId } });
-      toast.success(`Backup berhasil — ${res.tableCount} tabel, ${formatBytes(res.sizeBytes)}`);
+      void res;
+      toast.success("Backup berhasil diminta. Proses berjalan di background.");
       await reload();
     } catch (e) {
       toast.error((e as Error).message);

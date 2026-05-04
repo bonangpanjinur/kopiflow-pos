@@ -94,14 +94,14 @@ function PromosPage() {
       .from("promos")
       .update({ is_active: !p.is_active })
       .eq("id", p.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setPromos((xs) => xs.map((x) => (x.id === p.id ? { ...x, is_active: !p.is_active } : x)));
   }
 
   async function remove(p: Promo) {
     if (!confirm(`Hapus promo ${p.code}?`)) return;
     const { error } = await supabase.from("promos").delete().eq("id", p.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setPromos((xs) => xs.filter((x) => x.id !== p.id));
     toast.success("Promo dihapus");
   }
@@ -237,7 +237,7 @@ function PromoDialog({
       description: form.description || null,
     });
     if (!parsed.success) {
-      return toast.error(parsed.error.issues[0].message);
+      toast.error(parsed.error.issues[0].message); return;
     }
     setSaving(true);
     const payload = {
@@ -258,7 +258,7 @@ function PromoDialog({
       ? await supabase.from("promos").update(payload).eq("id", editing.id)
       : await supabase.from("promos").insert(payload);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Tersimpan");
     onSaved();
   }

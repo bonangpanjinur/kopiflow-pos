@@ -155,8 +155,8 @@ function SettingsPage() {
 
   const onUploadQris = async (file: File) => {
     if (!shop) return;
-    if (!file.type.startsWith("image/")) return toast.error("File harus berupa gambar");
-    if (file.size > 2 * 1024 * 1024) return toast.error("Ukuran maksimal 2MB");
+    if (!file.type.startsWith("image/")) { toast.error("File harus berupa gambar"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error("Ukuran maksimal 2MB"); return; }
     setUploadingQris(true);
     const ext = file.name.split(".").pop() ?? "png";
     const path = `${shop.id}/qris-${Date.now()}.${ext}`;

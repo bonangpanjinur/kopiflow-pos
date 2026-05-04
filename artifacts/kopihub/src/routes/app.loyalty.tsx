@@ -96,7 +96,7 @@ function LoyaltyPage() {
       .from("loyalty_settings")
       .upsert({ ...settings, shop_id: shop.id }, { onConflict: "shop_id" });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Pengaturan tersimpan");
   }
 

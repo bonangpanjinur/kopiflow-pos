@@ -1,15 +1,27 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export async function updateMinMonths({ data }: { data: { plan_id: string; item_key: string; kind: string; new_value: number; expected_old_value: number } }) {
-  const { error } = await supabase.rpc("admin_update_min_months" as any, { _plan_id: data.plan_id, _item_key: data.item_key, _kind: data.kind, _new_value: data.new_value, _expected_old_value: data.expected_old_value });
+export type MinMonthsResult = {
+  ok: boolean;
+  conflict?: boolean;
+  changed?: boolean;
+  old_value?: number;
+  new_value?: number;
+  message?: string;
+  retries_used?: number;
+};
+
+export async function updateMinMonths({ data }: { data: { plan_id: string; item_key: string; kind: string; new_value: number; expected_old_value: number } }): Promise<MinMonthsResult> {
+  const { data: result, error } = await supabase.rpc("admin_update_min_months" as any, { _plan_id: data.plan_id, _item_key: data.item_key, _kind: data.kind, _new_value: data.new_value, _expected_old_value: data.expected_old_value });
   if (error) throw error;
-  return { ok: true };
+  if (result && typeof result === "object") return result as MinMonthsResult;
+  return { ok: true, changed: true, old_value: data.expected_old_value, new_value: data.new_value };
 }
 
-export async function undoMinMonths({ data }: { data: { plan_id: string; item_key: string; kind: string; restore_value: number; expected_current: number } }) {
-  const { error } = await supabase.rpc("admin_undo_min_months" as any, { _plan_id: data.plan_id, _item_key: data.item_key, _kind: data.kind, _restore_value: data.restore_value, _expected_current: data.expected_current });
+export async function undoMinMonths({ data }: { data: { plan_id: string; item_key: string; kind: string; restore_value: number; expected_current: number } }): Promise<MinMonthsResult> {
+  const { data: result, error } = await supabase.rpc("admin_undo_min_months" as any, { _plan_id: data.plan_id, _item_key: data.item_key, _kind: data.kind, _restore_value: data.restore_value, _expected_current: data.expected_current });
   if (error) throw error;
-  return { ok: true };
+  if (result && typeof result === "object") return result as MinMonthsResult;
+  return { ok: true, changed: true };
 }
 
 export async function fetchMatrixAuditLogs({ data }: { data: { plan_id?: string; from_date: string; to_date: string } }) {

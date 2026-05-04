@@ -16,16 +16,6 @@ import {
 
 export const Route = createFileRoute("/")({
   component: Landing,
-  head: () => ({
-    meta: [
-      { title: "KopiHub — POS & Marketplace untuk Coffeeshop Indonesia" },
-      {
-        name: "description",
-        content:
-          "POS modern + etalase online + kurir milik toko untuk coffeeshop. Multi-cart, open bill realtime, QRIS, loyalty. Mulai gratis.",
-      },
-    ],
-  }),
 });
 
 function Feature({
