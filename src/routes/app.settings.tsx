@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, Trash2, Store, Phone, MapPin, Clock, Share2, Save, Image as ImageIcon, QrCode, CreditCard, Receipt as ReceiptIcon } from "lucide-react";
+import { Loader2, Upload, Trash2, Store, Phone, MapPin, Clock, Share2, Save, Image as ImageIcon, QrCode, CreditCard, Receipt as ReceiptIcon, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 export const Route = createFileRoute("/app/settings")({
   component: SettingsPage,
@@ -559,6 +560,10 @@ function SettingsPage() {
             Salin
           </Button>
         </div>
+      </Section>
+
+      <Section icon={Bell} title="Notifikasi" desc="Aktifkan suara & notifikasi browser untuk pesanan masuk.">
+        <NotificationSettings shopId={shop?.id} />
       </Section>
     </div>
   );
