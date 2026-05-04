@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentShop } from "@/lib/use-shop";
 import { usePlan } from "@/lib/use-plan";
@@ -10,6 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Globe, Lock, Loader2, CheckCircle2, AlertTriangle, Copy, Trash2 } from "lucide-react";
+import {
+  requestCustomDomainBridge,
+  verifyCustomDomainBridge,
+  removeCustomDomainBridge,
+} from "@/lib/domain-bridge";
 
 export const Route = createFileRoute("/app/domain")({
   component: DomainPage,
@@ -30,21 +34,6 @@ function DomainPage() {
   const [audit, setAudit] = useState<Array<{ id: string; action: string; new_domain: string | null; created_at: string }>>([]);
   const [cnameTarget, setCnameTarget] = useState<string>("tenants.kopihub.app");
   const [lastCheck, setLastCheck] = useState<{ verified: boolean; cnameOk: boolean; sslOk?: boolean; sslError?: string | null; txtValues: string[] } | null>(null);
-
-  const requestCustomDomainFn = useServerFn(async (data: { domain: string }) => {
-    const { requestCustomDomain } = await import("@/server/domain.functions");
-    return requestCustomDomain({ data });
-  });
-
-  const verifyCustomDomainFn = useServerFn(async () => {
-    const { verifyCustomDomain } = await import("@/server/domain.functions");
-    return verifyCustomDomain();
-  });
-
-  const removeCustomDomainFn = useServerFn(async () => {
-    const { removeCustomDomain } = await import("@/server/domain.functions");
-    return removeCustomDomain();
-  });
 
   const reload = async () => {
     if (!shop) return;
@@ -79,7 +68,7 @@ function DomainPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      await requestCustomDomainFn({ domain: domainInput.trim().toLowerCase() });
+      await requestCustomDomainBridge({ data: { domain: domainInput.trim().toLowerCase() } });
       toast.success("Domain disimpan. Atur DNS sesuai instruksi lalu verifikasi.");
       setDomainInput("");
       await reload();
@@ -91,7 +80,7 @@ function DomainPage() {
   const onVerify = async () => {
     setBusy(true);
     try {
-      const r = await verifyCustomDomainFn();
+      const r = await verifyCustomDomainBridge();
       setLastCheck({ verified: r.verified, cnameOk: r.cnameOk, sslOk: r.sslOk, sslError: r.sslError, txtValues: r.txtValues });
       if (r.cnameTarget) setCnameTarget(r.cnameTarget);
       if (r.verified) {
@@ -110,7 +99,7 @@ function DomainPage() {
     if (!confirm("Hapus custom domain?")) return;
     setBusy(true);
     try {
-      await removeCustomDomainFn();
+      await removeCustomDomainBridge();
       toast.success("Domain dihapus");
       await reload();
     } catch (e) {
