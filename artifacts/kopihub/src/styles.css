@@ -1,0 +1,338 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --shadow-pos: 0 1px 2px 0 oklch(0 0 0 / 0.04), 0 1px 3px 0 oklch(0 0 0 / 0.06);
+  --shadow-pos-lg: 0 8px 24px -8px oklch(0 0 0 / 0.12);
+}
+
+/* Modern POS Clean — neutral surfaces with emerald accent */
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.18 0.02 250);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 250);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 250);
+
+  /* Emerald primary */
+  --primary: oklch(0.62 0.14 160);
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.96 0.005 250);
+  --secondary-foreground: oklch(0.22 0.02 250);
+
+  --muted: oklch(0.965 0.005 250);
+  --muted-foreground: oklch(0.5 0.015 250);
+
+  --accent: oklch(0.95 0.02 160);
+  --accent-foreground: oklch(0.32 0.08 160);
+
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  --success: oklch(0.65 0.15 155);
+  --success-foreground: oklch(0.99 0 0);
+
+  --warning: oklch(0.78 0.15 75);
+  --warning-foreground: oklch(0.2 0.05 75);
+
+  --border: oklch(0.92 0.005 250);
+  --input: oklch(0.92 0.005 250);
+  --ring: oklch(0.62 0.14 160);
+
+  --chart-1: oklch(0.62 0.14 160);
+  --chart-2: oklch(0.65 0.13 220);
+  --chart-3: oklch(0.7 0.13 75);
+  --chart-4: oklch(0.6 0.18 25);
+  --chart-5: oklch(0.55 0.12 290);
+
+  --sidebar: oklch(0.99 0.002 250);
+  --sidebar-foreground: oklch(0.25 0.02 250);
+  --sidebar-primary: oklch(0.62 0.14 160);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.95 0.02 160);
+  --sidebar-accent-foreground: oklch(0.32 0.08 160);
+  --sidebar-border: oklch(0.92 0.005 250);
+  --sidebar-ring: oklch(0.62 0.14 160);
+}
+
+.dark {
+  --background: oklch(0.16 0.015 250);
+  --foreground: oklch(0.97 0.005 250);
+  --card: oklch(0.2 0.018 250);
+  --card-foreground: oklch(0.97 0.005 250);
+  --popover: oklch(0.2 0.018 250);
+  --popover-foreground: oklch(0.97 0.005 250);
+  --primary: oklch(0.7 0.15 160);
+  --primary-foreground: oklch(0.15 0.02 160);
+  --secondary: oklch(0.26 0.02 250);
+  --secondary-foreground: oklch(0.97 0.005 250);
+  --muted: oklch(0.26 0.02 250);
+  --muted-foreground: oklch(0.65 0.015 250);
+  --accent: oklch(0.3 0.05 160);
+  --accent-foreground: oklch(0.92 0.05 160);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.7 0.15 155);
+  --success-foreground: oklch(0.15 0.02 155);
+  --warning: oklch(0.78 0.15 75);
+  --warning-foreground: oklch(0.2 0.05 75);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.7 0.15 160);
+  --sidebar: oklch(0.18 0.018 250);
+  --sidebar-foreground: oklch(0.95 0.005 250);
+  --sidebar-primary: oklch(0.7 0.15 160);
+  --sidebar-primary-foreground: oklch(0.15 0.02 160);
+  --sidebar-accent: oklch(0.28 0.04 160);
+  --sidebar-accent-foreground: oklch(0.92 0.05 160);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.7 0.15 160);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Receipt — thermal (default 58mm). Width controlled by CSS var so the
+   same component can render at 58mm or 80mm via body[data-receipt-paper]. */
+.receipt-58 {
+  --r-w: 58mm;
+  --r-pad-x: 3mm;
+  --r-pad-y: 4mm;
+  --r-fs: 11px;
+  --r-fs-sm: 10px;
+  width: var(--r-w);
+  padding: var(--r-pad-y) var(--r-pad-x);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: var(--r-fs);
+  line-height: 1.4;
+  color: #000;
+  background: #fff;
+}
+.receipt-58 .r-center { text-align: center; }
+.receipt-58 .r-bold { font-weight: 700; }
+.receipt-58 .r-small { font-size: var(--r-fs-sm); }
+.receipt-58 .r-row { display: flex; justify-content: space-between; gap: 8px; }
+.receipt-58 .r-divider { border-top: 1px dashed #000; margin: 4px 0; }
+.receipt-58 .r-item { margin: 2px 0; }
+.receipt-58 .r-item > div:first-child {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* 80mm thermal preset — applied via body[data-receipt-paper="80"] so we don't
+   need a second component variant. */
+body[data-receipt-paper="80"] .receipt-58 {
+  --r-w: 80mm;
+  --r-pad-x: 4mm;
+  --r-pad-y: 5mm;
+  --r-fs: 12px;
+  --r-fs-sm: 11px;
+}
+
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+}
+/* Receipt paper size — @page can't read body attributes, so we expose
+   two named pages and let JS pick which one via the `page:` property
+   on .print-area (set in receipt-printer.ts before window.print()). */
+@page receipt-58 { size: 58mm auto; margin: 0; }
+@page receipt-80 { size: 80mm auto; margin: 0; }
+@media print {
+  .print-area { page: receipt-58; }
+  body[data-receipt-paper="80"] .print-area { page: receipt-80; }
+}
+
+
+/* PO print sheet — A4/Letter friendly. Shared styles applied to both the
+   hidden print layer (.po-print) and the on-screen preview (.po-preview).
+   Paper size + margins are controlled via CSS custom properties so the
+   user can switch them at runtime from the Print Preview dialog. */
+.po-print { display: none; }
+
+.po-preview {
+  --po-paper-w: 210mm;
+  --po-paper-h: 297mm;
+  --po-pad-y: 14mm;
+  --po-pad-x: 12mm;
+  --po-zoom: 1;
+  width: var(--po-paper-w);
+  min-height: var(--po-paper-h);
+  margin: 0 auto;
+  padding: var(--po-pad-y) var(--po-pad-x);
+  background: #fff;
+  transform: scale(var(--po-zoom));
+  transform-origin: top center;
+  color: #000;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 11pt;
+  line-height: 1.45;
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.25);
+}
+.po-preview h1 { font-size: 18pt; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+.po-preview .muted { color: #555; }
+.po-preview .label { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #666; }
+.po-preview .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.po-preview .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+.po-preview .box { border: 1px solid #d0d0d0; border-radius: 6px; padding: 10px 12px; }
+.po-preview table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 10.5pt; }
+.po-preview thead th {
+  text-align: left; padding: 8px 6px;
+  border-bottom: 2px solid #000; font-weight: 600;
+  text-transform: uppercase; font-size: 8.5pt; letter-spacing: 0.04em;
+}
+.po-preview tbody td { padding: 7px 6px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+.po-preview tbody tr:last-child td { border-bottom: 1px solid #000; }
+.po-preview .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.po-preview .totals { margin-top: 12px; margin-left: auto; width: 42%; font-size: 10.5pt; }
+.po-preview .totals .line { display: flex; justify-content: space-between; padding: 4px 0; }
+.po-preview .totals .grand { border-top: 1.5px solid #000; margin-top: 4px; padding-top: 6px; font-size: 12pt; font-weight: 700; }
+.po-preview .stamp {
+  display: inline-block; padding: 6px 14px;
+  border: 2px solid currentColor; border-radius: 4px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 10pt; transform: rotate(-3deg);
+}
+.po-preview .stamp.draft { color: #777; }
+.po-preview .stamp.ordered { color: #1d4ed8; }
+.po-preview .stamp.received { color: #047857; }
+.po-preview .stamp.cancelled { color: #b91c1c; text-decoration: line-through; }
+.po-preview .footer { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+.po-preview .sign { padding-top: 56px; border-top: 1px solid #000; text-align: center; font-size: 9.5pt; }
+.po-preview .note { margin-top: 14px; font-size: 10pt; white-space: pre-wrap; }
+
+/* Auto-pagination helpers (apply both in preview and print) */
+.po-preview thead, .po-print thead { display: table-header-group; }
+.po-preview tfoot, .po-print tfoot { display: table-footer-group; }
+.po-preview tr, .po-print tr { page-break-inside: avoid; break-inside: avoid; }
+.po-preview .totals, .po-print .totals,
+.po-preview .footer, .po-print .footer { page-break-inside: avoid; break-inside: avoid; }
+
+/* Runtime paper-size + margin overrides (driven by body[data-po-*]) */
+body[data-po-paper="letter"]    .po-preview { --po-paper-w: 216mm; --po-paper-h: 279mm; }
+body[data-po-paper="thermal80"] .po-preview { --po-paper-w: 80mm;  --po-paper-h: auto; }
+body[data-po-paper="thermal58"] .po-preview { --po-paper-w: 58mm;  --po-paper-h: auto; }
+body[data-po-margin="narrow"] .po-preview { --po-pad-y: 8mm;  --po-pad-x: 8mm; }
+body[data-po-margin="normal"] .po-preview { --po-pad-y: 14mm; --po-pad-x: 12mm; }
+body[data-po-margin="wide"]   .po-preview { --po-pad-y: 22mm; --po-pad-x: 20mm; }
+/* Thermal margins are tighter regardless of margin mode */
+body[data-po-paper="thermal80"] .po-preview,
+body[data-po-paper="thermal58"] .po-preview { --po-pad-y: 4mm; --po-pad-x: 3mm; font-size: 9.5pt; }
+/* Landscape orientation swaps width/height for the preview sheet */
+body[data-po-orient="landscape"][data-po-paper="a4"]     .po-preview { --po-paper-w: 297mm; --po-paper-h: 210mm; }
+body[data-po-orient="landscape"][data-po-paper="letter"] .po-preview { --po-paper-w: 279mm; --po-paper-h: 216mm; }
+
+@media print {
+  /* Paper size + margins for the actual printout */
+  .po-print { page: po-a4; }
+  body[data-po-paper="letter"] .po-print { page: po-letter; }
+
+  .po-print {
+    display: block;
+    width: 100%;
+    padding: 14mm 12mm;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+    color: #000;
+    background: #fff;
+  }
+  body[data-po-margin="narrow"] .po-print { padding: 8mm 8mm; }
+  body[data-po-margin="normal"] .po-print { padding: 14mm 12mm; }
+  body[data-po-margin="wide"]   .po-print { padding: 22mm 20mm; }
+
+  .po-print h1 { font-size: 18pt; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .po-print .muted { color: #555; }
+  .po-print .label { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #666; }
+  .po-print .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .po-print .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .po-print .box { border: 1px solid #d0d0d0; border-radius: 6px; padding: 10px 12px; }
+  .po-print table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 10.5pt; }
+  .po-print thead th {
+    text-align: left; padding: 8px 6px;
+    border-bottom: 2px solid #000; font-weight: 600;
+    text-transform: uppercase; font-size: 8.5pt; letter-spacing: 0.04em;
+  }
+  .po-print tbody td { padding: 7px 6px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+  .po-print tbody tr:last-child td { border-bottom: 1px solid #000; }
+  .po-print .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .po-print .totals { margin-top: 12px; margin-left: auto; width: 42%; font-size: 10.5pt; }
+  .po-print .totals .line { display: flex; justify-content: space-between; padding: 4px 0; }
+  .po-print .totals .grand { border-top: 1.5px solid #000; margin-top: 4px; padding-top: 6px; font-size: 12pt; font-weight: 700; }
+  .po-print .stamp {
+    display: inline-block; padding: 6px 14px;
+    border: 2px solid currentColor; border-radius: 4px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 10pt; transform: rotate(-3deg);
+  }
+  .po-print .stamp.draft { color: #777; }
+  .po-print .stamp.ordered { color: #1d4ed8; }
+  .po-print .stamp.received { color: #047857; }
+  .po-print .stamp.cancelled { color: #b91c1c; text-decoration: line-through; }
+  .po-print .footer { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+  .po-print .sign { padding-top: 56px; border-top: 1px solid #000; text-align: center; font-size: 9.5pt; }
+  .po-print .note { margin-top: 14px; font-size: 10pt; white-space: pre-wrap; }
+}
+
+@page po-a4     { size: A4 portrait;     margin: 0; }
+@page po-letter { size: Letter portrait; margin: 0; }
+
