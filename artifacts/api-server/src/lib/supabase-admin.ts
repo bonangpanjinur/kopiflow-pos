@@ -1,10 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-type SupabaseAdminClient = ReturnType<typeof createClient>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = SupabaseClient<any, any, any>;
 
-let _client: SupabaseAdminClient | undefined;
+let _client: AnyClient | undefined;
 
-export function getSupabaseAdmin(): SupabaseAdminClient {
+export function getSupabaseAdmin(): AnyClient {
   if (_client) return _client;
 
   const url = process.env["SUPABASE_URL"];
@@ -15,7 +16,9 @@ export function getSupabaseAdmin(): SupabaseAdminClient {
     throw new Error(`Missing Supabase env var(s): ${missing.join(", ")}. Set them in your environment.`);
   }
 
-  _client = createClient(url, key, {
+  // Using `any` generic so all .from() / .rpc() calls accept plain objects
+  // without requiring the generated Database type (which lives in kopihub).
+  _client = createClient<any>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return _client;

@@ -5,15 +5,15 @@ const router: IRouter = Router();
 
 router.get("/manifest/:slug", async (req, res) => {
   const { slug } = req.params;
-  const db = getSupabaseAdmin() as any;
+  const db = getSupabaseAdmin();
 
-  const { data: shop } = await db
+  const { data: shop, error } = await db
     .from("coffee_shops")
     .select("name, slug, logo_url, tagline, is_active, custom_domain, custom_domain_verified_at")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (!shop || !shop.is_active) {
+  if (error || !shop || !shop.is_active) {
     res.status(404).json({ error: "not_found" });
     return;
   }
@@ -23,7 +23,7 @@ router.get("/manifest/:slug", async (req, res) => {
 
   const manifest = {
     name: shop.name,
-    short_name: (shop.name as string)?.slice(0, 12) || shop.slug,
+    short_name: shop.name?.slice(0, 12) || shop.slug,
     description: shop.tagline ?? `Pesan online dari ${shop.name}`,
     start_url: startUrl,
     scope: startUrl,

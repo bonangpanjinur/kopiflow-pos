@@ -23,8 +23,7 @@ async function dohTxt(name: string): Promise<string[]> {
 async function getCronSecret(): Promise<string | null> {
   const fromEnv = process.env["CRON_SECRET"];
   if (fromEnv) return fromEnv;
-  const db = getSupabaseAdmin() as any;
-  const { data } = await db
+  const { data } = await getSupabaseAdmin()
     .from("billing_settings")
     .select("cron_secret")
     .eq("id", 1)
@@ -32,16 +31,25 @@ async function getCronSecret(): Promise<string | null> {
   return (data?.cron_secret as string | null) ?? null;
 }
 
-async function runMaintenance() {
-  const db = getSupabaseAdmin() as any;
+interface CronSummary {
+  expired_plans: number;
+  expired_invoices: number;
+  domains_checked: number;
+  domains_unverified: number;
+  reminders: Record<string, number>;
+  errors: string[];
+}
+
+async function runMaintenance(): Promise<CronSummary> {
+  const db = getSupabaseAdmin();
   const t0 = Date.now();
-  const summary = {
+  const summary: CronSummary = {
     expired_plans: 0,
     expired_invoices: 0,
     domains_checked: 0,
     domains_unverified: 0,
-    reminders: {} as Record<string, number>,
-    errors: [] as string[],
+    reminders: {},
+    errors: [],
   };
 
   const { data: runRow } = await db
@@ -50,6 +58,11 @@ async function runMaintenance() {
     .select("id")
     .single();
   const runId = runRow?.id as string | undefined;
+
+  async function updateRun(patch: Record<string, unknown>) {
+    if (!runId) return;
+    await db.from("cron_runs").update(patch).eq("id", runId);
+  }
 
   try {
     // 1. Expire overdue Pro plans
@@ -71,7 +84,7 @@ async function runMaintenance() {
     // 2. Expire overdue invoices
     const { data: invoices, error: invErr } = await db.rpc("expire_overdue_invoices");
     if (invErr) summary.errors.push("expire_overdue_invoices: " + invErr.message);
-    else summary.expired_invoices = ((invoices as unknown[]) ?? []).length;
+    else summary.expired_invoices = ((invoices as unknown[] | null) ?? []).length;
 
     // 3. DNS domain verification checks
     const { data: shops, error: shopErr } = await db
@@ -83,11 +96,16 @@ async function runMaintenance() {
     if (shopErr) {
       summary.errors.push("domain_check_fetch: " + shopErr.message);
     } else {
-      for (const s of shops ?? []) {
+      for (const s of (shops as Array<{
+        id: string;
+        custom_domain: string | null;
+        custom_domain_verified_at: string | null;
+        dns_txt_token: string | null;
+      }> | null) ?? []) {
         if (!s.custom_domain || !s.dns_txt_token) continue;
         summary.domains_checked++;
         const txts = await dohTxt(s.custom_domain);
-        const verified = txts.some((t: string) => t.includes(s.dns_txt_token as string));
+        const verified = txts.some((t) => t.includes(s.dns_txt_token!));
         if (!verified) {
           await db
             .from("coffee_shops")
@@ -112,35 +130,25 @@ async function runMaintenance() {
     // 4. Generate owner reminders
     const { data: rem, error: remErr } = await db.rpc("generate_owner_reminders");
     if (remErr) summary.errors.push("generate_owner_reminders: " + remErr.message);
-    else summary.reminders = (rem as Record<string, number>) ?? {};
+    else summary.reminders = (rem as Record<string, number> | null) ?? {};
 
-    if (runId) {
-      await db
-        .from("cron_runs")
-        .update({
-          status: summary.errors.length > 0 ? "error" : "success",
-          finished_at: new Date().toISOString(),
-          duration_ms: Date.now() - t0,
-          result: summary,
-          error_message: summary.errors.join(" | ") || null,
-        })
-        .eq("id", runId);
-    }
+    await updateRun({
+      status: summary.errors.length > 0 ? "error" : "success",
+      finished_at: new Date().toISOString(),
+      duration_ms: Date.now() - t0,
+      result: summary,
+      error_message: summary.errors.join(" | ") || null,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     summary.errors.push("fatal: " + msg);
-    if (runId) {
-      await db
-        .from("cron_runs")
-        .update({
-          status: "error",
-          finished_at: new Date().toISOString(),
-          duration_ms: Date.now() - t0,
-          result: summary,
-          error_message: msg,
-        })
-        .eq("id", runId);
-    }
+    await updateRun({
+      status: "error",
+      finished_at: new Date().toISOString(),
+      duration_ms: Date.now() - t0,
+      result: summary,
+      error_message: msg,
+    });
   }
 
   return summary;

@@ -26,7 +26,7 @@ router.get("/sitemap.xml", async (req, res) => {
   const urls: { loc: string; lastmod?: string }[] = [];
 
   try {
-    const db = getSupabaseAdmin() as any;
+    const db = getSupabaseAdmin();
 
     const { data: tenant } = await db
       .from("coffee_shops")
@@ -34,7 +34,7 @@ router.get("/sitemap.xml", async (req, res) => {
       .eq("custom_domain", host)
       .maybeSingle();
 
-    if (tenant && tenant.is_active && tenant.custom_domain_verified_at) {
+    if (tenant?.is_active && tenant.custom_domain_verified_at) {
       urls.push({ loc: `${origin}/` });
       const { data: items } = await db
         .from("menu_items")
@@ -42,7 +42,7 @@ router.get("/sitemap.xml", async (req, res) => {
         .eq("shop_id", tenant.id)
         .eq("is_available", true)
         .limit(2000);
-      for (const it of items ?? []) {
+      for (const it of (items as Array<{ id: string; updated_at: string | null }> | null) ?? []) {
         urls.push({ loc: `${origin}/menu/${it.id}`, lastmod: it.updated_at ?? undefined });
       }
     } else {
@@ -52,8 +52,10 @@ router.get("/sitemap.xml", async (req, res) => {
         .select("slug, updated_at")
         .eq("is_active", true)
         .limit(5000);
-      for (const s of shops ?? []) {
-        urls.push({ loc: `${origin}/s/${s.slug}`, lastmod: s.updated_at ?? undefined });
+      for (const s of (shops as Array<{ slug: string | null; updated_at: string | null }> | null) ?? []) {
+        if (s.slug) {
+          urls.push({ loc: `${origin}/s/${s.slug}`, lastmod: s.updated_at ?? undefined });
+        }
       }
     }
   } catch {
