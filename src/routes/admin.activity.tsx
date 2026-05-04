@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, Activity, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -51,14 +52,24 @@ function AdminActivity() {
   const [loading, setLoading] = useState(false);
   const [eventFilter, setEventFilter] = useState<string>("all");
 
+  const listCronRunsFn = useServerFn(async (data: any) => {
+    const { listCronRuns } = await import("@/server/observability.functions");
+    return listCronRuns({ data });
+  });
+
+  const listSystemAuditFn = useServerFn(async (data: any) => {
+    const { listSystemAudit } = await import("@/server/observability.functions");
+    return listSystemAudit({ data });
+  });
+
   const load = async () => {
     setLoading(true);
     try {
-      const { listCronRuns, listSystemAudit } = await import("@/server/observability.functions");
       const [r, a] = await Promise.all([
-        listCronRuns({ data: { limit: 30 } }),
-        listSystemAudit({
-          data: { limit: 100, eventType: eventFilter === "all" ? undefined : eventFilter },
+        listCronRunsFn({ limit: 30 }),
+        listSystemAuditFn({
+          limit: 100,
+          eventType: eventFilter === "all" ? undefined : eventFilter,
         }),
       ]);
       setRuns(r as CronRun[]);

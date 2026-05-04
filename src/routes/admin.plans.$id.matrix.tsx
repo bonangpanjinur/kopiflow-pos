@@ -67,16 +67,6 @@ function PlanMatrix() {
   const [undoStack, setUndoStack] = useState<Record<string, UndoEntry>>({});
   const [undoing, setUndoing] = useState<Set<string>>(new Set());
 
-  const [fns, setFns] = useState<{
-    updateMinMonths: typeof import("@/server/plan-matrix.functions").updateMinMonths;
-    undoMinMonths: typeof import("@/server/plan-matrix.functions").undoMinMonths;
-    fetchMatrixAuditLogs: typeof import("@/server/plan-matrix.functions").fetchMatrixAuditLogs;
-  } | null>(null);
-
-  useEffect(() => {
-    import("@/server/plan-matrix.functions").then(setFns);
-  }, []);
-
   // Export dialog
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFrom, setExportFrom] = useState(() => {
@@ -87,9 +77,18 @@ function PlanMatrix() {
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf">("csv");
   const [exporting, setExporting] = useState(false);
 
-  const updateMinMonthsFn = useServerFn(fns?.updateMinMonths || (async () => ({} as any)));
-  const undoMinMonthsFn = useServerFn(fns?.undoMinMonths || (async () => ({} as any)));
-  const fetchAuditFn = useServerFn(fns?.fetchMatrixAuditLogs || (async () => ({} as any)));
+  const updateMinMonthsFn = useServerFn(async (data: any) => {
+    const { updateMinMonths } = await import("@/server/plan-matrix.functions");
+    return updateMinMonths({ data });
+  });
+  const undoMinMonthsFn = useServerFn(async (data: any) => {
+    const { undoMinMonths } = await import("@/server/plan-matrix.functions");
+    return undoMinMonths({ data });
+  });
+  const fetchAuditFn = useServerFn(async (data: any) => {
+    const { fetchMatrixAuditLogs } = await import("@/server/plan-matrix.functions");
+    return fetchMatrixAuditLogs({ data });
+  });
 
   // Track load timestamp for staleness detection
   const loadedAt = useRef(Date.now());
