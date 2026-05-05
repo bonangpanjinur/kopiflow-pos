@@ -1,8 +1,10 @@
-import { ShoppingBag, Trash2, Plus, Minus, StickyNote, Percent, QrCode, Banknote } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, StickyNote, Percent, QrCode, Banknote, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatIDR } from "@/lib/format";
 import { cartCount, cartTotal, lineUnitPrice } from "@/lib/cart";
 import type { CartItem } from "@/lib/cart";
+import { usePermissions } from "@/lib/use-permissions";
+import { toast } from "sonner";
 
 interface CartPanelProps {
   items: CartItem[];
@@ -34,6 +36,23 @@ export function CartPanel({
   const subtotal = cartTotal(items);
   const total = grandTotal ?? subtotal + serviceCharge + tax;
   const count = cartCount(items);
+  const { can } = usePermissions();
+
+  const handleCheckout = () => {
+    if (!can("pos.order")) {
+      toast.error("Anda tidak memiliki izin untuk membuat pesanan");
+      return;
+    }
+    onCheckout();
+  };
+
+  const handleClear = () => {
+    if (!can("pos.void")) {
+      toast.error("Anda tidak memiliki izin untuk membatalkan pesanan");
+      return;
+    }
+    onClear();
+  };
 
   return (
     <div className="flex h-full flex-col bg-background">
@@ -51,8 +70,8 @@ export function CartPanel({
             </span>
           )}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={onClear} disabled={items.length === 0}>
-          <Trash2 className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={handleClear} disabled={items.length === 0}>
+          {can("pos.void") ? <Trash2 className="h-4 w-4" /> : <Lock className="h-3 w-3 opacity-50" />}
         </Button>
       </div>
 
@@ -150,8 +169,8 @@ export function CartPanel({
             <StickyNote className="h-4 w-4" />
             {isParked ? "Simpan" : "Parkir"}
           </Button>
-          <Button className="gap-2" onClick={onCheckout} disabled={items.length === 0}>
-            <Banknote className="h-4 w-4" />
+          <Button className="gap-2" onClick={handleCheckout} disabled={items.length === 0}>
+            {can("pos.order") ? <Banknote className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
             Bayar
           </Button>
         </div>

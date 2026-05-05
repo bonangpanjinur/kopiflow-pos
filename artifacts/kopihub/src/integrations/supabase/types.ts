@@ -291,6 +291,8 @@ export type Database = {
           shop_id: string
           sort_order: number
           updated_at: string
+          kds_station: string | null
+          printer_id: string | null
         }
         Insert: {
           created_at?: string
@@ -300,6 +302,8 @@ export type Database = {
           shop_id: string
           sort_order?: number
           updated_at?: string
+          kds_station?: string | null
+          printer_id?: string | null
         }
         Update: {
           created_at?: string
@@ -309,6 +313,8 @@ export type Database = {
           shop_id?: string
           sort_order?: number
           updated_at?: string
+          kds_station?: string | null
+          printer_id?: string | null
         }
         Relationships: [
           {
@@ -1372,6 +1378,7 @@ export type Database = {
           tip_amount: number
           total: number
           updated_at: string
+          table_id: string | null
         }
         Insert: {
           amount_tendered?: number | null
@@ -1398,6 +1405,7 @@ export type Database = {
           payment_proof_url?: string | null
           payment_split?: Json
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          table_id?: string | null
           points_earned?: number
           points_redeemed?: number
           promo_code?: string | null
