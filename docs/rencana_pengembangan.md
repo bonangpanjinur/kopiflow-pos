@@ -60,10 +60,10 @@ Berikut adalah langkah-langkah strategis untuk mentransformasi KopiFlow menjadi 
 2.  **Status Meja Real-time:** Integrasi antara POS dan denah meja untuk melihat durasi pelanggan duduk dan status pesanan. (DONE - Status: Available, Occupied, Dirty, Reserved)
 3.  **Enhanced Open Bill:** Mempermudah proses tambah pesanan (*add-on*) ke meja yang sedang aktif tanpa harus bayar di depan. (DONE - Integrasi Open Bill dengan Table ID)
 
-### ⏳ Tahap 3: Optimasi Operasional (Mid-term)
-1.  **KDS Station Routing:** Menambahkan pengaturan pada kategori menu untuk menentukan ke stasiun KDS mana pesanan tersebut dikirim.
-2.  **Multi-Printer Support:** Mendukung pengiriman data cetak ke beberapa printer thermal sekaligus (Kasir, Dapur, Bar).
-3.  **Advanced Permissions:** Menambahkan sistem Role-Based Access Control (RBAC) yang lebih granular.
+### ✅ Tahap 3: Optimasi Operasional (Mid-term) - COMPLETED
+1.  **KDS Station Routing:** Menambahkan pengaturan pada kategori menu untuk menentukan ke stasiun KDS mana pesanan tersebut dikirim. (DONE)
+2.  **Multi-Printer Support:** Mendukung pengiriman data cetak ke beberapa printer thermal sekaligus (Kasir, Dapur, Bar). (DONE)
+3.  **Advanced Permissions:** Menambahkan sistem Role-Based Access Control (RBAC) yang lebih granular. (DONE)
 
 ### ⏳ Tahap 4: Skalabilitas & Integrasi (Long-term)
 1.  **Sistem Reservasi:** Integrasi pesanan online dengan booking meja.
