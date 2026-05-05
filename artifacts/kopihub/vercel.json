@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile=false && pnpm --filter @workspace/kopihub run build",
+  "outputDirectory": "dist/public",
+  "installCommand": "echo 'install handled in buildCommand'",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "regions": ["sin1"]
+}
