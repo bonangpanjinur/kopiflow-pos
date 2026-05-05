@@ -5,8 +5,8 @@
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "dev": "cd artifacts/kopihub && PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} npx vite --config vite.config.ts --host 0.0.0.0",
-    "build": "cd artifacts/kopihub && PORT=8080 BASE_PATH=/ npx vite build --config vite.config.ts",
-    "build:dev": "cd artifacts/kopihub && PORT=8080 BASE_PATH=/ npx vite build --config vite.config.ts --mode development",
+    "build": "cd artifacts/kopihub && PORT=8080 BASE_PATH=/ npx vite build --config vite.config.ts && cd ../.. && rm -rf dist && cp -r artifacts/kopihub/dist/public dist",
+    "build:dev": "cd artifacts/kopihub && PORT=8080 BASE_PATH=/ npx vite build --config vite.config.ts --mode development && cd ../.. && rm -rf dist && cp -r artifacts/kopihub/dist/public dist",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
