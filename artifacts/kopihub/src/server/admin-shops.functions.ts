@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function getShopDetail({ data }: { data: { shopId: string } }) {
-  const { data: shop, error } = await supabase.from("coffee_shops").select("*").eq("id", data.shopId).maybeSingle();
+  const { data: shop, error } = await supabase.from("businesses").select("*").eq("id", data.shopId).maybeSingle();
   if (error) throw error;
   return shop as unknown as {
     shop: typeof shop;
@@ -30,7 +30,7 @@ export async function unsuspendShop({ data }: { data: { shopId: string } }) {
 }
 
 export async function sendOwnerPasswordReset({ data }: { data: { shopId: string } }): Promise<{ email: string }> {
-  const { data: shop } = await supabase.from("coffee_shops").select("owner_id").eq("id", data.shopId).maybeSingle();
+  const { data: shop } = await supabase.from("businesses").select("owner_id").eq("id", data.shopId).maybeSingle();
   if (!shop) throw new Error("shop_not_found");
   const { data: profile } = await supabase.from("profiles" as any).select("email").eq("id", (shop as any).owner_id).maybeSingle();
   if (!profile) throw new Error("user_not_found");

@@ -8,7 +8,7 @@ SET search_path = public
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.outlets o
-    JOIN public.coffee_shops s ON s.id = o.shop_id
+    JOIN public.businesses s ON s.id = o.shop_id
     WHERE o.id = _outlet_id
       AND (
         s.owner_id = _user_id
@@ -26,7 +26,7 @@ $$;
 CREATE TABLE public.open_bills (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   outlet_id uuid NOT NULL REFERENCES public.outlets(id) ON DELETE CASCADE,
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   label text NOT NULL DEFAULT 'Cart',
   items jsonb NOT NULL DEFAULT '[]'::jsonb,
   note text,
@@ -53,7 +53,7 @@ CREATE TYPE public.payment_method AS ENUM ('cash','qris');
 -- orders
 CREATE TABLE public.orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   outlet_id uuid NOT NULL REFERENCES public.outlets(id) ON DELETE CASCADE,
   order_no text NOT NULL,
   business_date date NOT NULL DEFAULT (now() AT TIME ZONE 'Asia/Jakarta')::date,

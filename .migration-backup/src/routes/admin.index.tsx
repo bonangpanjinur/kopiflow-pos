@@ -32,12 +32,12 @@ function AdminDashboard() {
         { count: expiringSoon },
         { count: domainOffline },
       ] = await Promise.all([
-        supabase.from("coffee_shops").select("id", { count: "exact", head: true }),
-        supabase.from("coffee_shops").select("id", { count: "exact", head: true }).eq("plan", "pro"),
+        supabase.from("businesses").select("id", { count: "exact", head: true }),
+        supabase.from("businesses").select("id", { count: "exact", head: true }).eq("plan", "pro"),
         supabase.from("plan_invoices").select("id", { count: "exact", head: true }).eq("status", "awaiting_review"),
         supabase.from("plan_invoices").select("amount_idr").eq("status", "paid").gte("paid_at", monthStart.toISOString()),
-        supabase.from("coffee_shops").select("id", { count: "exact", head: true }).eq("plan", "pro").gte("plan_expires_at", now).lte("plan_expires_at", sevenDays),
-        supabase.from("coffee_shops").select("id", { count: "exact", head: true }).not("custom_domain", "is", null).is("custom_domain_verified_at", null),
+        supabase.from("businesses").select("id", { count: "exact", head: true }).eq("plan", "pro").gte("plan_expires_at", now).lte("plan_expires_at", sevenDays),
+        supabase.from("businesses").select("id", { count: "exact", head: true }).not("custom_domain", "is", null).is("custom_domain_verified_at", null),
       ]);
       const mrr = (paidThisMonth ?? []).reduce((s: number, r: { amount_idr: number }) => s + r.amount_idr, 0);
       setStats({

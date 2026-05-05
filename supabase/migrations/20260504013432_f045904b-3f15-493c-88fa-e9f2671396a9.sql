@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
   endpoint text NOT NULL,
   subscription jsonb NOT NULL,
   user_agent text,
-  shop_id uuid REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid REFERENCES public.businesses(id) ON DELETE CASCADE,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, endpoint)

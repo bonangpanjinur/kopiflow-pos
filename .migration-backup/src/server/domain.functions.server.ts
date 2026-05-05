@@ -33,7 +33,7 @@ function makeToken() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getOwnedShop(supabase: any, userId: string) {
   const { data: shop } = await supabase
-    .from("coffee_shops")
+    .from("businesses")
     .select("id, plan, plan_expires_at, custom_domain, custom_domain_verify_token, custom_domain_verified_at")
     .eq("owner_id", userId)
     .maybeSingle();
@@ -75,7 +75,7 @@ export const requestCustomDomain = createServerFn({ method: "POST" })
 
     // Conflict check: domain must be unique across shops
     const { data: existing } = await supabaseAdmin
-      .from("coffee_shops")
+      .from("businesses")
       .select("id")
       .eq("custom_domain", domain)
       .neq("id", shop.id)
@@ -84,7 +84,7 @@ export const requestCustomDomain = createServerFn({ method: "POST" })
 
     const token = makeToken();
     const { error } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .update({
         custom_domain: domain,
         custom_domain_verify_token: token,
@@ -163,7 +163,7 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
 
     if (txtFound) {
       const { error } = await supabase
-        .from("coffee_shops")
+        .from("businesses")
         .update({
           custom_domain_verified_at: new Date().toISOString(),
           last_dns_check_at: new Date().toISOString(),
@@ -195,13 +195,13 @@ export const removeCustomDomain = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: shop } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .select("id, custom_domain")
       .eq("owner_id", userId)
       .maybeSingle();
     if (!shop) throw new Error("shop_not_found");
     const { error } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .update({ custom_domain: null, custom_domain_verified_at: null, custom_domain_verify_token: null, last_dns_check_at: null })
       .eq("id", shop.id);
     if (error) throw new Error(error.message);

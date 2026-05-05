@@ -35,7 +35,7 @@ function AdminBroadcast() {
     setSending(true);
     try {
       // Get target shops based on audience
-      let shopQuery = supabase.from("coffee_shops").select("id");
+      let shopQuery = supabase.from("businesses").select("id");
       if (audience !== "all") {
         shopQuery = shopQuery.eq("plan", audience);
       }

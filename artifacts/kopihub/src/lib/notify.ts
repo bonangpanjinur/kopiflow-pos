@@ -59,7 +59,7 @@ export function notifyOrder(title: string, body: string) {
     const n = new Notification(title, {
       body,
       icon: "/favicon.ico",
-      tag: "kopihub-order",
+      tag: "flowpos-order",
     });
     n.onclick = () => {
       window.focus();

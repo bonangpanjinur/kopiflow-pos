@@ -40,7 +40,7 @@ function AcceptInvitationPage() {
       } else {
         setInv(data as Inv);
         const { data: s } = await supabase
-          .from("coffee_shops")
+          .from("businesses")
           .select("name")
           .eq("id", data.shop_id)
           .maybeSingle();

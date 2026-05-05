@@ -1,5 +1,5 @@
 
-ALTER TABLE public.coffee_shops
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS qris_image_url text,
   ADD COLUMN IF NOT EXISTS qris_merchant_name text,
   ADD COLUMN IF NOT EXISTS payment_methods_enabled text[] NOT NULL DEFAULT ARRAY['cash','qris']::text[];
@@ -52,7 +52,7 @@ CREATE POLICY "payment_proofs_owner_read" ON storage.objects
   USING (
     bucket_id = 'payment-proofs'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.id::text = (storage.foldername(name))[1]
         AND s.owner_id = auth.uid()
     )
@@ -64,7 +64,7 @@ CREATE POLICY "payment_proofs_owner_delete" ON storage.objects
   USING (
     bucket_id = 'payment-proofs'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.id::text = (storage.foldername(name))[1]
         AND s.owner_id = auth.uid()
     )

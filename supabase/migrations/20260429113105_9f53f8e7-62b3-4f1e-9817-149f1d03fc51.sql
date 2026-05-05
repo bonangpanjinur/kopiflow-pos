@@ -8,7 +8,7 @@ CREATE POLICY "payment_proofs_owner_read" ON storage.objects
 FOR SELECT USING (
   bucket_id = 'payment-proofs' AND (
     EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND s.id::text = (storage.foldername(objects.name))[1]
     )
@@ -19,7 +19,7 @@ FOR SELECT USING (
 CREATE POLICY "payment_proofs_owner_write" ON storage.objects
 FOR INSERT WITH CHECK (
   bucket_id = 'payment-proofs' AND EXISTS (
-    SELECT 1 FROM public.coffee_shops s
+    SELECT 1 FROM public.businesses s
     WHERE s.owner_id = auth.uid()
       AND s.id::text = (storage.foldername(objects.name))[1]
   )
@@ -28,7 +28,7 @@ FOR INSERT WITH CHECK (
 CREATE POLICY "payment_proofs_owner_delete" ON storage.objects
 FOR DELETE USING (
   bucket_id = 'payment-proofs' AND EXISTS (
-    SELECT 1 FROM public.coffee_shops s
+    SELECT 1 FROM public.businesses s
     WHERE s.owner_id = auth.uid()
       AND s.id::text = (storage.foldername(objects.name))[1]
   )
@@ -39,11 +39,11 @@ CREATE POLICY "plan_invoices_owner_cancel" ON public.plan_invoices
 FOR UPDATE
 USING (
   status = 'pending' AND EXISTS (
-    SELECT 1 FROM public.coffee_shops s WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid()
+    SELECT 1 FROM public.businesses s WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid()
   )
 )
 WITH CHECK (
   status IN ('pending','cancelled') AND EXISTS (
-    SELECT 1 FROM public.coffee_shops s WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid()
+    SELECT 1 FROM public.businesses s WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid()
   )
 );

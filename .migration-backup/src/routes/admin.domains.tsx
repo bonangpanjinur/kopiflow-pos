@@ -13,7 +13,7 @@ type Row = { id: string; name: string; slug: string; custom_domain: string | nul
 function AdminDomains() {
   const [rows, setRows] = useState<Row[]>([]);
   const reload = async () => {
-    const { data } = await supabase.from("coffee_shops").select("id, name, slug, custom_domain, custom_domain_verified_at").not("custom_domain", "is", null).order("created_at", { ascending: false });
+    const { data } = await supabase.from("businesses").select("id, name, slug, custom_domain, custom_domain_verified_at").not("custom_domain", "is", null).order("created_at", { ascending: false });
     setRows((data as Row[]) ?? []);
   };
   useEffect(() => { reload(); }, []);

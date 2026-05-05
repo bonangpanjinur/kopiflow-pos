@@ -1,6 +1,6 @@
 
 -- Columns
-ALTER TABLE public.coffee_shops
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS last_dns_check_at timestamptz;
 
 ALTER TABLE public.billing_settings
@@ -49,7 +49,7 @@ ALTER TABLE public.domain_verify_attempts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "dva_owner_read"
   ON public.domain_verify_attempts FOR SELECT TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = shop_id AND s.owner_id = auth.uid())
+    EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = shop_id AND s.owner_id = auth.uid())
     OR public.has_role(auth.uid(), 'super_admin')
   );
 
@@ -57,7 +57,7 @@ CREATE POLICY "dva_owner_insert"
   ON public.domain_verify_attempts FOR INSERT TO authenticated
   WITH CHECK (
     actor_id = auth.uid()
-    AND EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = shop_id AND s.owner_id = auth.uid())
+    AND EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = shop_id AND s.owner_id = auth.uid())
   );
 
 -- Auto-unverify helper (called by cron via service role)
@@ -68,7 +68,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  UPDATE public.coffee_shops
+  UPDATE public.businesses
     SET custom_domain_verified_at = NULL,
         last_dns_check_at = now(),
         updated_at = now()
@@ -88,7 +88,7 @@ AS $$
 BEGIN
   RETURN QUERY
   WITH affected AS (
-    UPDATE public.coffee_shops
+    UPDATE public.businesses
       SET plan = 'free',
           custom_domain_verified_at = NULL,
           updated_at = now()

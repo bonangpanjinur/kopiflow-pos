@@ -9,7 +9,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
  * Beberapa tabel terkait via order/po, kita ambil terpisah.
  */
 const SHOP_TABLES: Array<{ table: string; shopColumn: string | null; via?: { table: string; key: string; shopColumn: string } }> = [
-  { table: "coffee_shops", shopColumn: "id" },
+  { table: "businesses", shopColumn: "id" },
   { table: "outlets", shopColumn: "shop_id" },
   { table: "categories", shopColumn: "shop_id" },
   { table: "menu_items", shopColumn: "shop_id" },
@@ -35,7 +35,7 @@ const SHOP_TABLES: Array<{ table: string; shopColumn: string | null; via?: { tab
 
 async function ensureOwner(shopId: string, userId: string) {
   const { data } = await supabaseAdmin
-    .from("coffee_shops")
+    .from("businesses")
     .select("id, owner_id, slug, name")
     .eq("id", shopId)
     .maybeSingle();
@@ -144,7 +144,7 @@ export const listShopBackups = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { userId, supabase } = context;
     const { data: shop } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .select("id")
       .eq("owner_id", userId)
       .maybeSingle();
@@ -208,7 +208,7 @@ export const upsertBackupSchedule = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId, supabase } = context;
     const { data: shop } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .select("id")
       .eq("owner_id", userId)
       .maybeSingle();
@@ -236,7 +236,7 @@ export const getBackupSchedule = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { userId, supabase } = context;
     const { data: shop } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .select("id")
       .eq("owner_id", userId)
       .maybeSingle();

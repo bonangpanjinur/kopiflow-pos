@@ -59,12 +59,12 @@ ALTER TABLE public.owner_notifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY owner_notif_owner_read ON public.owner_notifications
   FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY owner_notif_owner_update ON public.owner_notifications
   FOR UPDATE TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY owner_notif_super_admin_all ON public.owner_notifications
   FOR ALL TO authenticated
@@ -92,7 +92,7 @@ BEGIN
            'Plan Pro Anda akan berakhir pada ' || to_char(s.plan_expires_at AT TIME ZONE 'Asia/Jakarta', 'DD Mon YYYY HH24:MI'),
            '/app/billing', 'warning',
            'plan_expiring:' || to_char(s.plan_expires_at, 'YYYY-MM-DD')
-    FROM coffee_shops s
+    FROM businesses s
     WHERE s.plan = 'pro'
       AND s.plan_expires_at IS NOT NULL
       AND s.plan_expires_at > now()
@@ -109,7 +109,7 @@ BEGIN
            'Akun Anda otomatis turun ke Free. Custom domain dinonaktifkan sementara.',
            '/app/billing', 'danger',
            'plan_expired:' || to_char(COALESCE(s.plan_expires_at, now()), 'YYYY-MM-DD')
-    FROM coffee_shops s
+    FROM businesses s
     WHERE s.plan = 'free'
       AND s.plan_expires_at IS NOT NULL
       AND s.plan_expires_at < now()
@@ -143,7 +143,7 @@ BEGIN
            'Domain ' || s.custom_domain || ' tidak lagi terdeteksi. Periksa pengaturan DNS Anda.',
            '/app/domain', 'danger',
            'domain_offline:' || s.custom_domain || ':' || to_char(s.last_dns_check_at, 'YYYY-MM-DD')
-    FROM coffee_shops s
+    FROM businesses s
     WHERE s.custom_domain IS NOT NULL
       AND s.custom_domain_verified_at IS NULL
       AND s.last_dns_check_at IS NOT NULL

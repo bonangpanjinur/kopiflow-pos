@@ -26,7 +26,7 @@ export function OutletProvider({ children }: { children: ReactNode }) {
   const load = useCallback(async () => {
     if (!user) return;
     // Owner sees all outlets for their shop
-    const { data: shop } = await supabase.from("coffee_shops").select("id").eq("owner_id", user.id).maybeSingle();
+    const { data: shop } = await supabase.from("businesses").select("id").eq("owner_id", user.id).maybeSingle();
     if (!shop) { setLoading(false); return; }
     const { data } = await supabase.from("outlets").select("id, name, address, is_active").eq("shop_id", shop.id).order("name");
     const list = (data ?? []) as Outlet[];

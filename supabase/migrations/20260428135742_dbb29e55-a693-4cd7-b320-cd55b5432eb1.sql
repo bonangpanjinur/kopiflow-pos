@@ -16,8 +16,8 @@ ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY suppliers_owner_all ON public.suppliers
 FOR ALL TO authenticated
-USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = suppliers.shop_id AND s.owner_id = auth.uid()))
-WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = suppliers.shop_id AND s.owner_id = auth.uid()));
+USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = suppliers.shop_id AND s.owner_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = suppliers.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY suppliers_staff_read ON public.suppliers
 FOR SELECT TO authenticated
@@ -55,8 +55,8 @@ ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY po_owner_all ON public.purchase_orders
 FOR ALL TO authenticated
-USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = purchase_orders.shop_id AND s.owner_id = auth.uid()))
-WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = purchase_orders.shop_id AND s.owner_id = auth.uid()));
+USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = purchase_orders.shop_id AND s.owner_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = purchase_orders.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY po_staff_read ON public.purchase_orders
 FOR SELECT TO authenticated
@@ -90,12 +90,12 @@ CREATE POLICY poi_owner_all ON public.purchase_order_items
 FOR ALL TO authenticated
 USING (EXISTS (
   SELECT 1 FROM purchase_orders po
-  JOIN coffee_shops s ON s.id = po.shop_id
+  JOIN businesses s ON s.id = po.shop_id
   WHERE po.id = purchase_order_items.po_id AND s.owner_id = auth.uid()
 ))
 WITH CHECK (EXISTS (
   SELECT 1 FROM purchase_orders po
-  JOIN coffee_shops s ON s.id = po.shop_id
+  JOIN businesses s ON s.id = po.shop_id
   WHERE po.id = purchase_order_items.po_id AND s.owner_id = auth.uid()
 ));
 
@@ -147,7 +147,7 @@ BEGIN
   SELECT * INTO v_po FROM purchase_orders WHERE id = _po_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'po_not_found'; END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = v_po.shop_id AND s.owner_id = v_caller) THEN
+  IF NOT EXISTS (SELECT 1 FROM businesses s WHERE s.id = v_po.shop_id AND s.owner_id = v_caller) THEN
     RAISE EXCEPTION 'not_authorized';
   END IF;
 

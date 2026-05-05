@@ -1,7 +1,7 @@
 -- Categories table
 CREATE TABLE public.categories (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   name text NOT NULL,
   sort_order integer NOT NULL DEFAULT 0,
   is_active boolean NOT NULL DEFAULT true,
@@ -13,12 +13,12 @@ ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY categories_owner_all ON public.categories
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = categories.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = categories.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = categories.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = categories.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY categories_public_read ON public.categories
   FOR SELECT TO public
-  USING (is_active = true AND EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = categories.shop_id AND s.is_active = true));
+  USING (is_active = true AND EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = categories.shop_id AND s.is_active = true));
 
 CREATE POLICY categories_staff_read ON public.categories
   FOR SELECT TO authenticated
@@ -30,7 +30,7 @@ CREATE TRIGGER categories_touch BEFORE UPDATE ON public.categories
 -- Menu items table
 CREATE TABLE public.menu_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   category_id uuid REFERENCES public.categories(id) ON DELETE SET NULL,
   name text NOT NULL,
   description text,
@@ -46,12 +46,12 @@ ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY menu_items_owner_all ON public.menu_items
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = menu_items.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = menu_items.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = menu_items.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = menu_items.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY menu_items_public_read ON public.menu_items
   FOR SELECT TO public
-  USING (is_available = true AND EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = menu_items.shop_id AND s.is_active = true));
+  USING (is_available = true AND EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = menu_items.shop_id AND s.is_active = true));
 
 CREATE POLICY menu_items_staff_read ON public.menu_items
   FOR SELECT TO authenticated
@@ -72,7 +72,7 @@ CREATE POLICY "menu_images_owner_insert" ON storage.objects
   WITH CHECK (
     bucket_id = 'menu-images'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND s.id::text = (storage.foldername(name))[1]
     )
@@ -83,7 +83,7 @@ CREATE POLICY "menu_images_owner_update" ON storage.objects
   USING (
     bucket_id = 'menu-images'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND s.id::text = (storage.foldername(name))[1]
     )
@@ -94,7 +94,7 @@ CREATE POLICY "menu_images_owner_delete" ON storage.objects
   USING (
     bucket_id = 'menu-images'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND s.id::text = (storage.foldername(name))[1]
     )

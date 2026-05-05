@@ -26,8 +26,8 @@ CREATE INDEX idx_promos_shop ON public.promos(shop_id);
 ALTER TABLE public.promos ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY promos_owner_all ON public.promos FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = promos.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = promos.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = promos.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = promos.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY promos_staff_read ON public.promos FOR SELECT TO authenticated
   USING (is_active = true AND EXISTS (
@@ -37,7 +37,7 @@ CREATE POLICY promos_staff_read ON public.promos FOR SELECT TO authenticated
 
 CREATE POLICY promos_public_read ON public.promos FOR SELECT TO public
   USING (is_active = true AND channel IN ('online','all') AND EXISTS (
-    SELECT 1 FROM coffee_shops s WHERE s.id = promos.shop_id AND s.is_active = true
+    SELECT 1 FROM businesses s WHERE s.id = promos.shop_id AND s.is_active = true
   ));
 
 CREATE TRIGGER promos_touch BEFORE UPDATE ON public.promos
@@ -58,7 +58,7 @@ CREATE INDEX idx_promo_red_order ON public.promo_redemptions(order_id);
 ALTER TABLE public.promo_redemptions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY promo_red_owner_read ON public.promo_redemptions FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = promo_redemptions.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = promo_redemptions.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY promo_red_self_read ON public.promo_redemptions FOR SELECT TO authenticated
   USING (user_id = auth.uid());
@@ -84,11 +84,11 @@ CREATE TABLE public.loyalty_settings (
 ALTER TABLE public.loyalty_settings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY loyalty_settings_owner_all ON public.loyalty_settings FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = loyalty_settings.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = loyalty_settings.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = loyalty_settings.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = loyalty_settings.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY loyalty_settings_public_read ON public.loyalty_settings FOR SELECT TO public
-  USING (is_active = true AND EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = loyalty_settings.shop_id AND s.is_active = true));
+  USING (is_active = true AND EXISTS (SELECT 1 FROM businesses s WHERE s.id = loyalty_settings.shop_id AND s.is_active = true));
 
 CREATE TRIGGER loyalty_settings_touch BEFORE UPDATE ON public.loyalty_settings
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
@@ -110,7 +110,7 @@ CREATE POLICY loyalty_points_self_read ON public.loyalty_points FOR SELECT TO au
   USING (user_id = auth.uid());
 
 CREATE POLICY loyalty_points_owner_read ON public.loyalty_points FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = loyalty_points.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = loyalty_points.shop_id AND s.owner_id = auth.uid()));
 
 -- Loyalty ledger
 CREATE TABLE public.loyalty_ledger (
@@ -129,7 +129,7 @@ CREATE POLICY loyalty_ledger_self_read ON public.loyalty_ledger FOR SELECT TO au
   USING (user_id = auth.uid());
 
 CREATE POLICY loyalty_ledger_owner_read ON public.loyalty_ledger FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = loyalty_ledger.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = loyalty_ledger.shop_id AND s.owner_id = auth.uid()));
 
 -- Add columns to orders
 ALTER TABLE public.orders

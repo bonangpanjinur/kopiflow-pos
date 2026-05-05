@@ -35,7 +35,7 @@ export type Entitlements = {
 export const getEntitlements = async ({ context }: { context: any }): Promise<Entitlements> => {
   const { supabase, userId } = context;
   const { data: shop } = await supabase
-    .from("coffee_shops")
+    .from("businesses")
     .select("id")
     .eq("owner_id", userId)
     .maybeSingle();
@@ -48,7 +48,7 @@ export const getEntitlements = async ({ context }: { context: any }): Promise<En
 export const setShopTheme = async ({ data, context }: { data: any, context: any }) => {
   const { supabase, userId } = context;
   const { data: shop } = await supabase
-    .from("coffee_shops")
+    .from("businesses")
     .select("id")
     .eq("owner_id", userId)
     .maybeSingle();
@@ -60,7 +60,7 @@ export const setShopTheme = async ({ data, context }: { data: any, context: any 
 
 export const getPublicShopTheme = async ({ data }: { data: any }) => {
   const { data: shop } = await supabaseAdmin
-    .from("coffee_shops")
+    .from("businesses")
     .select("active_theme_key, plan")
     .eq("slug", data.slug)
     .eq("is_active", true)

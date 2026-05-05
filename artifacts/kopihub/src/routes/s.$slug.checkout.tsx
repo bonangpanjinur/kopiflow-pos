@@ -101,7 +101,7 @@ function CheckoutPage() {
   useEffect(() => {
     (async () => {
       const { data: shop } = await supabase
-        .from("coffee_shops")
+        .from("businesses")
         .select("id, payment_methods_enabled, qris_image_url, prep_minutes")
         .eq("slug", slug)
         .maybeSingle();

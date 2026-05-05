@@ -73,7 +73,7 @@ export const unsuspendShop = async ({ data, context }: { data: any, context: any
 export const sendOwnerPasswordReset = async ({ data, context }: { data: any, context: any }) => {
   await assertSuperAdmin(context.userId);
   const { data: shop } = await supabaseAdmin
-    .from("coffee_shops")
+    .from("businesses")
     .select("owner_id")
     .eq("id", data.shopId)
     .maybeSingle();

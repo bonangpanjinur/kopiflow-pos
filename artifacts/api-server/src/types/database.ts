@@ -9,7 +9,7 @@
 export interface Database {
   public: {
     Tables: {
-      coffee_shops: {
+      businesses: {
         Row: {
           id: string;
           name: string | null;

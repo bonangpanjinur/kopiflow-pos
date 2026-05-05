@@ -1,7 +1,7 @@
 -- G1: Super-admin shop management + performance indexes
 
--- 1. Suspension fields on coffee_shops
-ALTER TABLE public.coffee_shops
+-- 1. Suspension fields on businesses
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS suspended_at timestamptz,
   ADD COLUMN IF NOT EXISTS suspended_reason text;
 
@@ -46,13 +46,13 @@ BEGIN
   END IF;
 
   SELECT jsonb_build_object(
-    'shops', (SELECT count(*) FROM coffee_shops),
-    'pro', (SELECT count(*) FROM coffee_shops WHERE plan = 'pro'),
+    'shops', (SELECT count(*) FROM businesses),
+    'pro', (SELECT count(*) FROM businesses WHERE plan = 'pro'),
     'pending', (SELECT count(*) FROM plan_invoices WHERE status = 'awaiting_review'),
     'mrr', COALESCE((SELECT sum(amount_idr) FROM plan_invoices WHERE status = 'paid' AND paid_at >= month_start), 0),
-    'expiringSoon', (SELECT count(*) FROM coffee_shops WHERE plan = 'pro' AND plan_expires_at >= now() AND plan_expires_at <= seven_days),
-    'domainOffline', (SELECT count(*) FROM coffee_shops WHERE custom_domain IS NOT NULL AND custom_domain_verified_at IS NULL),
-    'suspended', (SELECT count(*) FROM coffee_shops WHERE suspended_at IS NOT NULL)
+    'expiringSoon', (SELECT count(*) FROM businesses WHERE plan = 'pro' AND plan_expires_at >= now() AND plan_expires_at <= seven_days),
+    'domainOffline', (SELECT count(*) FROM businesses WHERE custom_domain IS NOT NULL AND custom_domain_verified_at IS NULL),
+    'suspended', (SELECT count(*) FROM businesses WHERE suspended_at IS NOT NULL)
   ) INTO result;
 
   RETURN result;
@@ -81,9 +81,9 @@ BEGIN
     RAISE EXCEPTION 'invalid_plan';
   END IF;
 
-  SELECT plan, plan_expires_at INTO old_plan, old_exp FROM coffee_shops WHERE id = _shop_id;
+  SELECT plan, plan_expires_at INTO old_plan, old_exp FROM businesses WHERE id = _shop_id;
 
-  UPDATE coffee_shops
+  UPDATE businesses
     SET plan = _plan,
         plan_expires_at = CASE WHEN _plan = 'pro' THEN _expires_at ELSE NULL END,
         updated_at = now()
@@ -108,7 +108,7 @@ BEGIN
     RAISE EXCEPTION 'not_authorized';
   END IF;
 
-  UPDATE coffee_shops
+  UPDATE businesses
     SET suspended_at = now(), suspended_reason = _reason, is_active = false, updated_at = now()
     WHERE id = _shop_id;
 
@@ -135,7 +135,7 @@ BEGIN
     RAISE EXCEPTION 'not_authorized';
   END IF;
 
-  UPDATE coffee_shops
+  UPDATE businesses
     SET suspended_at = NULL, suspended_reason = NULL, is_active = true, updated_at = now()
     WHERE id = _shop_id;
 
@@ -171,7 +171,7 @@ BEGIN
     'menu_count', (SELECT count(*) FROM menu_items WHERE shop_id = s.id),
     'last_order_at', (SELECT max(created_at) FROM orders WHERE shop_id = s.id)
   ) INTO result
-  FROM coffee_shops s
+  FROM businesses s
   LEFT JOIN profiles p ON p.id = s.owner_id
   WHERE s.id = _shop_id;
 
@@ -180,9 +180,9 @@ END;
 $$;
 
 -- 7. Storefront should hide suspended shops automatically
-DROP POLICY IF EXISTS shops_public_read_active ON public.coffee_shops;
+DROP POLICY IF EXISTS shops_public_read_active ON public.businesses;
 CREATE POLICY shops_public_read_active
-  ON public.coffee_shops
+  ON public.businesses
   FOR SELECT
   TO public
   USING (is_active = true AND suspended_at IS NULL);

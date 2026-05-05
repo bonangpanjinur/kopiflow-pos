@@ -20,7 +20,7 @@ BEGIN
   -- Caller must be the courier's user OR have outlet access (owner/cashier assigning)
   IF NOT (
     v_courier.user_id = v_caller
-    OR EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = v_courier.shop_id AND s.owner_id = v_caller)
+    OR EXISTS (SELECT 1 FROM businesses s WHERE s.id = v_courier.shop_id AND s.owner_id = v_caller)
   ) THEN
     RAISE EXCEPTION 'not_authorized';
   END IF;
@@ -73,7 +73,7 @@ AS $$
     AND o.status IN ('ready', 'preparing')
     AND (
       c.user_id = auth.uid()
-      OR EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = c.shop_id AND s.owner_id = auth.uid())
+      OR EXISTS (SELECT 1 FROM businesses s WHERE s.id = c.shop_id AND s.owner_id = auth.uid())
     )
   ORDER BY o.created_at ASC
   LIMIT 50

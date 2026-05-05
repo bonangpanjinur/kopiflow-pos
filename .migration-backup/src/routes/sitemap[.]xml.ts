@@ -11,7 +11,7 @@ export const Route = createFileRoute("/sitemap.xml")({
 
         // Custom-domain mode: only show this tenant's URLs
         const { data: tenant } = await supabaseAdmin
-          .from("coffee_shops")
+          .from("businesses")
           .select("id, slug, custom_domain_verified_at, is_active")
           .eq("custom_domain", host)
           .maybeSingle();
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           // Platform mode: list active shops on the marketing domain
           urls.push({ loc: `${origin}/` });
           const { data: shops } = await supabaseAdmin
-            .from("coffee_shops")
+            .from("businesses")
             .select("slug, updated_at")
             .eq("is_active", true)
             .limit(5000);

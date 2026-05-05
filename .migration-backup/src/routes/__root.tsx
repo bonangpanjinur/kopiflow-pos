@@ -22,7 +22,7 @@ const resolveHost = createServerFn({ method: "GET" }).handler(async () => {
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
-    .from("coffee_shops")
+    .from("businesses")
     .select("slug, custom_domain_verified_at")
     .eq("custom_domain", host)
     .maybeSingle();

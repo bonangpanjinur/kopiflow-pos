@@ -18,8 +18,8 @@ ALTER TABLE public.ingredients ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY ingredients_owner_all ON public.ingredients
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = ingredients.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = ingredients.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = ingredients.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = ingredients.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY ingredients_staff_read ON public.ingredients
   FOR SELECT TO authenticated
@@ -45,8 +45,8 @@ ALTER TABLE public.recipes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY recipes_owner_all ON public.recipes
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM menu_items m JOIN coffee_shops s ON s.id = m.shop_id WHERE m.id = recipes.menu_item_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM menu_items m JOIN coffee_shops s ON s.id = m.shop_id WHERE m.id = recipes.menu_item_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM menu_items m JOIN businesses s ON s.id = m.shop_id WHERE m.id = recipes.menu_item_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM menu_items m JOIN businesses s ON s.id = m.shop_id WHERE m.id = recipes.menu_item_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY recipes_staff_read ON public.recipes
   FOR SELECT TO authenticated
@@ -79,8 +79,8 @@ ALTER TABLE public.stock_movements ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY stock_movements_owner_all ON public.stock_movements
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = stock_movements.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = stock_movements.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = stock_movements.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = stock_movements.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY stock_movements_staff_read ON public.stock_movements
   FOR SELECT TO authenticated

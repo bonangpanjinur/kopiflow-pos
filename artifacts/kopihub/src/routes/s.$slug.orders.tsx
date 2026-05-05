@@ -65,7 +65,7 @@ function MyOrders() {
     let cancelled = false;
     const load = async () => {
       const { data: shop } = await supabase
-        .from("coffee_shops")
+        .from("businesses")
         .select("id")
         .eq("slug", slug)
         .maybeSingle();

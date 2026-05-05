@@ -38,7 +38,7 @@ function DomainPage() {
   const reload = async () => {
     if (!shop) return;
     const [{ data: s }, { data: a }] = await Promise.all([
-      supabase.from("coffee_shops").select("custom_domain, custom_domain_verify_token, custom_domain_verified_at").eq("id", shop.id).maybeSingle(),
+      supabase.from("businesses").select("custom_domain, custom_domain_verify_token, custom_domain_verified_at").eq("id", shop.id).maybeSingle(),
       supabase.from("domain_audit").select("id, action, new_domain, created_at").eq("shop_id", shop.id).order("created_at", { ascending: false }).limit(10),
     ]);
     setState(s as DomainState | null);

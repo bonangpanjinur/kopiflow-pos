@@ -1,7 +1,7 @@
 {
-  "name": "KopiHub",
-  "short_name": "KopiHub",
-  "description": "POS & Marketplace untuk coffeeshop modern",
+  "name": "FlowPOS",
+  "short_name": "FlowPOS",
+  "description": "Sistem POS & Marketplace F&B Modern",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

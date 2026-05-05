@@ -29,7 +29,7 @@ export async function deleteBackup({ data }: { data: { backupId: string } }) {
 export async function upsertBackupSchedule({ data }: { data: { frequency: string; retentionDays: number } }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("not_authenticated");
-  const { data: shop } = await supabase.from("coffee_shops").select("id").eq("owner_id", user.id).maybeSingle();
+  const { data: shop } = await supabase.from("businesses").select("id").eq("owner_id", user.id).maybeSingle();
   if (!shop) throw new Error("shop_not_found");
   const { error } = await supabase.from("backup_schedules" as any).upsert({ shop_id: shop.id, frequency: data.frequency, retention_days: data.retentionDays });
   if (error) throw error;
@@ -39,7 +39,7 @@ export async function upsertBackupSchedule({ data }: { data: { frequency: string
 export async function getBackupSchedule() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("not_authenticated");
-  const { data: shop } = await supabase.from("coffee_shops").select("id").eq("owner_id", user.id).maybeSingle();
+  const { data: shop } = await supabase.from("businesses").select("id").eq("owner_id", user.id).maybeSingle();
   if (!shop) throw new Error("shop_not_found");
   const { data } = await supabase.from("backup_schedules" as any).select("*").eq("shop_id", shop.id).maybeSingle();
   return data ?? null;

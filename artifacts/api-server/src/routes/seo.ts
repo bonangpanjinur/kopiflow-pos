@@ -29,7 +29,7 @@ router.get("/sitemap.xml", async (req, res) => {
     const db = getSupabaseAdmin();
 
     const { data: tenant } = await db
-      .from("coffee_shops")
+      .from("businesses")
       .select("id, slug, custom_domain_verified_at, is_active")
       .eq("custom_domain", host)
       .maybeSingle();
@@ -48,7 +48,7 @@ router.get("/sitemap.xml", async (req, res) => {
     } else {
       urls.push({ loc: `${origin}/` });
       const { data: shops } = await db
-        .from("coffee_shops")
+        .from("businesses")
         .select("slug, updated_at")
         .eq("is_active", true)
         .limit(5000);

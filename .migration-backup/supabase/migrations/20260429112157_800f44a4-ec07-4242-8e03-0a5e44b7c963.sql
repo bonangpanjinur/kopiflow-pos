@@ -1,16 +1,16 @@
 -- 1. Extend app_role enum with super_admin
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'super_admin';
 
--- 2. Add plan & custom domain fields to coffee_shops
-ALTER TABLE public.coffee_shops
+-- 2. Add plan & custom domain fields to businesses
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS plan text NOT NULL DEFAULT 'free',
   ADD COLUMN IF NOT EXISTS plan_expires_at timestamptz,
   ADD COLUMN IF NOT EXISTS custom_domain text,
   ADD COLUMN IF NOT EXISTS custom_domain_verified_at timestamptz,
   ADD COLUMN IF NOT EXISTS custom_domain_verify_token text;
 
-CREATE UNIQUE INDEX IF NOT EXISTS coffee_shops_custom_domain_key
-  ON public.coffee_shops (lower(custom_domain))
+CREATE UNIQUE INDEX IF NOT EXISTS businesses_custom_domain_key
+  ON public.businesses (lower(custom_domain))
   WHERE custom_domain IS NOT NULL;
 
 -- 3. plans table
@@ -69,7 +69,7 @@ CREATE POLICY billing_settings_super_admin_write ON public.billing_settings
 -- 5. plan_invoices
 CREATE TABLE IF NOT EXISTS public.plan_invoices (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   plan_id uuid NOT NULL REFERENCES public.plans(id),
   invoice_no text UNIQUE NOT NULL,
   amount_idr int NOT NULL,
@@ -92,7 +92,7 @@ ALTER TABLE public.plan_invoices ENABLE ROW LEVEL SECURITY;
 CREATE POLICY plan_invoices_owner_select ON public.plan_invoices
   FOR SELECT TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM public.coffee_shops s
+    EXISTS (SELECT 1 FROM public.businesses s
             WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid())
     OR public.has_role(auth.uid(), 'super_admin')
   );
@@ -100,19 +100,19 @@ CREATE POLICY plan_invoices_owner_select ON public.plan_invoices
 CREATE POLICY plan_invoices_owner_insert ON public.plan_invoices
   FOR INSERT TO authenticated
   WITH CHECK (
-    EXISTS (SELECT 1 FROM public.coffee_shops s
+    EXISTS (SELECT 1 FROM public.businesses s
             WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid())
   );
 
 CREATE POLICY plan_invoices_owner_update_proof ON public.plan_invoices
   FOR UPDATE TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM public.coffee_shops s
+    EXISTS (SELECT 1 FROM public.businesses s
             WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid())
     AND status IN ('pending','awaiting_review')
   )
   WITH CHECK (
-    EXISTS (SELECT 1 FROM public.coffee_shops s
+    EXISTS (SELECT 1 FROM public.businesses s
             WHERE s.id = plan_invoices.shop_id AND s.owner_id = auth.uid())
     AND status IN ('pending','awaiting_review')
   );
@@ -125,7 +125,7 @@ CREATE POLICY plan_invoices_super_admin_all ON public.plan_invoices
 -- 6. domain_audit
 CREATE TABLE IF NOT EXISTS public.domain_audit (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   old_domain text,
   new_domain text,
   action text NOT NULL,
@@ -141,7 +141,7 @@ ALTER TABLE public.domain_audit ENABLE ROW LEVEL SECURITY;
 CREATE POLICY domain_audit_owner_select ON public.domain_audit
   FOR SELECT TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM public.coffee_shops s
+    EXISTS (SELECT 1 FROM public.businesses s
             WHERE s.id = domain_audit.shop_id AND s.owner_id = auth.uid())
     OR public.has_role(auth.uid(), 'super_admin')
   );
@@ -150,7 +150,7 @@ CREATE POLICY domain_audit_owner_insert ON public.domain_audit
   FOR INSERT TO authenticated
   WITH CHECK (
     actor_id = auth.uid() AND (
-      EXISTS (SELECT 1 FROM public.coffee_shops s
+      EXISTS (SELECT 1 FROM public.businesses s
               WHERE s.id = domain_audit.shop_id AND s.owner_id = auth.uid())
       OR public.has_role(auth.uid(), 'super_admin')
     )
@@ -191,7 +191,7 @@ BEGIN
 
   -- Extend from current expiry if still active, else from now
   SELECT GREATEST(COALESCE(plan_expires_at, now()), now()) INTO v_base
-    FROM coffee_shops WHERE id = v_inv.shop_id;
+    FROM businesses WHERE id = v_inv.shop_id;
   v_new_expiry := v_base + (v_plan.duration_days || ' days')::interval;
 
   UPDATE plan_invoices
@@ -200,7 +200,7 @@ BEGIN
         updated_at = now()
     WHERE id = _invoice_id;
 
-  UPDATE coffee_shops
+  UPDATE businesses
     SET plan = 'pro', plan_expires_at = v_new_expiry, updated_at = now()
     WHERE id = v_inv.shop_id;
 
@@ -237,7 +237,7 @@ BEGIN
   IF NOT public.has_role(auth.uid(), 'super_admin') THEN
     RAISE EXCEPTION 'not_authorized';
   END IF;
-  UPDATE coffee_shops
+  UPDATE businesses
     SET custom_domain_verified_at = CASE WHEN _verified THEN now() ELSE NULL END,
         updated_at = now()
     WHERE id = _shop_id;
@@ -257,7 +257,7 @@ CREATE POLICY payment_proofs_owner_read ON storage.objects
   USING (
     bucket_id = 'payment-proofs' AND (
       EXISTS (
-        SELECT 1 FROM public.coffee_shops s
+        SELECT 1 FROM public.businesses s
         WHERE s.owner_id = auth.uid()
           AND s.id::text = (storage.foldername(name))[1]
       )
@@ -270,7 +270,7 @@ CREATE POLICY payment_proofs_owner_write ON storage.objects
   WITH CHECK (
     bucket_id = 'payment-proofs' AND
     EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND s.id::text = (storage.foldername(name))[1]
     )

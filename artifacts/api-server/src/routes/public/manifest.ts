@@ -8,7 +8,7 @@ router.get("/manifest/:slug", async (req, res) => {
   const db = getSupabaseAdmin();
 
   const { data: shop, error } = await db
-    .from("coffee_shops")
+    .from("businesses")
     .select("name, slug, logo_url, tagline, is_active, custom_domain, custom_domain_verified_at")
     .eq("slug", slug)
     .maybeSingle();

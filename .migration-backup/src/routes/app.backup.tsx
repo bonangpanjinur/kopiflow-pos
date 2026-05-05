@@ -61,7 +61,7 @@ function BackupPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("coffee_shops").select("id").eq("owner_id", user.id).maybeSingle()
+    supabase.from("businesses").select("id").eq("owner_id", user.id).maybeSingle()
       .then(({ data }) => setShopId(data?.id ?? null));
     reload();
   }, [user]);

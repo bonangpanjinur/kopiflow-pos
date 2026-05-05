@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS public.parked_carts (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  shop_id UUID NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   outlet_id UUID NOT NULL REFERENCES public.outlets(id) ON DELETE CASCADE,
   label TEXT NOT NULL DEFAULT 'Cart',
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -23,7 +23,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.coffee_shops WHERE id = _shop_id AND owner_id = _user_id
+    SELECT 1 FROM public.businesses WHERE id = _shop_id AND owner_id = _user_id
   ) OR EXISTS (
     SELECT 1 FROM public.staff_permissions WHERE shop_id = _shop_id AND user_id = _user_id
   );

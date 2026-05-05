@@ -34,8 +34,8 @@ ALTER TABLE public.shop_customers ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "shop_customers_owner_all" ON public.shop_customers
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shop_customers.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shop_customers.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = shop_customers.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = shop_customers.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "shop_customers_self_read" ON public.shop_customers
   FOR SELECT TO authenticated
@@ -84,8 +84,8 @@ ALTER TABLE public.customer_segments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "customer_segments_owner_all" ON public.customer_segments
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = customer_segments.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = customer_segments.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = customer_segments.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = customer_segments.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "customer_segments_super_admin_read" ON public.customer_segments
   FOR SELECT TO authenticated
@@ -114,8 +114,8 @@ ALTER TABLE public.marketing_campaigns ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "marketing_campaigns_owner_all" ON public.marketing_campaigns
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = marketing_campaigns.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = marketing_campaigns.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = marketing_campaigns.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = marketing_campaigns.shop_id AND s.owner_id = auth.uid()));
 
 -- ============================================
 -- 5. campaign_recipients
@@ -136,12 +136,12 @@ CREATE POLICY "campaign_recipients_owner_all" ON public.campaign_recipients
   FOR ALL TO authenticated
   USING (EXISTS (
     SELECT 1 FROM marketing_campaigns mc
-    JOIN coffee_shops s ON s.id = mc.shop_id
+    JOIN businesses s ON s.id = mc.shop_id
     WHERE mc.id = campaign_recipients.campaign_id AND s.owner_id = auth.uid()
   ))
   WITH CHECK (EXISTS (
     SELECT 1 FROM marketing_campaigns mc
-    JOIN coffee_shops s ON s.id = mc.shop_id
+    JOIN businesses s ON s.id = mc.shop_id
     WHERE mc.id = campaign_recipients.campaign_id AND s.owner_id = auth.uid()
   ));
 

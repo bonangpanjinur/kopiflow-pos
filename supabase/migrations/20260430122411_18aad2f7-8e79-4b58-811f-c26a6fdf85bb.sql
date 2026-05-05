@@ -43,14 +43,14 @@ CREATE TABLE public.plan_themes (
   PRIMARY KEY (plan_id, theme_key)
 );
 
--- ============= coffee_shops additions =============
+-- ============= businesses additions =============
 
-ALTER TABLE public.coffee_shops
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS active_theme_key text NOT NULL DEFAULT 'classic',
   ADD COLUMN IF NOT EXISTS plan_started_at timestamptz;
 
-UPDATE public.coffee_shops SET active_theme_key = 'classic' WHERE active_theme_key IS NULL;
-UPDATE public.coffee_shops SET plan_started_at = COALESCE(plan_started_at, now() - interval '30 days')
+UPDATE public.businesses SET active_theme_key = 'classic' WHERE active_theme_key IS NULL;
+UPDATE public.businesses SET plan_started_at = COALESCE(plan_started_at, now() - interval '30 days')
   WHERE plan = 'pro' AND plan_started_at IS NULL;
 
 -- ============= Touch triggers =============
@@ -169,14 +169,14 @@ STABLE SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_shop coffee_shops%ROWTYPE;
+  v_shop businesses%ROWTYPE;
   v_plan_code text;
   v_effective_plan_id uuid;
   v_months_active numeric;
   v_features jsonb;
   v_themes jsonb;
 BEGIN
-  SELECT * INTO v_shop FROM coffee_shops WHERE id = _shop_id;
+  SELECT * INTO v_shop FROM businesses WHERE id = _shop_id;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('error', 'shop_not_found');
   END IF;
@@ -259,7 +259,7 @@ DECLARE
 BEGIN
   IF v_caller IS NULL THEN RAISE EXCEPTION 'not_authenticated'; END IF;
 
-  SELECT owner_id INTO v_owner FROM coffee_shops WHERE id = _shop_id;
+  SELECT owner_id INTO v_owner FROM businesses WHERE id = _shop_id;
   IF v_owner IS NULL THEN RAISE EXCEPTION 'shop_not_found'; END IF;
   IF v_owner <> v_caller AND NOT public.has_role(v_caller, 'super_admin') THEN
     RAISE EXCEPTION 'not_authorized';
@@ -275,7 +275,7 @@ BEGIN
     RAISE EXCEPTION 'theme_not_entitled';
   END IF;
 
-  UPDATE coffee_shops SET active_theme_key = _theme_key, updated_at = now() WHERE id = _shop_id;
+  UPDATE businesses SET active_theme_key = _theme_key, updated_at = now() WHERE id = _shop_id;
 END;
 $$;
 

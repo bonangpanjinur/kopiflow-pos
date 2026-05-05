@@ -1,7 +1,7 @@
 -- ============== STOCK OPNAMES ==============
 CREATE TABLE public.stock_opnames (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   status text NOT NULL DEFAULT 'completed', -- 'draft', 'completed'
   notes text,
   created_by uuid REFERENCES auth.users(id),
@@ -28,13 +28,13 @@ ALTER TABLE public.stock_opname_items ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY stock_opnames_owner_all ON public.stock_opnames
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = stock_opnames.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = stock_opnames.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = stock_opnames.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = stock_opnames.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY stock_opname_items_owner_all ON public.stock_opname_items
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM stock_opnames o JOIN coffee_shops s ON s.id = o.shop_id WHERE o.id = stock_opname_items.stock_opname_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM stock_opnames o JOIN coffee_shops s ON s.id = o.shop_id WHERE o.id = stock_opname_items.stock_opname_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM stock_opnames o JOIN businesses s ON s.id = o.shop_id WHERE o.id = stock_opname_items.stock_opname_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM stock_opnames o JOIN businesses s ON s.id = o.shop_id WHERE o.id = stock_opname_items.stock_opname_id AND s.owner_id = auth.uid()));
 
 -- Staff can read
 CREATE POLICY stock_opnames_staff_read ON public.stock_opnames

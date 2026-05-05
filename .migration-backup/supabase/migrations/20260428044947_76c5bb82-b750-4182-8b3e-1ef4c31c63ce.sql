@@ -19,8 +19,8 @@ ALTER TABLE public.couriers ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "couriers_owner_all" ON public.couriers
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = couriers.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = couriers.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = couriers.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = couriers.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "couriers_self_read" ON public.couriers
   FOR SELECT TO authenticated

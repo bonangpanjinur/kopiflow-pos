@@ -21,12 +21,12 @@ ALTER TABLE public.delivery_settings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "delivery_settings_owner_all" ON public.delivery_settings
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = delivery_settings.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = delivery_settings.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = delivery_settings.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = delivery_settings.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "delivery_settings_public_read" ON public.delivery_settings
   FOR SELECT TO public
-  USING (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = delivery_settings.shop_id AND s.is_active = true));
+  USING (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = delivery_settings.shop_id AND s.is_active = true));
 
 CREATE TRIGGER trg_delivery_settings_updated
   BEFORE UPDATE ON public.delivery_settings
@@ -47,12 +47,12 @@ ALTER TABLE public.delivery_zones ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "delivery_zones_owner_all" ON public.delivery_zones
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = delivery_zones.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = delivery_zones.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = delivery_zones.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = delivery_zones.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "delivery_zones_public_read" ON public.delivery_zones
   FOR SELECT TO public
-  USING (is_active = true AND EXISTS (SELECT 1 FROM public.coffee_shops s WHERE s.id = delivery_zones.shop_id AND s.is_active = true));
+  USING (is_active = true AND EXISTS (SELECT 1 FROM public.businesses s WHERE s.id = delivery_zones.shop_id AND s.is_active = true));
 
 CREATE TRIGGER trg_delivery_zones_updated
   BEFORE UPDATE ON public.delivery_zones

@@ -80,7 +80,7 @@ async function runMaintenance() {
     // 3. DNS recheck (throttle 6h)
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
     const { data: shops } = await supabaseAdmin
-      .from("coffee_shops")
+      .from("businesses")
       .select("id, custom_domain, custom_domain_verify_token, last_dns_check_at")
       .not("custom_domain", "is", null)
       .not("custom_domain_verified_at", "is", null)
@@ -106,7 +106,7 @@ async function runMaintenance() {
         summary.domains_unverified++;
       } else {
         await supabaseAdmin
-          .from("coffee_shops")
+          .from("businesses")
           .update({ last_dns_check_at: new Date().toISOString() })
           .eq("id", s.id);
       }

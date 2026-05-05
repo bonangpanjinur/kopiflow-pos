@@ -60,7 +60,7 @@ function PayPage() {
       }
       setOrder(o as Order);
       const { data: s } = await supabase
-        .from("coffee_shops")
+        .from("businesses")
         .select("id, name, qris_image_url, qris_merchant_name")
         .eq("id", o.shop_id)
         .maybeSingle();

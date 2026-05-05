@@ -18,12 +18,12 @@ ALTER TABLE public.menu_item_option_groups ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "option_groups_owner_all" ON public.menu_item_option_groups
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = menu_item_option_groups.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = menu_item_option_groups.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = menu_item_option_groups.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = menu_item_option_groups.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "option_groups_public_read" ON public.menu_item_option_groups
   FOR SELECT TO public
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = menu_item_option_groups.shop_id AND s.is_active = true));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = menu_item_option_groups.shop_id AND s.is_active = true));
 
 CREATE POLICY "option_groups_staff_read" ON public.menu_item_option_groups
   FOR SELECT TO authenticated
@@ -50,12 +50,12 @@ ALTER TABLE public.menu_item_options ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "options_owner_all" ON public.menu_item_options
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = menu_item_options.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = menu_item_options.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = menu_item_options.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = menu_item_options.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "options_public_read" ON public.menu_item_options
   FOR SELECT TO public
-  USING (is_available = true AND EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = menu_item_options.shop_id AND s.is_active = true));
+  USING (is_available = true AND EXISTS (SELECT 1 FROM businesses s WHERE s.id = menu_item_options.shop_id AND s.is_active = true));
 
 CREATE POLICY "options_staff_read" ON public.menu_item_options
   FOR SELECT TO authenticated

@@ -10,14 +10,14 @@ export async function getEntitlements() {
 export async function setShopTheme({ data }: { data: { themeKey: string } }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("not_authenticated");
-  const { data: shop } = await supabase.from("coffee_shops").select("id").eq("owner_id", user.id).maybeSingle();
+  const { data: shop } = await supabase.from("businesses").select("id").eq("owner_id", user.id).maybeSingle();
   if (!shop) throw new Error("shop_not_found");
-  const { error } = await supabase.from("coffee_shops").update({ theme_key: data.themeKey } as any).eq("id", shop.id);
+  const { error } = await supabase.from("businesses").update({ theme_key: data.themeKey } as any).eq("id", shop.id);
   if (error) throw error;
   return { ok: true };
 }
 
 export async function getPublicShopTheme({ data }: { data: { slug: string } }) {
-  const { data: shop } = await supabase.from("coffee_shops").select("theme_key").eq("slug", data.slug).maybeSingle();
+  const { data: shop } = await supabase.from("businesses").select("theme_key").eq("slug", data.slug).maybeSingle();
   return { themeKey: (shop as any)?.theme_key ?? "classic" };
 }

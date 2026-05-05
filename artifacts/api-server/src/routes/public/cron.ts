@@ -89,7 +89,7 @@ async function runMaintenance(): Promise<CronSummary> {
 
     // 3. DNS domain verification checks
     const { data: shops, error: shopErr } = await db
-      .from("coffee_shops")
+      .from("businesses")
       .select("id, custom_domain, custom_domain_verified_at, dns_txt_token")
       .not("custom_domain", "is", null)
       .not("custom_domain_verified_at", "is", null);
@@ -104,7 +104,7 @@ async function runMaintenance(): Promise<CronSummary> {
         const verified = txts.some((t) => t.includes(s.dns_txt_token!));
         if (!verified) {
           await db
-            .from("coffee_shops")
+            .from("businesses")
             .update({ custom_domain_verified_at: null })
             .eq("id", s.id);
           await db.rpc("log_system_event", {
@@ -116,7 +116,7 @@ async function runMaintenance(): Promise<CronSummary> {
           summary.domains_unverified++;
         } else {
           await db
-            .from("coffee_shops")
+            .from("businesses")
             .update({ last_dns_check_at: new Date().toISOString() })
             .eq("id", s.id);
         }

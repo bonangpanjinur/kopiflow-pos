@@ -34,8 +34,8 @@ CREATE INDEX IF NOT EXISTS idx_cash_shifts_shop ON public.cash_shifts(shop_id);
 ALTER TABLE public.cash_shifts ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY cash_shifts_owner_all ON public.cash_shifts FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = cash_shifts.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = cash_shifts.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = cash_shifts.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = cash_shifts.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY cash_shifts_staff_read ON public.cash_shifts FOR SELECT TO authenticated
   USING (has_outlet_access(auth.uid(), outlet_id));
@@ -67,11 +67,11 @@ ALTER TABLE public.cash_movements ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY cash_movements_owner_all ON public.cash_movements FOR ALL TO authenticated
   USING (EXISTS (
-    SELECT 1 FROM cash_shifts cs JOIN coffee_shops s ON s.id = cs.shop_id
+    SELECT 1 FROM cash_shifts cs JOIN businesses s ON s.id = cs.shop_id
     WHERE cs.id = cash_movements.shift_id AND s.owner_id = auth.uid()
   ))
   WITH CHECK (EXISTS (
-    SELECT 1 FROM cash_shifts cs JOIN coffee_shops s ON s.id = cs.shop_id
+    SELECT 1 FROM cash_shifts cs JOIN businesses s ON s.id = cs.shop_id
     WHERE cs.id = cash_movements.shift_id AND s.owner_id = auth.uid()
   ));
 
@@ -103,8 +103,8 @@ CREATE INDEX IF NOT EXISTS idx_refunds_shop ON public.refunds(shop_id);
 ALTER TABLE public.refunds ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY refunds_owner_all ON public.refunds FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = refunds.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = refunds.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = refunds.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = refunds.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY refunds_staff_read ON public.refunds FOR SELECT TO authenticated
   USING (has_outlet_access(auth.uid(), outlet_id));
@@ -118,8 +118,8 @@ ALTER TABLE public.orders
 
 CREATE INDEX IF NOT EXISTS idx_orders_shift ON public.orders(shift_id);
 
--- ===== ALTER coffee_shops =====
-ALTER TABLE public.coffee_shops
+-- ===== ALTER businesses =====
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS tax_percent numeric NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS service_charge_percent numeric NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS tax_inclusive boolean NOT NULL DEFAULT false;

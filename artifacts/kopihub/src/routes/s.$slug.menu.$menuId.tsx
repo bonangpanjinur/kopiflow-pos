@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 async function fetchMenuItemForStorefront(slug: string, menuId: string) {
   const { data: shop } = await supabase
-    .from("coffee_shops")
+    .from("businesses")
     .select("id, name, slug, is_active")
     .eq("slug", slug)
     .maybeSingle();

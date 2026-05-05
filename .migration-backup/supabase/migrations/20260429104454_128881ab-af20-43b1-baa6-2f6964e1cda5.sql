@@ -18,7 +18,7 @@ CREATE POLICY "branding_audit_owner_read"
   FOR SELECT
   TO authenticated
   USING (EXISTS (
-    SELECT 1 FROM public.coffee_shops s
+    SELECT 1 FROM public.businesses s
     WHERE s.id = branding_audit.shop_id AND s.owner_id = auth.uid()
   ));
 
@@ -29,7 +29,7 @@ CREATE POLICY "branding_audit_owner_insert"
   WITH CHECK (
     changed_by = auth.uid()
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.id = branding_audit.shop_id AND s.owner_id = auth.uid()
     )
   );

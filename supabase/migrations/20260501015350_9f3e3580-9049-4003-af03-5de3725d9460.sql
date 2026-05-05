@@ -7,7 +7,7 @@ ADD COLUMN IF NOT EXISTS allowed_modules text[] DEFAULT NULL;
 -- We'll use a separate staff_permissions table instead for cleaner design
 CREATE TABLE IF NOT EXISTS public.staff_permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES public.coffee_shops(id) ON DELETE CASCADE,
+  shop_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   user_id uuid NOT NULL,
   role text NOT NULL DEFAULT 'cashier',
   allowed_modules text[] DEFAULT NULL,
@@ -23,7 +23,7 @@ CREATE POLICY "Owner manages staff permissions"
 ON public.staff_permissions
 FOR ALL
 USING (
-  EXISTS (SELECT 1 FROM public.coffee_shops WHERE id = shop_id AND owner_id = auth.uid())
+  EXISTS (SELECT 1 FROM public.businesses WHERE id = shop_id AND owner_id = auth.uid())
 );
 
 -- Staff can read their own permissions
@@ -33,6 +33,6 @@ FOR SELECT
 USING (user_id = auth.uid());
 
 -- Receipt customization columns
-ALTER TABLE public.coffee_shops
+ALTER TABLE public.businesses
 ADD COLUMN IF NOT EXISTS receipt_header text DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS receipt_footer text DEFAULT NULL;

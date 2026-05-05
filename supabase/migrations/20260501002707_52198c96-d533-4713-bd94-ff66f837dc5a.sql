@@ -19,7 +19,7 @@ ALTER TABLE public.shop_backups ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "shop_backups_owner_read"
   ON public.shop_backups FOR SELECT TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shop_backups.shop_id AND s.owner_id = auth.uid())
+    EXISTS (SELECT 1 FROM businesses s WHERE s.id = shop_backups.shop_id AND s.owner_id = auth.uid())
     OR public.has_role(auth.uid(), 'super_admin')
   );
 
@@ -27,7 +27,7 @@ CREATE POLICY "shop_backups_owner_insert"
   ON public.shop_backups FOR INSERT TO authenticated
   WITH CHECK (
     requested_by = auth.uid()
-    AND EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shop_backups.shop_id AND s.owner_id = auth.uid())
+    AND EXISTS (SELECT 1 FROM businesses s WHERE s.id = shop_backups.shop_id AND s.owner_id = auth.uid())
   );
 
 CREATE POLICY "shop_backups_super_admin_write"
@@ -50,8 +50,8 @@ ALTER TABLE public.backup_schedules ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "backup_schedules_owner_all"
   ON public.backup_schedules FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = backup_schedules.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = backup_schedules.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = backup_schedules.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = backup_schedules.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY "backup_schedules_super_admin_read"
   ON public.backup_schedules FOR SELECT TO authenticated
@@ -73,7 +73,7 @@ CREATE POLICY "shop_backups_bucket_owner_read"
     bucket_id = 'shop-backups'
     AND (
       EXISTS (
-        SELECT 1 FROM coffee_shops s
+        SELECT 1 FROM businesses s
         WHERE s.id::text = (storage.foldername(name))[1]
           AND s.owner_id = auth.uid()
       )
@@ -86,7 +86,7 @@ CREATE POLICY "shop_backups_bucket_owner_insert"
   WITH CHECK (
     bucket_id = 'shop-backups'
     AND EXISTS (
-      SELECT 1 FROM coffee_shops s
+      SELECT 1 FROM businesses s
       WHERE s.id::text = (storage.foldername(name))[1]
         AND s.owner_id = auth.uid()
     )

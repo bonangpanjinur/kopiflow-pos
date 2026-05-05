@@ -68,7 +68,7 @@ AS $$
     s.name as shop_name, s.slug as shop_slug,
     c.name as courier_name, c.phone as courier_phone, c.plate_number as courier_plate
   FROM public.orders o
-  JOIN public.coffee_shops s ON s.id = o.shop_id
+  JOIN public.businesses s ON s.id = o.shop_id
   LEFT JOIN public.couriers c ON c.id = o.courier_id
   WHERE o.id = _order_id
     AND o.channel = 'online'

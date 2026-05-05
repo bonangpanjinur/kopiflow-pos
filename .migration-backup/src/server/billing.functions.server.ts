@@ -17,7 +17,7 @@ export const createPlanInvoice = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     const { data: shop } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .select("id")
       .eq("owner_id", userId)
       .maybeSingle();
@@ -164,12 +164,12 @@ export const getProofSignedUrl = createServerFn({ method: "POST" })
 
     const { data: inv, error } = await supabase
       .from("plan_invoices")
-      .select("payment_proof_url, shop_id, coffee_shops!inner(owner_id)")
+      .select("payment_proof_url, shop_id, businesses!inner(owner_id)")
       .eq("id", data.invoiceId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!inv) throw new Error("invoice_not_found");
-    const ownerId = (inv as unknown as { coffee_shops: { owner_id: string } }).coffee_shops?.owner_id;
+    const ownerId = (inv as unknown as { businesses: { owner_id: string } }).businesses?.owner_id;
     if (!isAdmin && ownerId !== userId) throw new Error("not_authorized");
     if (!inv.payment_proof_url) throw new Error("no_proof");
 
@@ -187,7 +187,7 @@ export const getProofSignedUrl = createServerFn({ method: "POST" })
 
 export const expireOverduePlans = createServerFn({ method: "POST" }).handler(async () => {
   const { error } = await supabaseAdmin
-    .from("coffee_shops")
+    .from("businesses")
     .update({ plan: "free" })
     .eq("plan", "pro")
     .lt("plan_expires_at", new Date().toISOString());

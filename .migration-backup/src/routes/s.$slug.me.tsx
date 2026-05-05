@@ -29,7 +29,7 @@ function CustomerProfilePage() {
     (async () => {
       // Get shop
       const { data: s } = await supabase
-        .from("coffee_shops")
+        .from("businesses")
         .select("id, name")
         .eq("slug", slug)
         .eq("is_active", true)

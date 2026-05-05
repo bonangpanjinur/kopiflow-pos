@@ -34,7 +34,7 @@ function OnboardingPage() {
     // If owner already has a shop → /app
     (async () => {
       const { data } = await supabase
-        .from("coffee_shops")
+        .from("businesses")
         .select("id")
         .eq("owner_id", user.id)
         .maybeSingle();
@@ -54,7 +54,7 @@ function OnboardingPage() {
     const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
 
     const { data: shop, error: shopErr } = await supabase
-      .from("coffee_shops")
+      .from("businesses")
       .insert({
         owner_id: user.id,
         name: shopName,

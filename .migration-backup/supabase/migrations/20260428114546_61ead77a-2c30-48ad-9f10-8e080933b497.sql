@@ -1,5 +1,5 @@
 
-ALTER TABLE public.coffee_shops
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS logo_url text,
   ADD COLUMN IF NOT EXISTS phone text,
   ADD COLUMN IF NOT EXISTS email text,
@@ -24,7 +24,7 @@ CREATE POLICY "shop_logos_owner_write" ON storage.objects
   WITH CHECK (
     bucket_id = 'shop-logos'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND (storage.foldername(name))[1] = s.id::text
     )
@@ -36,7 +36,7 @@ CREATE POLICY "shop_logos_owner_update" ON storage.objects
   USING (
     bucket_id = 'shop-logos'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND (storage.foldername(name))[1] = s.id::text
     )
@@ -48,7 +48,7 @@ CREATE POLICY "shop_logos_owner_delete" ON storage.objects
   USING (
     bucket_id = 'shop-logos'
     AND EXISTS (
-      SELECT 1 FROM public.coffee_shops s
+      SELECT 1 FROM public.businesses s
       WHERE s.owner_id = auth.uid()
         AND (storage.foldername(name))[1] = s.id::text
     )

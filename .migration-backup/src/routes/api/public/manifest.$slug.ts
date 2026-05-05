@@ -6,7 +6,7 @@ export const Route = createFileRoute("/api/public/manifest/$slug")({
     handlers: {
       GET: async ({ params }) => {
         const { data: shop } = await supabaseAdmin
-          .from("coffee_shops")
+          .from("businesses")
           .select("name, slug, logo_url, tagline, is_active, custom_domain, custom_domain_verified_at")
           .eq("slug", params.slug)
           .maybeSingle();

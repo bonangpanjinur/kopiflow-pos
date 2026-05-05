@@ -16,7 +16,7 @@ export const Route = createFileRoute("/admin/invoices")({
 type Invoice = {
   id: string; invoice_no: string; amount_idr: number; status: string; payment_proof_url: string | null;
   created_at: string; notes: string | null;
-  coffee_shops: { name: string; slug: string } | null;
+  businesses: { name: string; slug: string } | null;
   plans: { name: string } | null;
 };
 
@@ -26,7 +26,7 @@ function AdminInvoices() {
   const [filter, setFilter] = useState<string>("awaiting_review");
 
   const reload = async () => {
-    let q = supabase.from("plan_invoices").select("id, invoice_no, amount_idr, status, payment_proof_url, created_at, notes, coffee_shops(name, slug), plans(name)").order("created_at", { ascending: false });
+    let q = supabase.from("plan_invoices").select("id, invoice_no, amount_idr, status, payment_proof_url, created_at, notes, businesses(name, slug), plans(name)").order("created_at", { ascending: false });
     if (filter !== "all") q = q.eq("status", filter);
     const { data } = await q;
     setInvs((data as unknown as Invoice[]) ?? []);
@@ -88,7 +88,7 @@ function AdminInvoices() {
             <div className="flex items-start justify-between flex-wrap gap-3">
               <div>
                 <div className="font-mono text-sm font-semibold">{inv.invoice_no}</div>
-                <div className="text-xs text-muted-foreground">{inv.coffee_shops?.name} · {inv.plans?.name} · {new Date(inv.created_at).toLocaleString("id-ID")}</div>
+                <div className="text-xs text-muted-foreground">{inv.businesses?.name} · {inv.plans?.name} · {new Date(inv.created_at).toLocaleString("id-ID")}</div>
                 {inv.notes && <div className="mt-1 text-xs text-amber-700">{inv.notes}</div>}
               </div>
               <div className="text-right">

@@ -15,7 +15,7 @@ const getShopForStorefront = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: shop } = await supabaseAdmin
-      .from("coffee_shops")
+      .from("businesses")
       .select(
         "id, name, slug, description, tagline, logo_url, address, phone, whatsapp, open_hours, custom_domain, custom_domain_verified_at, is_active",
       )

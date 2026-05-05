@@ -38,7 +38,7 @@ function AdminShops() {
   const [filter, setFilter] = useState<StatusFilter>("all");
 
   useEffect(() => {
-    supabase.from("coffee_shops").select("id, name, slug, plan, plan_expires_at, custom_domain, custom_domain_verified_at, created_at, suspended_at").order("created_at", { ascending: false })
+    supabase.from("businesses").select("id, name, slug, plan, plan_expires_at, custom_domain, custom_domain_verified_at, created_at, suspended_at").order("created_at", { ascending: false })
       .then(({ data }) => setShops((data as Shop[]) ?? []));
   }, []);
 

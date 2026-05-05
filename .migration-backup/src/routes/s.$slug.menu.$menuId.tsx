@@ -22,7 +22,7 @@ const getMenuItemForStorefront = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: shop } = await supabaseAdmin
-      .from("coffee_shops")
+      .from("businesses")
       .select("id, name, slug, custom_domain, custom_domain_verified_at, is_active")
       .eq("slug", data.slug)
       .maybeSingle();

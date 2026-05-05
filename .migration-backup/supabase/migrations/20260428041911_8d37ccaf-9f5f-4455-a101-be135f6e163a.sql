@@ -24,8 +24,8 @@ ALTER TABLE public.staff_invitations ENABLE ROW LEVEL SECURITY;
 -- Owner: full access
 CREATE POLICY staff_inv_owner_all ON public.staff_invitations
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = staff_invitations.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = staff_invitations.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = staff_invitations.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = staff_invitations.shop_id AND s.owner_id = auth.uid()));
 
 -- Anyone (anon + auth) can read by token (for invite-accept page)
 CREATE POLICY staff_inv_token_read ON public.staff_invitations
@@ -59,8 +59,8 @@ ALTER TABLE public.shifts ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY shifts_owner_all ON public.shifts
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shifts.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = shifts.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = shifts.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = shifts.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY shifts_self_read ON public.shifts
   FOR SELECT TO authenticated
@@ -91,8 +91,8 @@ ALTER TABLE public.attendances ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY attendances_owner_all ON public.attendances
   FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = attendances.shop_id AND s.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = attendances.shop_id AND s.owner_id = auth.uid()));
+  USING (EXISTS (SELECT 1 FROM businesses s WHERE s.id = attendances.shop_id AND s.owner_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM businesses s WHERE s.id = attendances.shop_id AND s.owner_id = auth.uid()));
 
 -- Self: insert (clock-in) and update own row (clock-out), select own
 CREATE POLICY attendances_self_select ON public.attendances
@@ -178,17 +178,17 @@ GRANT EXECUTE ON FUNCTION public.accept_staff_invitation(text) TO authenticated;
 -- Add policy: owners can read user_roles within their shop.
 CREATE POLICY user_roles_owner_read ON public.user_roles
   FOR SELECT TO authenticated
-  USING (shop_id IS NOT NULL AND EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = user_roles.shop_id AND s.owner_id = auth.uid()));
+  USING (shop_id IS NOT NULL AND EXISTS (SELECT 1 FROM businesses s WHERE s.id = user_roles.shop_id AND s.owner_id = auth.uid()));
 
 CREATE POLICY user_roles_owner_delete ON public.user_roles
   FOR DELETE TO authenticated
-  USING (shop_id IS NOT NULL AND EXISTS (SELECT 1 FROM coffee_shops s WHERE s.id = user_roles.shop_id AND s.owner_id = auth.uid()));
+  USING (shop_id IS NOT NULL AND EXISTS (SELECT 1 FROM businesses s WHERE s.id = user_roles.shop_id AND s.owner_id = auth.uid()));
 
 -- Owner: view profiles of staff in their shops (so we can show name/avatar)
 CREATE POLICY profiles_owner_read_staff ON public.profiles
   FOR SELECT TO authenticated
   USING (EXISTS (
     SELECT 1 FROM public.user_roles r
-    JOIN public.coffee_shops s ON s.id = r.shop_id
+    JOIN public.businesses s ON s.id = r.shop_id
     WHERE r.user_id = profiles.id AND s.owner_id = auth.uid()
   ));

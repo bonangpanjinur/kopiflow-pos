@@ -56,7 +56,7 @@ $$;
 create policy "user_roles_select_own" on public.user_roles for select to authenticated using (auth.uid() = user_id);
 
 -- Coffee shops
-create table public.coffee_shops (
+create table public.businesses (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
@@ -66,16 +66,16 @@ create table public.coffee_shops (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-alter table public.coffee_shops enable row level security;
+alter table public.businesses enable row level security;
 
-create policy "shops_public_read_active" on public.coffee_shops for select using (is_active = true);
-create policy "shops_owner_all" on public.coffee_shops for all to authenticated
+create policy "shops_public_read_active" on public.businesses for select using (is_active = true);
+create policy "shops_owner_all" on public.businesses for all to authenticated
   using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
 -- Outlets
 create table public.outlets (
   id uuid primary key default gen_random_uuid(),
-  shop_id uuid not null references public.coffee_shops(id) on delete cascade,
+  shop_id uuid not null references public.businesses(id) on delete cascade,
   name text not null,
   address text,
   phone text,
@@ -87,11 +87,11 @@ create table public.outlets (
 alter table public.outlets enable row level security;
 
 create policy "outlets_public_read_active" on public.outlets for select
-  using (is_active = true and exists (select 1 from public.coffee_shops s where s.id = shop_id and s.is_active = true));
+  using (is_active = true and exists (select 1 from public.businesses s where s.id = shop_id and s.is_active = true));
 
 create policy "outlets_owner_all" on public.outlets for all to authenticated
-  using (exists (select 1 from public.coffee_shops s where s.id = shop_id and s.owner_id = auth.uid()))
-  with check (exists (select 1 from public.coffee_shops s where s.id = shop_id and s.owner_id = auth.uid()));
+  using (exists (select 1 from public.businesses s where s.id = shop_id and s.owner_id = auth.uid()))
+  with check (exists (select 1 from public.businesses s where s.id = shop_id and s.owner_id = auth.uid()));
 
 create policy "outlets_staff_read" on public.outlets for select to authenticated
   using (exists (
@@ -120,7 +120,7 @@ returns trigger language plpgsql as $$
 begin new.updated_at = now(); return new; end; $$;
 
 create trigger trg_profiles_updated before update on public.profiles for each row execute function public.touch_updated_at();
-create trigger trg_shops_updated before update on public.coffee_shops for each row execute function public.touch_updated_at();
+create trigger trg_shops_updated before update on public.businesses for each row execute function public.touch_updated_at();
 create trigger trg_outlets_updated before update on public.outlets for each row execute function public.touch_updated_at();
 create trigger trg_prefs_updated before update on public.user_preferences for each row execute function public.touch_updated_at();
 

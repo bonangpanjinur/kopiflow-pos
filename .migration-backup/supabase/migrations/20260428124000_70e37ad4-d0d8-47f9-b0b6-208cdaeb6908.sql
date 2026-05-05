@@ -25,8 +25,8 @@ CREATE TRIGGER on_auth_user_created_customer
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_customer_signup();
 
--- 2) Add prep_minutes & address_lat/lng default to coffee_shops for ETA
-ALTER TABLE public.coffee_shops
+-- 2) Add prep_minutes & address_lat/lng default to businesses for ETA
+ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS prep_minutes integer NOT NULL DEFAULT 20;
 
 -- 3) Storage RLS for payment-proofs (path = `{order_id}/...`)

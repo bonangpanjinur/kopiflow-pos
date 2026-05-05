@@ -26,7 +26,7 @@ export function useCurrentShop() {
     (async () => {
       setLoading(true);
       const { data: s } = await supabase
-        .from("coffee_shops")
+        .from("businesses")
         .select("id, name, slug, logo_url, address, phone, tax_percent, service_charge_percent, tax_inclusive")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: true })
