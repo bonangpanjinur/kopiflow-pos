@@ -37,6 +37,7 @@ import {
   Lock,
   Palette,
   Database,
+  Printer,
 } from "lucide-react";
 import { usePlan, useIsSuperAdmin } from "@/lib/use-plan";
 import { Button } from "@/components/ui/button";
